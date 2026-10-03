@@ -12,6 +12,9 @@ export const MANA_REGEN = 3;      // per own turn
 export const STAMINA_REGEN = 4;   // per own turn
 export const DEFENDING_DEFENSE = 4;
 
+const STAT_RU = { attack: 'атаки', defense: 'защиты', accuracy: 'точности', evasion: 'уклонения', speed: 'скорости' };
+const statRu = (s) => STAT_RU[s] || s;
+
 function statOf(c, stat) {
   return c.base ? c.base[stat] : (c.stats?.[stat] ?? c[stat] ?? 0);
 }
@@ -88,7 +91,7 @@ export function createBattle({ player, opponents }, rng = Math.random) {
   const state = {
     round: 1, turnIndex: 0, order, combatants, over: false, winner: null, rngSeed: null,
   };
-  const events = [{ type: 'info', text: 'Battle begins! Round 1.' }];
+  const events = [{ type: 'info', text: 'Бой начинается! Раунд 1.' }];
   // If an enemy is faster, it acts before the player so control always returns to the player.
   if (activeCombatant(state).side === 'enemy') events.push(...runEnemyTurns(state, rng));
   return { state, events };
@@ -131,12 +134,12 @@ function tickDots(state, c, events) {
   const remaining = [];
   for (const dot of c.dots) {
     applyDamage(c, dot.damage, events, null);
-    events.push({ type: 'status', text: `${c.name} suffers ${dot.damage} ${dot.name} damage.`, target: c.key });
+    events.push({ type: 'status', text: `${c.name} страдает ${dot.damage} урона от ${dot.name}.`, target: c.key });
     dot.turns -= 1;
     if (dot.turns > 0) remaining.push(dot);
   }
   c.dots = remaining;
-  if (c.hp === 0) events.push({ type: 'down', text: `${c.name} is defeated!`, target: c.key });
+  if (c.hp === 0) events.push({ type: 'down', text: `${c.name} побеждён!`, target: c.key });
 }
 
 function regenResources(c) {
@@ -152,7 +155,7 @@ export function performAction(state, actor, action, rng = Math.random) {
     state.over = true;
     state.winner = null;
     state.fled = true;
-    events.push({ type: 'info', text: `${actor.name} flees the battle.`, actor: actor.key });
+    events.push({ type: 'info', text: `${actor.name} покидает поле боя.`, actor: actor.key });
     return events;
   }
   const target = combatantByKey(state, action?.targetKey)
@@ -164,29 +167,33 @@ export function performAction(state, actor, action, rng = Math.random) {
 
   if (ability.id !== 'basic') {
     const cd = actor.cooldowns[ability.id] || 0;
-    if (cd > 0) return [{ type: 'info', text: `${ability.name} is on cooldown (${cd}).` }];
-    if (ability.resource === 'mana' && actor.mana < ability.cost) return [{ type: 'info', text: 'Not enough mana.' }];
-    if (ability.resource === 'stamina' && actor.stamina < ability.cost) return [{ type: 'info', text: 'Not enough stamina.' }];
+    if (cd > 0) return [{ type: 'info', text: `${ability.name} на перезарядке (${cd}).` }];
+    if (ability.resource === 'mana' && actor.mana < ability.cost) return [{ type: 'info', text: 'Недостаточно маны.' }];
+    if (ability.resource === 'stamina' && actor.stamina < ability.cost) return [{ type: 'info', text: 'Недостаточно выносливости.' }];
   }
 
   actor.defending = false;
 
   if (ability.kind === 'attack') {
-    if (!target || target.hp <= 0) return [{ type: 'info', text: 'No valid target.' }];
+    if (!target || target.hp <= 0) return [{ type: 'info', text: 'Нет подходящей цели.' }];
     return resolveAttackAction(state, actor, target, ability, rng);
   }
   if (ability.kind === 'heal') {
     const heal = Math.round(actor.maxHp * ability.power);
     actor.hp = Math.min(actor.maxHp, actor.hp + heal);
-    events.push({ type: 'heal', text: `${actor.name} uses ${ability.name} and recovers ${heal} HP.`, actor: actor.key });
-    if (ability.effect?.type === 'cleanse') { actor.dots = []; events.push({ type: 'info', text: `${actor.name} is cleansed of all afflictions.` }); }
+    events.push({ type: 'heal', text: `${actor.name} применяет «${ability.name}» и восстанавливает ${heal} здоровья.`, actor: actor.key });
+    if (ability.effect?.type === 'cleanse') { actor.dots = []; events.push({ type: 'info', text: `${actor.name} очищается от всех недугов.` }); }
   } else if (ability.kind === 'defend') {
-    actor.defending = true;
-    events.push({ type: 'info', text: `${actor.name} braces (${ability.name}).`, actor: actor.key });
+    if (ability.effect) {
+      applyAbilityEffect(state, actor, actor, ability, events);
+    } else {
+      actor.defending = true;
+      events.push({ type: 'info', text: `${actor.name} готовится к обороне («${ability.name}»).`, actor: actor.key });
+    }
   } else if (ability.kind === 'buff') {
     applyAbilityEffect(state, actor, actor, ability, events);
   } else {
-    events.push({ type: 'info', text: `${actor.name} hesitates.` });
+    events.push({ type: 'info', text: `${actor.name} медлит.` });
   }
 
   spendAndCool(state, actor, ability);
@@ -198,29 +205,29 @@ function resolveAttackAction(state, actor, target, ability, rng) {
   const chance = hitChance(actor, target, ability.accuracyBonus || 0);
   const roll = rng() * 100;
   if (roll >= chance) {
-    events.push({ type: 'miss', text: `${actor.name} uses ${ability.name} on ${target.name} and misses (${chance}% chance).`, actor: actor.key, target: target.key });
+    events.push({ type: 'miss', text: `${actor.name} применяет «${ability.name}» на ${target.name} и промахивается (шанс ${chance}%).`, actor: actor.key, target: target.key });
     spendAndCool(state, actor, ability);
     return events;
   }
 
   const damage = damageOf(actor, target, ability.power ?? 1);
   const down = applyDamage(target, damage, events, actor);
-  events.push({ type: 'hit', text: `${actor.name} uses ${ability.name} on ${target.name} for ${damage} damage.`, actor: actor.key, target: target.key, damage });
+  events.push({ type: 'hit', text: `${actor.name} применяет «${ability.name}» на ${target.name} и наносит ${damage} урона.`, actor: actor.key, target: target.key, damage });
 
   if (ability.effect) {
     if (ability.effect.type === 'leech') {
       const heal = Math.round(damage * ability.effect.ratio);
       actor.hp = Math.min(actor.maxHp, actor.hp + heal);
-      events.push({ type: 'heal', text: `${actor.name} drains ${heal} HP.`, actor: actor.key });
+      events.push({ type: 'heal', text: `${actor.name} вытягивает ${heal} здоровья.`, actor: actor.key });
     } else if (ability.effect.type === 'dot') {
       target.dots.push({ name: ability.effect.name, damage: ability.effect.damage, turns: ability.effect.turns });
-      events.push({ type: 'status', text: `${target.name} is afflicted with ${ability.effect.name}.`, target: target.key });
+      events.push({ type: 'status', text: `${target.name} поражён эффектом «${ability.effect.name}».`, target: target.key });
     } else {
       applyAbilityEffect(state, actor, target, ability, events);
     }
   }
 
-  if (down) events.push({ type: 'down', text: `${target.name} is defeated!`, target: target.key });
+  if (down) events.push({ type: 'down', text: `${target.name} побеждён!`, target: target.key });
   spendAndCool(state, actor, ability);
   return events;
 }
@@ -232,10 +239,10 @@ function applyAbilityEffect(state, actor, target, ability, events) {
     const field = eff.resource === 'mana' ? 'mana' : 'stamina';
     const max = field === 'mana' ? actor.maxMana : actor.maxStamina;
     actor[field] = Math.min(max, actor[field] + eff.amount);
-    events.push({ type: 'info', text: `${actor.name} restores ${eff.amount} ${field}.`, actor: actor.key });
+    events.push({ type: 'info', text: `${actor.name} восстанавливает ${eff.amount} ${field === 'mana' ? 'маны' : 'выносливости'}.`, actor: actor.key });
   } else if (eff.type === 'buff' || eff.type === 'debuff') {
     target.buffs.push({ stat: eff.stat, amount: eff.amount, turns: eff.turns });
-    events.push({ type: 'status', text: `${target.name}: ${eff.amount >= 0 ? '+' : ''}${eff.amount} ${eff.stat} for ${eff.turns} turns.`, target: target.key });
+    events.push({ type: 'status', text: `${target.name}: ${eff.amount >= 0 ? '+' : ''}${eff.amount} ${statRu(eff.stat)} на ${eff.turns} хода.`, target: target.key });
   }
 }
 
@@ -271,8 +278,8 @@ function advancePointer(state) {
 }
 
 export function takePlayerAction(state, action, rng = Math.random) {
-  if (state.over) return { state, events: [{ type: 'info', text: 'The battle is already over.' }] };
-  if (!isPlayerTurn(state)) return { state, events: [{ type: 'info', text: 'It is not your turn.' }] };
+  if (state.over) return { state, events: [{ type: 'info', text: 'Бой уже окончен.' }] };
+  if (!isPlayerTurn(state)) return { state, events: [{ type: 'info', text: 'Сейчас не ваш ход.' }] };
 
   const actor = activeCombatant(state);
   const events = [];

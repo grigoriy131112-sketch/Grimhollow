@@ -40,7 +40,7 @@ test('xp thresholds map to levels, capped at 5', () => {
 
 test('validateCharacterInput enforces sensible input', () => {
   assert.throws(() => validateCharacterInput({ name: 'x', class: 'fighter' }));
-  assert.throws(() => validateCharacterInput({ name: 'Valid', class: 'barbarian' }));
+  assert.throws(() => validateCharacterInput({ name: 'Valid', class: 'warlord' }));
   const ok = validateCharacterInput({ name: '  Aria  ', class: 'rogue' });
   assert.equal(ok.name, 'Aria');
   assert.equal(ok.class, 'rogue');
@@ -51,4 +51,42 @@ test('wizard has more mana and less HP than fighter at the same level', () => {
   const w = deriveCharacter(row({ class: 'wizard' }));
   assert.ok(w.stats.maxMana > f.stats.maxMana);
   assert.ok(w.stats.maxHp < f.stats.maxHp);
+});
+
+const ALL_CLASSES = ['fighter', 'wizard', 'rogue', 'cleric', 'barbarian', 'bard', 'druid', 'monk', 'paladin', 'ranger', 'sorcerer', 'warlock'];
+
+test('the game ships the 12 D&D classes', () => {
+  assert.deepEqual(Object.keys(CLASSES).sort(), [...ALL_CLASSES].sort());
+});
+
+test('every class has 5 levels, 2 abilities per level, and one passive', () => {
+  const seen = new Set();
+  for (const key of ALL_CLASSES) {
+    const klass = CLASSES[key];
+    for (let lvl = 1; lvl <= 5; lvl += 1) {
+      const atLevel = klass.abilities.filter((a) => a.unlockLevel === lvl);
+      assert.equal(atLevel.length, 2, `${key} should unlock 2 abilities at level ${lvl}`);
+    }
+    assert.equal(klass.abilities.length, 10, `${key} should have 10 abilities`);
+    assert.equal(klass.abilities.filter((a) => a.passive).length, 1, `${key} should have 1 passive`);
+    for (const a of klass.abilities) {
+      assert.ok(!seen.has(a.id), `duplicate ability id ${a.id}`);
+      seen.add(a.id);
+      assert.equal(typeof a.name, 'string');
+      assert.ok(a.name.length > 0);
+      assert.equal(typeof a.description, 'string');
+      assert.ok(a.description.length > 0);
+    }
+  }
+});
+
+test('every class derives valid level-5 stats and 10 abilities', () => {
+  for (const key of ALL_CLASSES) {
+    const c5 = deriveCharacter(row({ class: key, level: 5 }));
+    assert.equal(c5.abilities.length, 10, `${key} level 5 should have 10 abilities`);
+    assert.ok(c5.stats.maxHp > 0, `${key} maxHp > 0`);
+    assert.ok(c5.stats.attack > 0, `${key} attack > 0`);
+    assert.ok(c5.stats.speed > 0, `${key} speed > 0`);
+    assert.equal(c5.hp, c5.stats.maxHp);
+  }
 });

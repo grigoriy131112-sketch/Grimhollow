@@ -6,7 +6,7 @@ const router = Router();
 router.post('/', (req, res) => {
   try {
     const { characterId, monsterId, locationId } = req.body || {};
-    if (!characterId) throw new Error('characterId is required');
+    if (!characterId) throw new Error('Требуется characterId');
     res.status(201).json(startBattle({
       characterId: Number(characterId),
       monsterId: monsterId ? Number(monsterId) : undefined,
@@ -17,13 +17,13 @@ router.post('/', (req, res) => {
 
 router.get('/:id', (req, res) => {
   const view = getBattleView(Number(req.params.id));
-  if (!view) return res.status(404).json({ error: 'Battle not found' });
+  if (!view) return res.status(404).json({ error: 'Бой не найден' });
   return res.json(view);
 });
 
 router.get('/:id/preview', (req, res) => {
   const preview = getAbilityPreview(Number(req.params.id), req.query.abilityId || 'basic', req.query.targetKey);
-  if (!preview) return res.status(404).json({ error: 'Battle not found' });
+  if (!preview) return res.status(404).json({ error: 'Бой не найден' });
   return res.json(preview);
 });
 

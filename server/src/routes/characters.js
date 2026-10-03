@@ -28,13 +28,13 @@ router.post('/', (req, res) => {
 
 router.get('/:id', (req, res) => {
   const c = getCharacter(Number(req.params.id));
-  if (!c) return res.status(404).json({ error: 'Character not found' });
+  if (!c) return res.status(404).json({ error: 'Персонаж не найден' });
   return res.json(c);
 });
 
 router.delete('/:id', (req, res) => {
   const ok = deleteCharacter(Number(req.params.id));
-  if (!ok) return res.status(404).json({ error: 'Character not found' });
+  if (!ok) return res.status(404).json({ error: 'Персонаж не найден' });
   return res.status(204).end();
 });
 

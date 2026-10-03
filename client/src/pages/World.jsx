@@ -10,7 +10,7 @@ export default function WorldPage() {
 
   return (
     <div>
-      <div className="page-head"><h1>The World</h1></div>
+      <div className="page-head"><h1>Мир</h1></div>
       {error && <div className="error">{error}</div>}
       {world.map((continent) => (
         <section key={continent.id} className="continent">
@@ -25,10 +25,10 @@ export default function WorldPage() {
                   <Link key={loc.id} className="card loc-card" to={`/world/locations/${loc.id}`}>
                     <div className="hero-top">
                       <b>{loc.name}</b>
-                      {loc.is_safe && <span className="badge safe">Safe</span>}
+                      {loc.is_safe && <span className="badge safe">Безопасно</span>}
                     </div>
                     <p className="muted small">{loc.description}</p>
-                    <span className="danger-tag">Danger {'★'.repeat(Math.min(loc.danger, 5))}</span>
+                    <span className="danger-tag">Опасность {'★'.repeat(Math.min(loc.danger, 5))}</span>
                   </Link>
                 ))}
               </div>

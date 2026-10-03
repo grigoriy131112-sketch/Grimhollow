@@ -102,8 +102,8 @@ function clampResource(value, max) {
 
 export function validateCharacterInput(input) {
   const name = String(input?.name || '').trim();
-  if (name.length < 2 || name.length > 24) throw new Error('Name must be 2-24 characters');
-  if (!CLASSES[input?.class]) throw new Error(`Unknown class: ${input?.class}`);
+  if (name.length < 2 || name.length > 24) throw new Error('Имя должно быть от 2 до 24 символов');
+  if (!CLASSES[input?.class]) throw new Error(`Неизвестный класс: ${input?.class}`);
   return { name, class: input.class, portrait: input.portrait ? String(input.portrait).slice(0, 120) : null };
 }
 

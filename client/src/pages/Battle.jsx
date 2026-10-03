@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { abilityIcon, monsterIcon, Icon } from '../icons.jsx';
 
+const STAT_RU = { attack: 'атака', defense: 'защита', accuracy: 'точность', evasion: 'уклонение', speed: 'скорость' };
+
 function Bar({ value, max, kind }) {
   const pct = Math.max(0, Math.min(100, Math.round((value / max) * 100)));
   return <div className="bar"><div className={`fill ${kind}`} style={{ width: `${pct}%` }} /></div>;
@@ -40,17 +42,17 @@ function CombatantCard({ c, active }) {
           {icon && <Icon src={icon} alt={c.name} size={26} />}
           {c.name}
         </b>
-        {active && <span className="badge">turn</span>}
+        {active && <span className="badge">ход</span>}
       </div>
-      <div className="small muted">{c.classKey || 'monster'} · Lv {c.level}</div>
-      <Stat label="HP" value={c.hp} max={c.maxHp} />
+      <div className="small muted">Ур. {c.level}</div>
+      <Stat label="Здоровье" value={c.hp} max={c.maxHp} />
       <Bar value={c.hp} max={c.maxHp} kind="hp" />
       <div className="res-bars">
-        {c.maxMana > 0 && <div className="res"><Stat label="Mana" value={c.mana} max={c.maxMana} /><Bar value={c.mana} max={c.maxMana} kind="mana" /></div>}
-        {c.maxStamina > 0 && <div className="res"><Stat label="Stam" value={c.stamina} max={c.maxStamina} /><Bar value={c.stamina} max={c.maxStamina} kind="stamina" /></div>}
+        {c.maxMana > 0 && <div className="res"><Stat label="Мана" value={c.mana} max={c.maxMana} /><Bar value={c.mana} max={c.maxMana} kind="mana" /></div>}
+        {c.maxStamina > 0 && <div className="res"><Stat label="Вын." value={c.stamina} max={c.maxStamina} /><Bar value={c.stamina} max={c.maxStamina} kind="stamina" /></div>}
       </div>
-      <div className="small muted">atk {c.base.attack} · def {c.base.defense} · spd {c.base.speed}</div>
-      {c.buffs.length > 0 && <div className="small muted">{c.buffs.map((b) => `${b.stat} ${b.amount > 0 ? '+' : ''}${b.amount}`).join(', ')}</div>}
+      <div className="small muted">атака {c.base.attack} · защита {c.base.defense} · скор. {c.base.speed}</div>
+      {c.buffs.length > 0 && <div className="small muted">{c.buffs.map((b) => `${STAT_RU[b.stat] || b.stat} ${b.amount > 0 ? '+' : ''}${b.amount}`).join(', ')}</div>}
       {c.dots.length > 0 && <div className="small" style={{ color: '#d98a8a' }}>{c.dots.map((d) => d.name).join(', ')}</div>}
     </div>
   );
@@ -106,17 +108,17 @@ export default function BattlePage() {
   const attack = () => act({ type: 'attack', abilityId: selected === 'basic' ? undefined : selected, targetKey: target?.key });
 
   if (error && !battle) return <div className="error">{error}</div>;
-  if (!battle) return <div className="muted center">Loading…</div>;
+  if (!battle) return <div className="muted center">Загрузка…</div>;
 
   const over = !battle.active;
   const won = battle.status === 'won';
 
   return (
     <div>
-      <Link to="/characters" className="muted">← Heroes</Link>
+      <Link to="/characters" className="muted">← Герои</Link>
       <div className="page-head">
-        <h1>Battle</h1>
-        <span className="badge">Round {battle.round}</span>
+        <h1>Бой</h1>
+        <span className="badge">Раунд {battle.round}</span>
       </div>
       {error && <div className="error">{error}</div>}
 
@@ -127,10 +129,10 @@ export default function BattlePage() {
       {over && (
         <div className="card reward">
           {won
-            ? `🏆 Victory! +${battle.rewardXp} XP, +${battle.rewardGold} gold.`
+            ? `🏆 Победа! +${battle.rewardXp} опыта, +${battle.rewardGold} золота.`
             : battle.status === 'lost'
-              ? `💀 Defeat… you stagger away with a single point of health${battle.rewards?.goldLost ? ` and lose ${battle.rewards.goldLost} gold` : ''}.`
-              : 'You fled the field.'}
+              ? `💀 Поражение… вы уходите с единственным очком здоровья${battle.rewards?.goldLost ? ` и теряете ${battle.rewards.goldLost} золота` : ''}.`
+              : 'Вы покинули поле боя.'}
         </div>
       )}
 
@@ -139,11 +141,12 @@ export default function BattlePage() {
           <div className="abilities-bar">
             <button type="button" className={`ability-btn ${selected === 'basic' ? 'selected' : ''}`}
               onClick={() => setSelected('basic')}>
-              ⚔️ Attack<span className="cost">No cost</span>
+              ⚔️ Атака<span className="cost">Без затрат</span>
             </button>
             {myAbilities.map((a) => {
               const cd = actor?.cooldowns?.[a.id];
               const blocked = !!cd;
+              const lacks = (a.resource === 'mana' && player.mana < a.cost) || (a.resource === 'stamina' && player.stamina < a.cost);
               return (
                 <button key={a.id} type="button" disabled={blocked}
                   className={`ability-btn ${selected === a.id ? 'selected' : ''}`}
@@ -151,7 +154,7 @@ export default function BattlePage() {
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <Icon src={abilityIcon(a)} alt={a.name} size={20} /> {a.name}
                   </span>
-                  <span className="cost">{a.cost > 0 ? `${a.cost} ${a.resource}` : 'no cost'}{cd ? ` · cd ${cd}` : ''}</span>
+                  <span className="cost">{a.cost > 0 ? `${a.cost} ${a.resource === 'mana' ? 'маны' : 'выносливости'}${lacks ? ' (мало)' : ''}` : 'без затрат'}{cd ? ` · перезарядка ${cd}` : ''}</span>
                 </button>
               );
             })}
@@ -159,19 +162,19 @@ export default function BattlePage() {
 
           <div className="actions">
             <button type="button" disabled={busy || !battle.isPlayerTurn} onClick={attack}>
-              {preview?.kind === 'attack' ? `Strike (${preview.chance}% · ~${preview.damage} dmg)` : 'Use ability'}
+              {preview?.kind === 'attack' ? `Удар (${preview.chance}% · ~${preview.damage} урона)` : 'Применить способность'}
             </button>
             <button type="button" className="danger" disabled={busy || !battle.isPlayerTurn}
-              onClick={() => act({ type: 'flee' })}>🏃 Flee</button>
-            {!battle.isPlayerTurn && <span className="muted">The enemy moves…</span>}
+              onClick={() => act({ type: 'flee' })}>🏃 Бежать</button>
+            {!battle.isPlayerTurn && <span className="muted">Ход противника…</span>}
           </div>
         </>
       )}
 
-      {over && <div className="actions"><Link className="btn" to="/characters">Back to heroes</Link></div>}
+      {over && <div className="actions"><Link className="btn" to="/characters">К героям</Link></div>}
 
       <div className="card">
-        <h2>Chronicle</h2>
+        <h2>Хроника</h2>
         <div className="log" ref={logRef}>
           {battle.log.map((e, i) => <div key={i} className={`logline ${e.type}`}>{e.text}</div>)}
         </div>

@@ -27,7 +27,7 @@ export function deleteCharacter(id) {
 export function applyBattleRewards(characterId, { hp, mana, stamina, xpGained = 0, goldGained = 0 }) {
   const db = getDb();
   const row = db.prepare('SELECT * FROM characters WHERE id = ?').get(characterId);
-  if (!row) throw new Error('Character not found');
+  if (!row) throw new Error('Персонаж не найден');
 
   const newXp = row.xp + xpGained;
   const newLevel = levelFromXp(newXp);

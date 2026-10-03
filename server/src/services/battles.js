@@ -34,14 +34,14 @@ function monsterSource(monster) {
 
 export function startBattle({ characterId, monsterId, locationId }) {
   const character = getCharacter(characterId);
-  if (!character) throw new Error('Character not found');
+  if (!character) throw new Error('Персонаж не найден');
 
   let monster = monsterId ? getMonster(monsterId) : null;
   let location = locationId ? getLocation(locationId) : null;
   if (!monster && location && location.monsters?.length) {
     monster = location.monsters[Math.floor(Math.random() * location.monsters.length)];
   }
-  if (!monster) throw new Error('No monster available for this encounter');
+  if (!monster) throw new Error('Для этой встречи нет доступного монстра');
 
   const { state, events } = createBattle({ player: character, opponents: [monsterSource(monster)] });
   const db = getDb();
@@ -80,8 +80,8 @@ export function getBattleView(id) {
 export function takeTurn(id, action) {
   const db = getDb();
   const battle = getBattle(id);
-  if (!battle) throw new Error('Battle not found');
-  if (battle.status !== 'active') throw new Error('This battle has already ended');
+  if (!battle) throw new Error('Бой не найден');
+  if (battle.status !== 'active') throw new Error('Этот бой уже завершён');
 
   const { state, events } = takePlayerAction(battle.state, action);
   const log = [...battle.log, ...events];

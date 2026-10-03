@@ -10,10 +10,10 @@ function Nav() {
     <nav className="nav">
       <div className="brand">☠ Grimhollow</div>
       <div className="links">
-        <NavLink to="/characters">Heroes</NavLink>
-        <NavLink to="/world">World</NavLink>
-        <span className="muted small" style={{ marginLeft: 'auto', opacity: 0.6 }} title="build id">
-          build {typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev'}
+        <NavLink to="/characters">Герои</NavLink>
+        <NavLink to="/world">Мир</NavLink>
+        <span className="muted small" style={{ marginLeft: 'auto', opacity: 0.6 }} title="версия сборки">
+          сборка {typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev'}
         </span>
       </div>
     </nav>

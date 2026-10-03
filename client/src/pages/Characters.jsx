@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 
+const STAT_RU = { hp: 'здоровье', mana: 'мана', stamina: 'выносливость', attack: 'атака', defense: 'защита', accuracy: 'точность', evasion: 'уклонение', speed: 'скорость' };
+
 export default function CharactersPage() {
   const navigate = useNavigate();
   const [characters, setCharacters] = useState([]);
@@ -29,7 +31,7 @@ export default function CharactersPage() {
 
   const remove = async (id, e) => {
     e.preventDefault();
-    if (!confirm('Abandon this hero forever?')) return;
+    if (!confirm('Оставить этого героя навсегда?')) return;
     await api.deleteCharacter(id);
     load();
   };
@@ -37,19 +39,19 @@ export default function CharactersPage() {
   return (
     <div>
       <div className="page-head">
-        <h1>Your Heroes</h1>
-        <button type="button" onClick={() => setCreating((v) => !v)}>{creating ? 'Cancel' : '+ New hero'}</button>
+        <h1>Ваши герои</h1>
+        <button type="button" onClick={() => setCreating((v) => !v)}>{creating ? 'Отмена' : '+ Новый герой'}</button>
       </div>
       {error && <div className="error">{error}</div>}
 
       {creating && options && (
         <form className="card" onSubmit={submit}>
-          <h2>Forge a hero</h2>
+          <h2>Создать героя</h2>
           <div className="grid2">
-            <label>Name
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Kael Vane" />
+            <label>Имя
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="напр. Каэль Вейн" />
             </label>
-            <label>Class
+            <label>Класс
               <select value={form.class} onChange={(e) => setForm({ ...form, class: e.target.value })}>
                 {options.classes.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
               </select>
@@ -58,12 +60,12 @@ export default function CharactersPage() {
           {selectedClass && (
             <div className="card" style={{ background: '#14101a' }}>
               <p className="muted">{selectedClass.blurb}</p>
-              <p className="small"><b>Starting stats:</b> {Object.entries(selectedClass.base).map(([k, v]) => `${k} ${v}`).join(' · ')}</p>
-              <p className="small"><b>Per level:</b> {selectedClass.growthText}</p>
-              <p className="small muted">{selectedClass.abilities.filter((a) => a.unlockLevel === 1).map((a) => `${a.icon} ${a.name}`).join(' · ')} unlocked at level 1.</p>
+              <p className="small"><b>Начальные характеристики:</b> {Object.entries(selectedClass.base).map(([k, v]) => `${STAT_RU[k] || k} ${v}`).join(' · ')}</p>
+              <p className="small"><b>За уровень:</b> {selectedClass.growthText}</p>
+              <p className="small muted">{selectedClass.abilities.filter((a) => a.unlockLevel === 1).map((a) => `${a.icon} ${a.name}`).join(' · ')} — открываются на 1 уровне.</p>
             </div>
           )}
-          <button type="submit">Create hero</button>
+          <button type="submit">Создать героя</button>
         </form>
       )}
 
@@ -72,7 +74,7 @@ export default function CharactersPage() {
           <Link className="card hero-card" key={c.id} to={`/characters/${c.id}`}>
             <div className="hero-top">
               <h3>{c.name}</h3>
-              <span className="badge">Lv {c.level}</span>
+              <span className="badge">Ур. {c.level}</span>
             </div>
             <p className="muted">{c.className}</p>
             <div className="stat-row">
@@ -82,12 +84,12 @@ export default function CharactersPage() {
               <span>💰 {c.gold}</span>
             </div>
             <div className="hero-actions">
-              <span className="muted small">{c.abilities.length} abilities</span>
-              <button type="button" className="danger" onClick={(e) => remove(c.id, e)}>Delete</button>
+              <span className="muted small">{c.abilities.length} способностей</span>
+              <button type="button" className="danger" onClick={(e) => remove(c.id, e)}>Удалить</button>
             </div>
           </Link>
         ))}
-        {characters.length === 0 && !creating && <p className="muted">No heroes yet. Forge your first.</p>}
+        {characters.length === 0 && !creating && <p className="muted">Героев пока нет. Создайте первого.</p>}
       </div>
     </div>
   );

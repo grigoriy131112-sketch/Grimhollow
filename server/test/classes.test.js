@@ -35,5 +35,5 @@ test('basic attack always exists and is free', () => {
   assert.equal(BASIC_ATTACK.id, 'basic');
   assert.equal(BASIC_ATTACK.cost, 0);
   assert.equal(findAbility('wizard', 'does_not_exist'), null);
-  assert.equal(findAbility('wizard', 'fire_bolt').name, 'Fire Bolt');
+  assert.equal(findAbility('wizard', 'fire_bolt').name, 'Огненный снаряд');
 });

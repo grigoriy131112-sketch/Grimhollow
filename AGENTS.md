@@ -34,8 +34,25 @@ npm start                   # run the API, serving client/dist if built
 - **Defeat is survivable**: the hero keeps 1 HP and loses 25% of their gold
   (`DEFEAT_GOLD_PENALTY` in `services/battles.js`).
 - Every class has **5 levels**; each level unlocks **2 abilities** and raises
-  HP/mana (plus per-class growth in `game/classes.js`).
+  HP/mana (plus per-class growth in `game/classes.js`). There are **12 classes**
+  (the D&D set).
 - XP comes from quests (future), battles, and exploration (future).
+
+## Content language
+
+- All player-visible text is **Russian** (class/monster/location names, ability
+  names and descriptions, combat log, UI labels, error messages).
+- Stable keys stay **Latin**: class `key` (e.g. `fighter`), ability `id`
+  (e.g. `fire_bolt`), stat keys, route paths. These are the identity used by the
+  DB, the API, and the client, so never translate them.
+
+## Ability icons
+
+- Icons resolve by `ability.id` via `ABILITY_ICONS` in `client/src/icons.jsx`.
+- Each entry maps an id to `client/public/art/abilities/<file>.svg`; a missing
+  entry just renders no icon.
+- Icons are CC BY 3.0 from game-icons.net (see `client/public/art/CREDITS.txt`
+  for the per-file source manifest).
 
 ## Conventions
 

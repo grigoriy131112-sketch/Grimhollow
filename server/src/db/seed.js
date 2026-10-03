@@ -5,28 +5,28 @@ import { getDb, transaction } from './index.js';
 
 const WORLD = [
   {
-    name: 'Mordrath',
-    description: 'The Sundered Realm. A continent under a sky the colour of old bruises, where the dead do not always stay buried.',
+    name: 'Мордрат',
+    description: 'Расколотое королевство. Континент под небом цвета старых синяков, где мёртвые не всегда остаются в земле.',
     regions: [
       {
-        name: 'The Ashen Reach',
-        description: 'Fields of grey dust where a war no one remembers was fought.',
+        name: 'Пепельный предел',
+        description: 'Поля серой пыли, где отгремела война, которую никто не помнит.',
         locations: [
-          { name: 'Gallows Crossroads', description: 'A crossroads marked by a gallows that never emptied.', danger: 1, safe: true, connects: ['Weeping Hollow', 'The Drowned Road'] },
-          { name: 'Weeping Hollow', description: 'A fog-choked vale that swallows sound and light alike.', danger: 2, connects: ['Gallows Crossroads', 'Cinderwood'] },
-          { name: 'The Drowned Road', description: 'A sunken causeway where the marsh crept over a king\'s highway.', danger: 2, connects: ['Gallows Crossroads', 'Sunken Chapel'] },
-          { name: 'Cinderwood', description: 'Blackened trees, still warm to the touch, long after the fire.', danger: 3, connects: ['Weeping Hollow', 'The Bonefields'] },
+          { name: 'Перекрёсток висельников', description: 'Перекрёсток, отмеченный виселицей, что никогда не пустовала.', danger: 1, safe: true, connects: ['Плачущая низина', 'Утонувшая дорога'] },
+          { name: 'Плачущая низина', description: 'Ложбина, задушенная туманом, что глотает и звук, и свет.', danger: 2, connects: ['Перекрёсток висельников', 'Пепельный лес'] },
+          { name: 'Утонувшая дорога', description: 'Затонувшая гать, где болото поглотило королевский тракт.', danger: 2, connects: ['Перекрёсток висельников', 'Затонувшая часовня'] },
+          { name: 'Пепельный лес', description: 'Обгоревшие деревья, всё ещё тёплые на ощупь спустя годы после пожара.', danger: 3, connects: ['Плачущая низина', 'Костяные поля'] },
         ],
       },
       {
-        name: 'The Ossuary Coast',
-        description: 'A shore of chalk cliffs and ossuaries, where the sea gives up bones instead of shells.',
+        name: 'Костяной берег',
+        description: 'Берег меловых утёсов и оссуариев, где море отдаёт кости вместо ракушек.',
         locations: [
-          { name: 'Gloamharbour', description: 'A lantern-lit port that trades in salvage and secrets.', danger: 1, safe: true, connects: ['The Drowned Road', 'Tide-Gnawed Caves'] },
-          { name: 'Tide-Gnawed Caves', description: 'Sea caves hung with the remains of those the tide claimed.', danger: 3, connects: ['Gloamharbour', 'Sunken Chapel', 'The Bonefields'] },
-          { name: 'Sunken Chapel', description: 'A flooded chapel to a god who drowned with his flock.', danger: 4, connects: ['The Drowned Road', 'Tide-Gnawed Caves'] },
-          { name: 'The Bonefields', description: 'A plain of bleached remains where the earth never healed.', danger: 4, connects: ['Cinderwood', 'Tide-Gnawed Caves', 'The Black Spire'] },
-          { name: 'The Black Spire', description: 'A needle of obsidian that hums with a sound like flies.', danger: 5, connects: ['The Bonefields'] },
+          { name: 'Сумеречная гавань', description: 'Порт, освещённый фонарями, торгующий обломками и секретами.', danger: 1, safe: true, connects: ['Утонувшая дорога', 'Пещеры, изгрызенные приливом'] },
+          { name: 'Пещеры, изгрызенные приливом', description: 'Морские пещеры, увешанные останками тех, кого забрал прилив.', danger: 3, connects: ['Сумеречная гавань', 'Затонувшая часовня', 'Костяные поля'] },
+          { name: 'Затонувшая часовня', description: 'Затопленная часовня богу, что утонул вместе со своим стадом.', danger: 4, connects: ['Утонувшая дорога', 'Пещеры, изгрызенные приливом'] },
+          { name: 'Костяные поля', description: 'Равнина выбеленных останков, где земля так и не зажила.', danger: 4, connects: ['Пепельный лес', 'Пещеры, изгрызенные приливом', 'Чёрный шпиль'] },
+          { name: 'Чёрный шпиль', description: 'Игла обсидиана, что гудит звуком, похожим на жужжание мух.', danger: 5, connects: ['Костяные поля'] },
         ],
       },
     ],
@@ -34,26 +34,26 @@ const WORLD = [
 ];
 
 const MONSTERS = [
-  { name: 'Grave Rat', description: 'A bloated rat grown fat on corpses.', level: 1, max_hp: 22, attack: 7, defense: 2, accuracy: 22, evasion: 8, speed: 9, mana: 0, stamina: 0, class_key: 'fighter', xp_reward: 25, gold_reward: 3 },
-  { name: 'Hollow Peasant', description: 'A villager whose eyes hold nothing but hunger.', level: 1, max_hp: 26, attack: 8, defense: 3, accuracy: 20, evasion: 5, speed: 6, mana: 0, stamina: 0, class_key: 'fighter', xp_reward: 30, gold_reward: 5 },
-  { name: 'Lantern Wight', description: 'A drowned sailor carrying a cold green flame.', level: 2, max_hp: 34, attack: 11, defense: 4, accuracy: 26, evasion: 8, speed: 7, mana: 20, stamina: 0, class_key: 'wizard', xp_reward: 55, gold_reward: 12 },
-  { name: 'Briar Stalker', description: 'A knot of thorned limbs that hunts by smell.', level: 2, max_hp: 30, attack: 12, defense: 3, accuracy: 28, evasion: 12, speed: 11, mana: 0, stamina: 40, class_key: 'rogue', xp_reward: 55, gold_reward: 8 },
-  { name: 'Ossuary Knight', description: 'Armour animated by grievance, still sworn to a dead liege.', level: 3, max_hp: 52, attack: 15, defense: 8, accuracy: 28, evasion: 6, speed: 7, mana: 0, stamina: 60, class_key: 'fighter', xp_reward: 95, gold_reward: 25 },
-  { name: 'Choir Wraith', description: 'A chorus of the damned, singing in one broken voice.', level: 3, max_hp: 46, attack: 16, defense: 5, accuracy: 32, evasion: 14, speed: 10, mana: 50, stamina: 0, class_key: 'wizard', xp_reward: 95, gold_reward: 20 },
-  { name: 'Bonefield Colossus', description: 'A hill of fused skeletons that stands and walks.', level: 4, max_hp: 80, attack: 20, defense: 10, accuracy: 30, evasion: 5, speed: 6, mana: 0, stamina: 80, class_key: 'fighter', xp_reward: 150, gold_reward: 45 },
-  { name: 'Plague Herald', description: 'A robed figure whose breath turns flesh to rot.', level: 4, max_hp: 64, attack: 18, defense: 7, accuracy: 34, evasion: 12, speed: 9, mana: 70, stamina: 0, class_key: 'cleric', xp_reward: 150, gold_reward: 40 },
-  { name: 'Spire Warden', description: 'The thing that keeps the Black Spire\'s door shut.', level: 5, max_hp: 120, attack: 24, defense: 13, accuracy: 34, evasion: 10, speed: 9, mana: 60, stamina: 60, class_key: 'cleric', xp_reward: 260, gold_reward: 90 },
-  { name: 'The Hollow King', description: 'Crowned, seated, and entirely empty — save for the flies.', level: 5, max_hp: 140, attack: 26, defense: 12, accuracy: 36, evasion: 12, speed: 11, mana: 40, stamina: 80, class_key: 'fighter', xp_reward: 320, gold_reward: 150 },
+  { name: 'Могильная крыса', description: 'Раздутая крыса, отъевшаяся на трупах.', level: 1, max_hp: 22, attack: 7, defense: 2, accuracy: 22, evasion: 8, speed: 9, mana: 0, stamina: 0, class_key: 'fighter', xp_reward: 25, gold_reward: 3 },
+  { name: 'Пустой крестьянин', description: 'Селянин, в чьих глазах остался один лишь голод.', level: 1, max_hp: 26, attack: 8, defense: 3, accuracy: 20, evasion: 5, speed: 6, mana: 0, stamina: 0, class_key: 'fighter', xp_reward: 30, gold_reward: 5 },
+  { name: 'Фонарный упырь', description: 'Утонувший моряк, несущий холодное зелёное пламя.', level: 2, max_hp: 34, attack: 11, defense: 4, accuracy: 26, evasion: 8, speed: 7, mana: 20, stamina: 0, class_key: 'wizard', xp_reward: 55, gold_reward: 12 },
+  { name: 'Терновый охотник', description: 'Клубок шипастых конечностей, что охотится по запаху.', level: 2, max_hp: 30, attack: 12, defense: 3, accuracy: 28, evasion: 12, speed: 11, mana: 0, stamina: 40, class_key: 'rogue', xp_reward: 55, gold_reward: 8 },
+  { name: 'Костяной рыцарь', description: 'Доспех, движимый обидой, всё ещё верный мёртвому сюзерену.', level: 3, max_hp: 52, attack: 15, defense: 8, accuracy: 28, evasion: 6, speed: 7, mana: 0, stamina: 60, class_key: 'fighter', xp_reward: 95, gold_reward: 25 },
+  { name: 'Призрак хора', description: 'Хор проклятых, поющий одним сломанным голосом.', level: 3, max_hp: 46, attack: 16, defense: 5, accuracy: 32, evasion: 14, speed: 10, mana: 50, stamina: 0, class_key: 'wizard', xp_reward: 95, gold_reward: 20 },
+  { name: 'Колосс костяных полей', description: 'Холм из сросшихся скелетов, что встаёт и идёт.', level: 4, max_hp: 80, attack: 20, defense: 10, accuracy: 30, evasion: 5, speed: 6, mana: 0, stamina: 80, class_key: 'fighter', xp_reward: 150, gold_reward: 45 },
+  { name: 'Вестник чумы', description: 'Фигура в балахоне, чьё дыхание обращает плоть в гниль.', level: 4, max_hp: 64, attack: 18, defense: 7, accuracy: 34, evasion: 12, speed: 9, mana: 70, stamina: 0, class_key: 'cleric', xp_reward: 150, gold_reward: 40 },
+  { name: 'Хранитель шпиля', description: 'То, что держит дверь Чёрного шпиля запертой.', level: 5, max_hp: 120, attack: 24, defense: 13, accuracy: 34, evasion: 10, speed: 9, mana: 60, stamina: 60, class_key: 'cleric', xp_reward: 260, gold_reward: 90 },
+  { name: 'Полый король', description: 'Коронован, восседает и совершенно пуст — если не считать мух.', level: 5, max_hp: 140, attack: 26, defense: 12, accuracy: 36, evasion: 12, speed: 11, mana: 40, stamina: 80, class_key: 'fighter', xp_reward: 320, gold_reward: 150 },
 ];
 
 const SPAWNS = {
-  'Weeping Hollow': ['Grave Rat', 'Hollow Peasant', 'Briar Stalker'],
-  'The Drowned Road': ['Hollow Peasant', 'Grave Rat', 'Lantern Wight'],
-  Cinderwood: ['Briar Stalker', 'Hollow Peasant', 'Choir Wraith'],
-  'Tide-Gnawed Caves': ['Lantern Wight', 'Ossuary Knight', 'Grave Rat'],
-  'Sunken Chapel': ['Lantern Wight', 'Choir Wraith', 'Plague Herald'],
-  'The Bonefields': ['Ossuary Knight', 'Bonefield Colossus', 'Choir Wraith'],
-  'The Black Spire': ['Spire Warden', 'The Hollow King', 'Bonefield Colossus'],
+  'Плачущая низина': ['Могильная крыса', 'Пустой крестьянин', 'Терновый охотник'],
+  'Утонувшая дорога': ['Пустой крестьянин', 'Могильная крыса', 'Фонарный упырь'],
+  'Пепельный лес': ['Терновый охотник', 'Пустой крестьянин', 'Призрак хора'],
+  'Пещеры, изгрызенные приливом': ['Фонарный упырь', 'Костяной рыцарь', 'Могильная крыса'],
+  'Затонувшая часовня': ['Фонарный упырь', 'Призрак хора', 'Вестник чумы'],
+  'Костяные поля': ['Костяной рыцарь', 'Колосс костяных полей', 'Призрак хора'],
+  'Чёрный шпиль': ['Хранитель шпиля', 'Полый король', 'Колосс костяных полей'],
 };
 
 export function seedWorld() {
@@ -87,7 +87,7 @@ export function seedWorld() {
     WORLD.flatMap((c) => c.regions).flatMap((r) => r.locations).forEach((l) => {
       (l.connects || []).forEach((target) => {
         const from = locIds.get(l.name); const to = locIds.get(target);
-        if (from && to) { insConn.run(from, to, `Road to ${target}`); insConn.run(to, from, `Road to ${l.name}`); }
+        if (from && to) { insConn.run(from, to, `Дорога к ${target}`); insConn.run(to, from, `Дорога к ${l.name}`); }
       });
     });
 

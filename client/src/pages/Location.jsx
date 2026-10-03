@@ -20,7 +20,7 @@ export default function LocationPage() {
   }, [id]);
 
   const startFight = async (monsterId) => {
-    if (!heroId) return setError('Forge a hero first.');
+    if (!heroId) return setError('Сначала создайте героя.');
     setError('');
     try {
       const battle = await api.startBattle({
@@ -32,24 +32,24 @@ export default function LocationPage() {
   };
 
   if (error && !location) return <div className="error">{error}</div>;
-  if (!location) return <div className="muted center">Loading…</div>;
+  if (!location) return <div className="muted center">Загрузка…</div>;
 
   return (
     <div>
-      <Link to="/world" className="muted">← World map</Link>
+      <Link to="/world" className="muted">← Карта мира</Link>
       <div className="page-head">
         <h1>{location.name}</h1>
-        {location.is_safe && <span className="badge safe">Safe zone</span>}
+        {location.is_safe && <span className="badge safe">Безопасная зона</span>}
       </div>
       <p className="muted">{location.continent?.name} · {location.region?.name} — {location.description}</p>
-      <p className="danger-tag">Danger {'★'.repeat(Math.min(location.danger, 5))}</p>
+      <p className="danger-tag">Опасность {'★'.repeat(Math.min(location.danger, 5))}</p>
 
       {error && <div className="error">{error}</div>}
 
       <div className="grid2">
         <div className="card">
-          <h2>Travel</h2>
-          {location.connections.length === 0 && <p className="muted">No known roads from here.</p>}
+          <h2>Путешествие</h2>
+          {location.connections.length === 0 && <p className="muted">Отсюда не ведут известные дороги.</p>}
           <ul className="stats">
             {location.connections.map((c) => (
               <li key={c.id}>
@@ -61,14 +61,14 @@ export default function LocationPage() {
         </div>
 
         <div className="card">
-          <h2>Encounters</h2>
+          <h2>Столкновения</h2>
           {location.monsters.length === 0 ? (
-            <p className="muted">Nothing dangerous lurks here.</p>
+            <p className="muted">Здесь не таится ничего опасного.</p>
           ) : (
             <>
-              <label>Send forth
+              <label>Отправить
                 <select value={heroId} onChange={(e) => setHeroId(e.target.value)}>
-                  {characters.map((c) => <option key={c.id} value={c.id}>{c.name} (Lv {c.level} {c.className})</option>)}
+                  {characters.map((c) => <option key={c.id} value={c.id}>{c.name} (Ур. {c.level} {c.className})</option>)}
                 </select>
               </label>
               <ul className="stats">
@@ -76,9 +76,9 @@ export default function LocationPage() {
                   <li key={m.id}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <Icon src={monsterIcon(m.name)} alt={m.name} size={26} />
-                      <span><b>{m.name}</b> <span className="muted small">Lv {m.level} · {m.max_hp} HP · {m.xp_reward} XP</span></span>
+                      <span><b>{m.name}</b> <span className="muted small">Ур. {m.level} · {m.max_hp} HP · {m.xp_reward} опыта</span></span>
                     </span>
-                    <button type="button" onClick={() => startFight(m.id)}>Fight</button>
+                    <button type="button" onClick={() => startFight(m.id)}>Сражаться</button>
                   </li>
                 ))}
               </ul>

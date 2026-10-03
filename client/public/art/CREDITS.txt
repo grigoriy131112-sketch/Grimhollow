@@ -14,3 +14,90 @@ original filenames' authorship as listed on game-icons.net. If you redistribute
 this project, keep this credit file.
 
 No paid or API-generated art is used in this project.
+
+Per-file sources (Wave 2 ability icons)
+======================================
+Each file client/public/art/abilities/<id>.svg is derived from the game-icons.net
+icon named below (<author>/<icon>). The same author/name pairs also apply to the
+Wave 1 ability icons; their filenames already match the game-icons.net names.
+
+  rage.svg  <-  delapouite/enrage
+  reckless_strike.svg  <-  lorc/axe-swing
+  wide_swing.svg  <-  lorc/battle-axe
+  thick_skin.svg  <-  delapouite/animal-hide
+  brutal_blow.svg  <-  lorc/hammer-drop
+  blood_rage.svg  <-  lorc/bloody-sword
+  rampage.svg  <-  delapouite/charging-bull
+  wild_heal.svg  <-  sbed/regeneration
+  executioner.svg  <-  lorc/guillotine
+  berserker.svg  <-  lorc/barbute
+  vicious_mockery.svg  <-  lorc/imp-laugh
+  inspiring_song.svg  <-  skoll/sound-waves
+  healing_ballad.svg  <-  lorc/heart-inside
+  discordant_note.svg  <-  delapouite/stabbed-note
+  mesmerizing_tune.svg  <-  lorc/lyre
+  soothing_melody.svg  <-  delapouite/harp
+  heroic_anthem.svg  <-  delapouite/trumpet
+  shatter_cry.svg  <-  lorc/sonic-screech
+  requiem.svg  <-  zajkonur/violin
+  master_maestro.svg  <-  delapouite/musical-notes
+  thorn_whip.svg  <-  lorc/thorny-vine
+  regrowth.svg  <-  lorc/sprout
+  entangling_roots.svg  <-  delapouite/tree-roots
+  bark_skin.svg  <-  delapouite/wood-pile
+  venom_bloom.svg  <-  lorc/mushroom
+  rejuvenate.svg  <-  lorc/pollen-dust
+  sunbeam.svg  <-  lorc/sun
+  nature_ward.svg  <-  delapouite/oak-leaf
+  wildfire.svg  <-  lorc/flame-tunnel
+  one_with_nature.svg  <-  lorc/oak
+  flurry_of_blows.svg  <-  lorc/fist
+  patient_defense.svg  <-  lorc/meditation
+  pressure_point.svg  <-  lorc/palm
+  ki_focus.svg  <-  lorc/water-splash
+  roundhouse.svg  <-  delapouite/high-kick
+  flowing_water.svg  <-  lorc/water-splash
+  quivering_palm.svg  <-  lorc/magic-palm
+  inner_peace.svg  <-  lorc/lotus
+  dragon_kick.svg  <-  lorc/boot-kick
+  perfect_body.svg  <-  delapouite/yin-yang
+  holy_strike.svg  <-  lorc/holy-symbol
+  lay_on_hands.svg  <-  delapouite/hand-of-god
+  shield_of_faith.svg  <-  delapouite/cross-shield
+  divine_favor.svg  <-  lorc/prayer
+  consecrate.svg  <-  delapouite/holy-water
+  aura_of_warding.svg  <-  lorc/aura
+  avenging_smite.svg  <-  lorc/hammer-drop
+  greater_blessing.svg  <-  lorc/holy-grail
+  divine_judgment.svg  <-  lorc/scales
+  aura_mastery.svg  <-  lorc/beams-aura
+  precise_shot.svg  <-  lorc/on-target
+  hunters_mark.svg  <-  skoll/bullseye
+  twin_shot.svg  <-  delapouite/split-arrows
+  camouflage.svg  <-  darkzaitzev/smoke-bomb
+  venom_arrow.svg  <-  lorc/poison-bottle
+  natural_recovery.svg  <-  lorc/leaf-swirl
+  volley.svg  <-  lorc/arrow-flights
+  beasts_bond.svg  <-  lorc/wolf-head
+  piercing_shot.svg  <-  lorc/pierced-body
+  eagle_eye.svg  <-  delapouite/eagle-head
+  chaos_bolt.svg  <-  lorc/spiral-thrust
+  draconic_ward.svg  <-  delapouite/dragon-shield
+  scorching_ray.svg  <-  lorc/sunbeams
+  sorcerous_restore.svg  <-  lorc/magic-swirl
+  lightning_arc.svg  <-  lorc/lightning-arc
+  mirror_image.svg  <-  lorc/mirror-mirror
+  fireball.svg  <-  lorc/fireball
+  empowered_spell.svg  <-  delapouite/spell-book
+  meteor_swarm.svg  <-  lorc/meteor-impact
+  innate_power.svg  <-  delapouite/radiations
+  eldritch_blast.svg  <-  lorc/interlaced-tentacles
+  dark_pact.svg  <-  lorc/scroll-unfurled
+  hex.svg  <-  lorc/candle-flame
+  siphon_life.svg  <-  lorc/bleeding-heart
+  curse_of_weakness.svg  <-  lorc/skull-crack
+  shadow_heal.svg  <-  lorc/shadow-grasp
+  soul_rend.svg  <-  lorc/screaming
+  infernal_shield.svg  <-  lorc/fire-shield
+  doom_bolt.svg  <-  lorc/magic-portal
+  dark_blessing.svg  <-  delapouite/soul-vessel

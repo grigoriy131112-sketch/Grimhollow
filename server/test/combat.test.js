@@ -74,7 +74,7 @@ test('insufficient resource blocks the ability and wastes no turn', () => {
   const { state } = createBattle({ player: tired, opponents: [goblin] }, seq([0.99]));
   const before = combatantByKey(state, 'e1').hp;
   const { events } = takePlayerAction(state, { type: 'attack', abilityId: 'cleave', targetKey: 'e1' }, seq([0.0]));
-  assert.ok(events.some((e) => e.text.includes('Not enough stamina')));
+  assert.ok(events.some((e) => e.text.includes('Недостаточно выносливости')));
   assert.equal(combatantByKey(state, 'e1').hp, before);
 });
 
