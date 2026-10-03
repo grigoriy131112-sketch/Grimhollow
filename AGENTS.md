@@ -95,3 +95,19 @@ npm start                   # run the API, serving client/dist if built
   lives in `server/src/data/` and is gitignored.
 - `server/src/index.js` also serves `client/dist` (SPA fallback) so the whole app
   is reachable from one port in preview.
+
+## Party combat (Wave 3C)
+
+- `server/src/game/combat.js` builds combatants with `key`/`side`/`kind`
+  (`leader|ally|enemy`)/`refId`.
+- `startBattle` loads the leader's active party; every player-side member is
+  human-controlled, turn order by speed. The enemy AI targets the lowest-HP
+  living party member.
+- Settlement applies leader XP/HP, companion XP, and permanent companion death
+  (`party_members.status='dead'`). Defeat is survivable: the leader ends at 1 HP
+  and loses 25% of gold unless the party still won.
+- `battles.result` (JSON) stores the end-of-battle report; the Battle page reads
+  it so the report survives a reload. Additive migrations live in
+  `server/src/db/index.js#migrate`.
+- Tests share one SQLite file, so they run serially:
+  `npm --workspace server test` uses `node --test --test-concurrency=1`.
