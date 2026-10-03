@@ -179,6 +179,11 @@ ul.stats span { color: var(--muted); }
 .fill.hp { background: linear-gradient(90deg, #7d1f1f, #c0392b); }
 .combatant.enemy .fill.hp { background: linear-gradient(90deg, #4a1f5a, #8e44ad); }
 
+/* stat number flash on change */
+.stat { transition: color 0.2s, text-shadow 0.2s; }
+.stat.drop { color: #ff8f8f; text-shadow: 0 0 8px rgba(224,80,80,0.7); }
+.stat.gain { color: #9fe0a0; text-shadow: 0 0 8px rgba(90,200,110,0.7); }
+
 /* icons */
 .icon { filter: invert(0.82) sepia(0.25) saturate(1.4) hue-rotate(5deg); vertical-align: middle; }
 .combatant.enemy .icon { filter: invert(0.7) sepia(0.4) saturate(2) hue-rotate(-20deg); }

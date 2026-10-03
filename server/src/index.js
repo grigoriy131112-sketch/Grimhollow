@@ -19,9 +19,12 @@ export function createApp() {
 
   // Serve the built SPA when present (production / work-host preview).
   const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
-  app.use(express.static(clientDist));
+  app.use(express.static(clientDist, { index: false }));
+  // index.html must never be cached so a fresh build's asset hashes are picked up.
   app.get(/^\/(?!api).*/, (req, res, next) => {
-    res.sendFile(path.join(clientDist, 'index.html'), (err) => (err ? next() : undefined));
+    res.sendFile(path.join(clientDist, 'index.html'),
+      { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } },
+      (err) => (err ? next() : undefined));
   });
 
   app.use((req, res) => res.status(404).json({ error: 'Not found' }));

@@ -8,6 +8,21 @@ function Bar({ value, max, kind }) {
   return <div className="bar"><div className={`fill ${kind}`} style={{ width: `${pct}%` }} /></div>;
 }
 
+// Number readout that flashes when its value changes, so damage/healing and
+// resource spend are obvious even when the delta is small.
+function Stat({ label, value, max }) {
+  const [flash, setFlash] = useState('');
+  const prev = useRef(value);
+  useEffect(() => {
+    if (prev.current === value) return;
+    setFlash(value < prev.current ? 'drop' : 'gain');
+    prev.current = value;
+    const t = setTimeout(() => setFlash(''), 700);
+    return () => clearTimeout(t);
+  }, [value]);
+  return <div className={`small stat ${flash}`}>{label} {value}/{max}</div>;
+}
+
 function CombatantCard({ c, active }) {
   const icon = c.side === 'enemy' ? monsterIcon(c.name) : null;
   return (
@@ -20,11 +35,11 @@ function CombatantCard({ c, active }) {
         {active && <span className="badge">turn</span>}
       </div>
       <div className="small muted">{c.classKey || 'monster'} · Lv {c.level}</div>
-      <div className="small">HP {c.hp}/{c.maxHp}</div>
+      <Stat label="HP" value={c.hp} max={c.maxHp} />
       <Bar value={c.hp} max={c.maxHp} kind="hp" />
       <div className="res-bars">
-        {c.maxMana > 0 && <div className="res"><div className="small">Mana {c.mana}/{c.maxMana}</div><Bar value={c.mana} max={c.maxMana} kind="mana" /></div>}
-        {c.maxStamina > 0 && <div className="res"><div className="small">Stam {c.stamina}/{c.maxStamina}</div><Bar value={c.stamina} max={c.maxStamina} kind="stamina" /></div>}
+        {c.maxMana > 0 && <div className="res"><Stat label="Mana" value={c.mana} max={c.maxMana} /><Bar value={c.mana} max={c.maxMana} kind="mana" /></div>}
+        {c.maxStamina > 0 && <div className="res"><Stat label="Stam" value={c.stamina} max={c.maxStamina} /><Bar value={c.stamina} max={c.maxStamina} kind="stamina" /></div>}
       </div>
       <div className="small muted">atk {c.base.attack} · def {c.base.defense} · spd {c.base.speed}</div>
       {c.buffs.length > 0 && <div className="small muted">{c.buffs.map((b) => `${b.stat} ${b.amount > 0 ? '+' : ''}${b.amount}`).join(', ')}</div>}
