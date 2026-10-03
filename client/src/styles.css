@@ -168,14 +168,16 @@ ul.stats span { color: var(--muted); }
 
 .reward { border-color: var(--gold); color: var(--gold-soft); text-align: center; }
 
-/* resources */
+/* resource bars (shared by HP, mana, stamina) */
+.bar { height: 10px; background: #241a1a; border-radius: 6px; overflow: hidden; border: 1px solid #3a2626; }
+.fill { height: 100%; transition: width 0.3s; }
 .res-bars { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.4rem 0; font-size: 0.8rem; }
 .res { flex: 1; min-width: 90px; }
-.res .bar { height: 6px; background: #14101a; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
-.res .fill { height: 100%; }
+.res .bar { height: 6px; background: #14101a; border-radius: 4px; border: 1px solid var(--line); }
 .fill.mana { background: linear-gradient(90deg, #24435f, #4a90d9); }
 .fill.stamina { background: linear-gradient(90deg, #4a5420, #9bbf4a); }
 .fill.hp { background: linear-gradient(90deg, #7d1f1f, #c0392b); }
+.combatant.enemy .fill.hp { background: linear-gradient(90deg, #4a1f5a, #8e44ad); }
 
 /* icons */
 .icon { filter: invert(0.82) sepia(0.25) saturate(1.4) hue-rotate(5deg); vertical-align: middle; }
