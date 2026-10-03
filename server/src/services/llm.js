@@ -92,12 +92,22 @@ export function acceptReply(text, briefing, draft = '') {
   }
   const latin = (text.match(/[A-Za-z]/g) || []).length;
   if (latin > text.length * 0.3) return false; // a Russian line should not be mostly Latin
-  // A short line may differ freely; a longer one must stay on the draft's topic,
-  // which we approximate by sharing at least one substantial word.
-  if (text.length > 30 && draft) {
-    const words = (s) => new Set(s.toLowerCase().replace(/[^a-zа-яё0-9 ]/gi, ' ').split(/\s+/).filter((w) => w.length >= 5));
-    const dw = words(draft);
-    if (dw.size && ![...words(text)].some((w) => dw.has(w))) return false;
+  // A short reply that only mirrors the player's own words is not an answer
+  // ("готов к сражению" -> "Я готов к сражению!"): reject short echoes.
+  if (briefing?.playerText) {
+    const norm = (s) => new Set(s.toLowerCase().replace(/[^a-zа-яё0-9 ]/gi, ' ').split(/\s+/).filter((w) => w.length >= 4));
+    const said = norm(briefing.playerText);
+    const words = [...norm(text)];
+    if (said.size && words.length && words.length <= 6
+      && words.filter((w) => said.has(w)).length >= Math.ceil(words.length * 0.6)) return false;
+  }
+  // The reply must stay on the draft's topic. We approximate that by sharing a
+  // stem (first four letters) with the draft, which tolerates synonyms
+  // ("привет" ~ "приветствую") while catching hallucinated non-answers.
+  if (draft) {
+    const stems = (s) => new Set(s.toLowerCase().replace(/[^a-zа-яё0-9 ]/gi, ' ').split(/\s+/).filter((w) => w.length >= 4).map((w) => w.slice(0, 4)));
+    const dw = stems(draft);
+    if (dw.size && ![...stems(text)].some((w) => dw.has(w))) return false;
   }
   return true;
 }

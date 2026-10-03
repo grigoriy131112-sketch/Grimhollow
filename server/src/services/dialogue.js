@@ -75,7 +75,7 @@ function rememberFact(leaderId, kind, refId, { key, text }) {
 // join) keep the engine's exact wording: a small local model drifts off-register
 // on those, and getting the tone wrong there is worse than sounding repetitive.
 const LLM_TOPICS = new Set([
-  'greeting', 'wellbeing', 'farewell', 'smalltalk', 'lore', 'history',
+  'greeting', 'wellbeing', 'battle', 'farewell', 'smalltalk', 'lore', 'history',
   'faith', 'party', 'help', 'gold', 'compliment', 'joke',
 ]);
 
@@ -151,7 +151,7 @@ export async function say(leaderId, kind, refId, text) {
   // The LLM only ever sees the clean spoken line, never the mechanical memory
   // aside — otherwise a small model rewrites the aside and loses the answer.
   const turn = getDb().prepare(
-    'SELECT COUNT(*) AS n FROM dialogue_messages WHERE leader_id = ? AND kind = ? AND ref_id = ?',
+    "SELECT COUNT(*) AS n FROM dialogue_messages WHERE leader_id = ? AND kind = ? AND ref_id = ? AND speaker = 'other'",
   ).get(leaderId, kind, refId).n;
   const reply = composeReply({ topic, traits: traitKeys, relation: after, name: persona.name, facts: memory }, turn + refId);
   const lastReply = getDb().prepare(

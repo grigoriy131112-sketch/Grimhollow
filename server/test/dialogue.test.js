@@ -221,3 +221,34 @@ test('tidyReply strips a leading label and wrapping quotes', async () => {
   assert.equal(tidyReply('«Держусь. Спасибо, что спросил.»'), 'Держусь. Спасибо, что спросил.');
 });
 
+
+// --- battle readiness -------------------------------------------------------
+
+test('"готов к сражению" is a battle topic, not small talk', () => {
+  assert.equal(classifyTopic('готов к сражению'), 'battle');
+  assert.equal(classifyTopic('Готов к сражению?'), 'battle');
+  assert.equal(classifyTopic('Идём в бой'), 'battle');
+  assert.equal(classifyTopic('прикрывай меня в драке'), 'battle');
+  // Brave characters like it, cowards fear it.
+  assert.ok(relationDelta('battle', ['brave'], 50) > 0);
+  assert.ok(relationDelta('battle', ['coward'], 50) < 0);
+});
+
+test('the drift guard rejects a reply that only echoes the player', async () => {
+  const { acceptReply } = await import('../src/services/llm.js');
+  const b = { name: 'Брокер Сарн', playerText: 'готов к сражению' };
+  assert.equal(acceptReply('Я готов к сражению!', b, 'Готов. Держись рядом.'), false);
+  assert.equal(acceptReply('Здоров, готов к сражению!', b, 'Готов. Держись рядом.'), false);
+  assert.equal(acceptReply('Готов. Скажи, когда и куда.', b, 'Готов. Держись рядом.'), true);
+});
+
+
+test('every mood answers every topic — no falls through to the battle default', async () => {
+  const { MOOD_LINES, TOPICS } = await import('../src/game/dialogue.js');
+  for (const [mood, pool] of Object.entries(MOOD_LINES)) {
+    for (const topic of Object.keys(TOPICS)) {
+      assert.ok(Array.isArray(pool[topic]) && pool[topic].length, `${mood} has no line for ${topic}`);
+    }
+  }
+});
+

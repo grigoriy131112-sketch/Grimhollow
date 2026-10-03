@@ -212,3 +212,21 @@ as long as the machine does.
   with a nudge, then falls back to the engine line.
 - Memory weight is capped at 5 and `memoryAside` only recalls weight >= 2, so a
   frequently repeated fact cannot monopolise every reply.
+
+## Dialogue topics (invariants)
+
+- `MOOD_LINES` must define a line for **every** topic in `TOPICS` in **every**
+  mood. A missing key silently falls back to `default`, which once made a
+  farewell answer with a battle line. The test
+  "every mood answers every topic" enforces this.
+- Battle readiness is its own topic (`battle`), matched by words like
+  "сражени", "бой", "готов к", "в атаку". Before, "готов к сражению" fell
+  through to smalltalk and the model just echoed it back.
+- `acceptReply` also rejects a short reply that only mirrors the player's own
+  words (>=60% shared content words, <=6 words), so "готов к сражению" cannot
+  be answered with "Я готов к сражению!".
+- A reply must share at least one four-letter stem with the engine draft; this
+  catches hallucinated non-answers ("Ты гадкий" to "как ты сегодня?") while
+  still allowing synonyms ("привет" ~ "приветствую").
+- The reply seed counts only the character's own lines (`speaker='other'`),
+  because each turn writes two rows and the parity used to get stuck.
