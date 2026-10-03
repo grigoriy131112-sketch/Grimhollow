@@ -111,3 +111,18 @@ npm start                   # run the API, serving client/dist if built
   `server/src/db/index.js#migrate`.
 - Tests share one SQLite file, so they run serially:
   `npm --workspace server test` uses `node --test --test-concurrency=1`.
+
+## World map, scenes and arena (Waves 4-5)
+
+- `locations` carry `map_x`/`map_y`/`scene`/`biome`; migrations live in
+  `server/src/db/index.js#migrate` and `seedWorld()` backfills map data into
+  databases that predate the columns (no duplicates, keyed by location name).
+- `GET /api/world/map` (see `services/world.js#getMap`) returns flat locations
+  with coordinates plus undirected roads and per-location monster counts.
+- All art is procedural SVG, no rasters: `client/src/WorldMap.jsx` is the
+  interactive atlas, `client/src/scenes.jsx` renders layered scene backdrops
+  (biome palette + location-specific accents) reused by location cards, the
+  location hero and the battle arena.
+- The arena in `client/src/pages/Battle.jsx` turns the engine's event stream
+  into transient VFX (floating damage/heal numbers, hit shake, heal pulse,
+  dodge, screen flash); `getBattleView` exposes the location's scene/biome.
