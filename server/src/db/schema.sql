@@ -37,7 +37,11 @@ CREATE TABLE IF NOT EXISTS locations (
   description  TEXT NOT NULL DEFAULT '',
   danger       INTEGER NOT NULL DEFAULT 1,
   is_safe      INTEGER NOT NULL DEFAULT 0,
-  sort_order   INTEGER NOT NULL DEFAULT 0
+  sort_order   INTEGER NOT NULL DEFAULT 0,
+  map_x        REAL,
+  map_y        REAL,
+  scene        TEXT,
+  biome        TEXT
 );
 
 CREATE TABLE IF NOT EXISTS connections (

@@ -69,12 +69,14 @@ export function getBattleView(id) {
   const battle = getBattle(id);
   if (!battle) return null;
   const state = battle.state;
+  const location = battle.location_id ? getLocation(battle.location_id) : null;
   return {
     id: battle.id,
     status: battle.status,
     active: battle.active,
     characterId: battle.character_id,
     locationId: battle.location_id,
+    location: location ? { id: location.id, name: location.name, scene: location.scene, biome: location.biome, danger: location.danger } : null,
     round: state.round,
     turnIndex: state.turnIndex,
     activeKey: activeCombatant(state)?.key,

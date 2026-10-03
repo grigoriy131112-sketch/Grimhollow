@@ -5,6 +5,7 @@ export function getWorld() {
   const continents = db.prepare('SELECT * FROM continents ORDER BY sort_order, id').all();
   const regions = db.prepare('SELECT * FROM regions ORDER BY sort_order, id').all();
   const locations = db.prepare('SELECT * FROM locations ORDER BY sort_order, id').all();
+  const connections = db.prepare('SELECT * FROM connections ORDER BY id').all();
   return continents.map((c) => ({
     ...c,
     regions: regions.filter((r) => r.continent_id === c.id).map((r) => ({
@@ -12,6 +13,34 @@ export function getWorld() {
       locations: locations.filter((l) => l.region_id === r.id).map((l) => ({ ...l, is_safe: !!l.is_safe })),
     })),
   }));
+}
+
+// Flat location list with map coordinates, for the interactive map.
+export function getMap() {
+  const db = getDb();
+  const continents = db.prepare('SELECT * FROM continents ORDER BY sort_order, id').all();
+  const regions = db.prepare('SELECT * FROM regions ORDER BY sort_order, id').all();
+  const locations = db.prepare('SELECT * FROM locations ORDER BY sort_order, id').all();
+  const connections = db.prepare('SELECT * FROM connections ORDER BY id').all();
+  const monsters = db.prepare('SELECT location_id, COUNT(*) AS n FROM location_monsters GROUP BY location_id').all();
+  const counts = new Map(monsters.map((m) => [m.location_id, m.n]));
+  return {
+    continents: continents.map((c) => ({ ...c, regions: regions.filter((r) => r.continent_id === c.id).map((r) => ({ ...r })) })),
+    locations: locations.map((l) => {
+      const region = regions.find((r) => r.id === l.region_id);
+      const continent = region ? continents.find((c) => c.id === region.continent_id) : null;
+      return {
+        id: l.id, name: l.name, description: l.description, danger: l.danger,
+        isSafe: !!l.is_safe, x: l.map_x, y: l.map_y, scene: l.scene, biome: l.biome,
+        regionId: l.region_id, regionName: region?.name, continentName: continent?.name,
+        monsterCount: counts.get(l.id) || 0,
+      };
+    }),
+    // Undirected edges: draw each road once.
+    connections: connections
+      .filter((c) => c.from_id < c.to_id)
+      .map((c) => ({ from: c.from_id, to: c.to_id, label: c.label })),
+  };
 }
 
 export function getLocation(id) {

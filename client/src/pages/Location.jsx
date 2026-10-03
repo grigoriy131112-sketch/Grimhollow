@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { monsterIcon, Icon } from '../icons.jsx';
+import SceneBackdrop from '../scenes.jsx';
 
 export default function LocationPage() {
   const { id } = useParams();
@@ -37,12 +38,17 @@ export default function LocationPage() {
   return (
     <div>
       <Link to="/world" className="muted">← Карта мира</Link>
-      <div className="page-head">
-        <h1>{location.name}</h1>
-        {location.is_safe && <span className="badge safe">Безопасная зона</span>}
+      <div className="scene-hero">
+        <SceneBackdrop scene={location.scene} biome={location.biome} danger={location.danger} name={location.name} />
+        <div className="scene-caption">
+          <div className="page-head" style={{ margin: 0 }}>
+            <h1>{location.name}</h1>
+            {location.is_safe && <span className="badge safe">Безопасная зона</span>}
+          </div>
+          <p className="muted">{location.continent?.name} · {location.region?.name} — {location.description}</p>
+          <p className="danger-tag">Опасность {'★'.repeat(Math.min(location.danger, 5))}</p>
+        </div>
       </div>
-      <p className="muted">{location.continent?.name} · {location.region?.name} — {location.description}</p>
-      <p className="danger-tag">Опасность {'★'.repeat(Math.min(location.danger, 5))}</p>
 
       {error && <div className="error">{error}</div>}
 

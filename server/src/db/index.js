@@ -24,6 +24,11 @@ function migrate(d) {
   if (!columns('battles').includes('result')) {
     d.exec('ALTER TABLE battles ADD COLUMN result TEXT');
   }
+  const locCols = columns('locations');
+  if (!locCols.includes('map_x')) d.exec('ALTER TABLE locations ADD COLUMN map_x REAL');
+  if (!locCols.includes('map_y')) d.exec('ALTER TABLE locations ADD COLUMN map_y REAL');
+  if (!locCols.includes('scene')) d.exec('ALTER TABLE locations ADD COLUMN scene TEXT');
+  if (!locCols.includes('biome')) d.exec('ALTER TABLE locations ADD COLUMN biome TEXT');
 }
 
 export function transaction(fn) {

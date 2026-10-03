@@ -17,6 +17,7 @@ export const api = {
   createCharacter: (payload) => request('POST', '/characters', payload),
   deleteCharacter: (id) => request('DELETE', `/characters/${id}`),
   getWorld: () => request('GET', '/world'),
+  getMap: () => request('GET', '/world/map'),
   getLocation: (id) => request('GET', `/world/locations/${id}`),
   listMonsters: () => request('GET', '/world/monsters'),
   startBattle: (payload) => request('POST', '/battles', payload),

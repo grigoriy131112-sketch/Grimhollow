@@ -12,21 +12,21 @@ const WORLD = [
         name: 'Пепельный предел',
         description: 'Поля серой пыли, где отгремела война, которую никто не помнит.',
         locations: [
-          { name: 'Перекрёсток висельников', description: 'Перекрёсток, отмеченный виселицей, что никогда не пустовала.', danger: 1, safe: true, connects: ['Плачущая низина', 'Утонувшая дорога'] },
-          { name: 'Плачущая низина', description: 'Ложбина, задушенная туманом, что глотает и звук, и свет.', danger: 2, connects: ['Перекрёсток висельников', 'Пепельный лес'] },
-          { name: 'Утонувшая дорога', description: 'Затонувшая гать, где болото поглотило королевский тракт.', danger: 2, connects: ['Перекрёсток висельников', 'Затонувшая часовня'] },
-          { name: 'Пепельный лес', description: 'Обгоревшие деревья, всё ещё тёплые на ощупь спустя годы после пожара.', danger: 3, connects: ['Плачущая низина', 'Костяные поля'] },
+          { name: 'Перекрёсток висельников', description: 'Перекрёсток, отмеченный виселицей, что никогда не пустовала.', danger: 1, safe: true, biome: 'waste', scene: 'crossroads', x: 170, y: 170, connects: ['Плачущая низина', 'Утонувшая дорога'] },
+          { name: 'Плачущая низина', description: 'Ложбина, задушенная туманом, что глотает и звук, и свет.', danger: 2, biome: 'marsh', scene: 'hollow', x: 320, y: 140, connects: ['Перекрёсток висельников', 'Пепельный лес'] },
+          { name: 'Утонувшая дорога', description: 'Затонувшая гать, где болото поглотило королевский тракт.', danger: 2, biome: 'marsh', scene: 'drowned_road', x: 250, y: 320, connects: ['Перекрёсток висельников', 'Затонувшая часовня', 'Сумеречная гавань'] },
+          { name: 'Пепельный лес', description: 'Обгоревшие деревья, всё ещё тёплые на ощупь спустя годы после пожара.', danger: 3, biome: 'forest', scene: 'ash_forest', x: 430, y: 250, connects: ['Плачущая низина', 'Костяные поля'] },
         ],
       },
       {
         name: 'Костяной берег',
         description: 'Берег меловых утёсов и оссуариев, где море отдаёт кости вместо ракушек.',
         locations: [
-          { name: 'Сумеречная гавань', description: 'Порт, освещённый фонарями, торгующий обломками и секретами.', danger: 1, safe: true, connects: ['Утонувшая дорога', 'Пещеры, изгрызенные приливом'] },
-          { name: 'Пещеры, изгрызенные приливом', description: 'Морские пещеры, увешанные останками тех, кого забрал прилив.', danger: 3, connects: ['Сумеречная гавань', 'Затонувшая часовня', 'Костяные поля'] },
-          { name: 'Затонувшая часовня', description: 'Затопленная часовня богу, что утонул вместе со своим стадом.', danger: 4, connects: ['Утонувшая дорога', 'Пещеры, изгрызенные приливом'] },
-          { name: 'Костяные поля', description: 'Равнина выбеленных останков, где земля так и не зажила.', danger: 4, connects: ['Пепельный лес', 'Пещеры, изгрызенные приливом', 'Чёрный шпиль'] },
-          { name: 'Чёрный шпиль', description: 'Игла обсидиана, что гудит звуком, похожим на жужжание мух.', danger: 5, connects: ['Костяные поля'] },
+          { name: 'Сумеречная гавань', description: 'Порт, освещённый фонарями, торгующий обломками и секретами.', danger: 1, safe: true, biome: 'coast', scene: 'harbor', x: 640, y: 160, connects: ['Утонувшая дорога', 'Пещеры, изгрызенные приливом'] },
+          { name: 'Пещеры, изгрызенные приливом', description: 'Морские пещеры, увешанные останками тех, кого забрал прилив.', danger: 3, biome: 'coast', scene: 'tide_caves', x: 760, y: 320, connects: ['Сумеречная гавань', 'Затонувшая часовня', 'Костяные поля'] },
+          { name: 'Затонувшая часовня', description: 'Затопленная часовня богу, что утонул вместе со своим стадом.', danger: 4, biome: 'coast', scene: 'sunken_chapel', x: 430, y: 470, connects: ['Утонувшая дорога', 'Пещеры, изгрызенные приливом'] },
+          { name: 'Костяные поля', description: 'Равнина выбеленных останков, где земля так и не зажила.', danger: 4, biome: 'bonefield', scene: 'bone_field', x: 620, y: 500, connects: ['Пепельный лес', 'Пещеры, изгрызенные приливом', 'Чёрный шпиль'] },
+          { name: 'Чёрный шпиль', description: 'Игла обсидиана, что гудит звуком, похожим на жужжание мух.', danger: 5, biome: 'waste', scene: 'black_spire', x: 850, y: 540, connects: ['Костяные поля'] },
         ],
       },
     ],
@@ -56,15 +56,28 @@ const SPAWNS = {
   'Чёрный шпиль': ['Хранитель шпиля', 'Полый король', 'Колосс костяных полей'],
 };
 
+// Existing databases predate the map columns; fill them in from the source
+// world definition without touching anything the player has changed.
+function backfillMap() {
+  const rows = WORLD.flatMap((c) => c.regions).flatMap((r) => r.locations);
+  transaction((d) => {
+    const stmt = d.prepare('UPDATE locations SET map_x=?, map_y=?, scene=?, biome=? WHERE name=?');
+    rows.forEach((l) => stmt.run(l.x ?? null, l.y ?? null, l.scene ?? null, l.biome ?? null, l.name));
+  });
+}
+
 export function seedWorld() {
   const db = getDb();
   const existing = db.prepare('SELECT COUNT(*) AS n FROM continents').get().n;
-  if (existing > 0) return { skipped: true };
+  if (existing > 0) {
+    backfillMap();
+    return { skipped: true };
+  }
 
   transaction((d) => {
     const insContinent = d.prepare('INSERT INTO continents (name, description, sort_order) VALUES (?, ?, ?)');
     const insRegion = d.prepare('INSERT INTO regions (continent_id, name, description, sort_order) VALUES (?, ?, ?, ?)');
-    const insLocation = d.prepare('INSERT INTO locations (region_id, name, description, danger, is_safe, sort_order) VALUES (?, ?, ?, ?, ?, ?)');
+    const insLocation = d.prepare('INSERT INTO locations (region_id, name, description, danger, is_safe, sort_order, map_x, map_y, scene, biome) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const insConn = d.prepare('INSERT OR IGNORE INTO connections (from_id, to_id, label) VALUES (?, ?, ?)');
     const insMonster = d.prepare(
       `INSERT INTO monsters (name, description, level, max_hp, attack, defense, accuracy, evasion, speed, mana, stamina, class_key, xp_reward, gold_reward)
@@ -78,7 +91,7 @@ export function seedWorld() {
       c.regions.forEach((r, ri) => {
         const rid = insRegion.run(cid, r.name, r.description, ri).lastInsertRowid;
         r.locations.forEach((l, li) => {
-          const lid = insLocation.run(rid, l.name, l.description, l.danger, l.safe ? 1 : 0, li).lastInsertRowid;
+          const lid = insLocation.run(rid, l.name, l.description, l.danger, l.safe ? 1 : 0, li, l.x ?? null, l.y ?? null, l.scene ?? null, l.biome ?? null).lastInsertRowid;
           locIds.set(l.name, lid);
         });
       });
