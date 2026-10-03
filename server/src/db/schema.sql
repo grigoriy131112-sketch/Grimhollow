@@ -135,3 +135,57 @@ CREATE TABLE IF NOT EXISTS party_upgrades (
   points     INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (leader_id, node)
 );
+
+-- Named inhabitants of the world (Wave 6). Each has traits, a role and a mood.
+CREATE TABLE IF NOT EXISTS npcs (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+  key         TEXT NOT NULL UNIQUE,
+  name        TEXT NOT NULL,
+  role        TEXT NOT NULL DEFAULT 'житель',
+  class       TEXT NOT NULL DEFAULT 'fighter',
+  portrait    TEXT,
+  description TEXT NOT NULL DEFAULT '',
+  pluses      TEXT NOT NULL DEFAULT '[]',
+  minuses     TEXT NOT NULL DEFAULT '[]',
+  opinion     INTEGER NOT NULL DEFAULT 50,
+  mood        TEXT NOT NULL DEFAULT 'calm',
+  source      TEXT NOT NULL DEFAULT 'world'
+);
+
+-- Every line ever spoken to (or by) an NPC or companion. This is the raw log.
+CREATE TABLE IF NOT EXISTS dialogue_messages (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  leader_id    INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  kind         TEXT NOT NULL,             -- npc | companion
+  ref_id       INTEGER NOT NULL,          -- npc id or party_member id
+  speaker      TEXT NOT NULL,             -- player | other | system
+  text         TEXT NOT NULL,
+  topic        TEXT,
+  delta        INTEGER NOT NULL DEFAULT 0,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Distilled memory: what a character remembers about the leader and how much it
+-- matters. `weight` decays over time and grows each time the fact repeats.
+CREATE TABLE IF NOT EXISTS dialogue_memory (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  leader_id    INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  kind         TEXT NOT NULL,
+  ref_id       INTEGER NOT NULL,
+  fact_key     TEXT NOT NULL,
+  text         TEXT NOT NULL,
+  weight       INTEGER NOT NULL DEFAULT 1,
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (leader_id, kind, ref_id, fact_key)
+);
+
+-- An NPC's opinion of a given leader. Kept separate from party_relations, which
+-- is keyed to party_members and cascades on their deletion.
+CREATE TABLE IF NOT EXISTS npc_relations (
+  leader_id  INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  npc_id     INTEGER NOT NULL REFERENCES npcs(id) ON DELETE CASCADE,
+  value      INTEGER NOT NULL DEFAULT 50,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (leader_id, npc_id)
+);

@@ -126,3 +126,48 @@ npm start                   # run the API, serving client/dist if built
 - The arena in `client/src/pages/Battle.jsx` turns the engine's event stream
   into transient VFX (floating damage/heal numbers, hit shake, heal pulse,
   dodge, screen flash); `getBattleView` exposes the location's scene/biome.
+
+## Dialogue, memory and the local AI (Wave 6)
+
+The party and world inhabitants can be talked to. Every line is remembered, and
+each character's attitude toward the leader moves with what is said.
+
+- Pure engine: `server/src/game/dialogue.js` (topic classifier, trait-weighted
+  `relationDelta`, mood buckets, fact extraction, reply composition). No I/O, so
+  it is unit-tested directly.
+- NPC design data: `server/src/game/npcs.js`; persistence and seeding:
+  `server/src/services/npcs.js#seedNpcs` (idempotent, runs on startup).
+- Orchestration: `server/src/services/dialogue.js` records both lines in
+  `dialogue_messages`, distils durable facts into `dialogue_memory` (repeating a
+  fact raises its weight), and moves the relationship. NPC opinion lives in
+  `npc_relations`; companion opinion reuses `party_relations` (leader-targeted
+  row). Both are clamped to 0..100.
+- Routes: `server/src/routes/dialogue.js` — `GET /api/dialogue/options`,
+  `GET /api/dialogue/:leaderId/:kind/:refId`, `POST .../say`, plus
+  `GET /api/dialogue/status`.
+- UI: `client/src/Talk.jsx` is a reusable panel wired into `pages/Location.jsx`
+  (inhabitants) and `pages/Party.jsx` (companions). It shows the live relation
+  meter, topic quick-prompts, remembered facts and per-line attitude deltas.
+
+### The AI layer is optional and layered
+
+`server/src/services/llm.js` rewords the engine's draft reply, in order:
+
+1. **local** — llama.cpp `llama-server` with Qwen2.5-1.5B-Instruct Q4_K_M.
+2. **cloud** — any OpenAI-compatible endpoint, only if `LLM_CLOUD_KEY` is set.
+3. **template** — the deterministic engine line, always available.
+
+If nothing is running, dialogue still works. Config via env: `LLM_PROVIDER`
+(`auto|local|cloud|off`), `LLM_LOCAL_URL` (default `http://127.0.0.1:8080`),
+`LLM_CLOUD_KEY`, `LLM_CLOUD_BASE`, `LLM_CLOUD_MODEL`, `LLM_TIMEOUT_MS`.
+
+A small local model drifts off-register, so the layer only rewords "safe"
+topics; volatile beats (insult, threat, apology, join) keep the engine's exact
+wording. Model output is rejected (falling back to the engine) if it is empty,
+too long, mostly Latin, contains markup, uses the speaker's own name for the
+listener, or drifts off the draft's subject.
+
+Models are never committed: `models/` is gitignored. Recreate the local layer
+with `npm run llm:setup` then `npm run llm:start`. The weights are open and the
+runtime is offline, so this layer has no API key and no expiry — it keeps working
+as long as the machine does.

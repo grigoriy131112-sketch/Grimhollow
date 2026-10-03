@@ -32,4 +32,9 @@ export const api = {
   adjustRelation: (memberId, payload) => request('POST', `/party/member/${memberId}/relation`, payload),
   sweepParty: (leaderId) => request('POST', `/party/${leaderId}/sweep`),
   setMemberStatus: (memberId, status) => request('POST', `/party/member/${memberId}/status`, { status }),
+  dialogueOptions: () => request('GET', '/dialogue/options'),
+  dialogueStatus: () => request('GET', '/dialogue/status'),
+  npcsAtLocation: (locationId) => request('GET', `/dialogue/npc/${locationId}`),
+  getConversation: (leaderId, kind, refId) => request('GET', `/dialogue/${leaderId}/${kind}/${refId}`),
+  say: (leaderId, kind, refId, text) => request('POST', `/dialogue/${leaderId}/${kind}/${refId}`, { text }),
 };

@@ -11,3 +11,6 @@ server/src/data/*.json
 .DS_Store
 .agent_tmp/
 coverage/
+
+# Local LLM weights and the llama.cpp runtime are downloaded, never committed.
+models/

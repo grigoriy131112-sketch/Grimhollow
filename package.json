@@ -10,7 +10,9 @@
     "dev:server": "npm --workspace server run dev",
     "dev:client": "npm --workspace client run dev",
     "build": "npm --workspace client run build",
-    "test": "npm --workspace server run test"
+    "test": "npm --workspace server run test",
+    "llm:setup": "bash scripts/setup-llm.sh",
+    "llm:start": "bash scripts/start-llm.sh"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

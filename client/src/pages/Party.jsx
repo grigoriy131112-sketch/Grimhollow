@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { portraitIcon, classColor, Icon } from '../icons.jsx';
+import Talk from '../Talk.jsx';
 
 const REL = (v) => Math.max(0, Math.min(100, v));
 const relTone = (v) => (v < 25 ? 'bad' : v < 50 ? 'warn' : 'good');
@@ -28,6 +29,8 @@ function Portrait({ member, size = 64 }) {
 
 function MemberCard({ member, party }) {
   const [open, setOpen] = useState(false);
+  const [talking, setTalking] = useState(false);
+  const [relation, setRelation] = useState(member.relationToLeader);
   return (
     <div className={`card member-card ${member.status}`} style={{ borderColor: `${classColor(member.class)}55` }}>
       <div className="member-top">
@@ -59,8 +62,12 @@ function MemberCard({ member, party }) {
       <div className="rel-block">
         <div className="rel-row">
           <span className="muted small">Отношение ко мне</span>
-          <Bar value={member.relationToLeader} />
+          <Bar value={relation} />
         </div>
+        <button type="button" className="linklike" onClick={() => setTalking((v) => !v)}>
+          {talking ? 'Закончить разговор' : 'Поговорить'}
+        </button>
+        {talking && <Talk leaderId={party.leader.id} kind="companion" refId={member.id} onClose={() => setTalking(false)} onRelationChange={setRelation} />}
         <button type="button" className="linklike" onClick={() => setOpen((v) => !v)}>
           {open ? 'Скрыть соратников' : `К соратникам (${member.bonds.length})`}
         </button>

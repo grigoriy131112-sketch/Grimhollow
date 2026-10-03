@@ -367,3 +367,39 @@ ul.stats span { color: var(--muted); }
 
 .vfx-ripple { position: absolute; left: 50%; top: 40%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; border: 2px solid #ffcf6b; pointer-events: none; animation: ripple 0.5s ease-out forwards; }
 @keyframes ripple { 0% { opacity: 0.9; transform: scale(0.4); } 100% { opacity: 0; transform: scale(5); } }
+
+/* --- Wave 6: dialogue / talk panel --- */
+.talk { margin-top: 1rem; }
+.talk-head { display: flex; align-items: center; gap: 0.8rem; }
+.talk-head h3 { margin: 0; }
+.talk-id { flex: 1; }
+.talk-desc { margin: 0.5rem 0; }
+.talk .portrait.small { width: 40px; height: 40px; }
+.portrait.small .portrait-initial { font-size: 1.1rem; }
+
+.npc-list { list-style: none; padding: 0; margin: 0.6rem 0; display: grid; gap: 0.6rem; }
+.npc-list li { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 0.8rem; background: var(--panel-2); }
+.npc-line { display: flex; gap: 0.7rem; align-items: flex-start; }
+.traits { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.3rem; }
+.chip.trait { font-size: 0.72rem; padding: 0.15rem 0.5rem; cursor: default; }
+.chip.trait.plus { border-color: #2f6b3a; color: #9fe0a8; }
+.chip.trait.minus { border-color: #6b2f2f; color: #e0a0a0; }
+
+.memory-hints { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin: 0.5rem 0; }
+.chip.memory { cursor: default; font-size: 0.72rem; background: #241a2c; border-color: #4a3a56; color: #d8c8e0; }
+.chip.memory.strong { border-color: var(--gold); color: var(--gold-soft); }
+
+.talk-feed { display: flex; flex-direction: column; gap: 0.5rem; max-height: 340px; overflow-y: auto; padding: 0.6rem; margin: 0.6rem 0; background: #120e16; border: 1px solid var(--line); border-radius: 10px; }
+.bubble { max-width: 78%; padding: 0.5rem 0.75rem; border-radius: 12px; position: relative; line-height: 1.35; }
+.bubble.them { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--line); }
+.bubble.me { align-self: flex-end; background: #2a2130; border: 1px solid #4a3a56; }
+.bubble.typing { color: var(--muted); font-style: italic; }
+.delta-chip { margin-left: 0.5rem; font-size: 0.7rem; font-weight: 700; vertical-align: middle; }
+.delta-chip.gain { color: #8fe09a; }
+.delta-chip.drop { color: #ff7a7a; }
+
+.talk-topics { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0; }
+.talk-input { display: flex; gap: 0.5rem; }
+.talk-input input { flex: 1; }
+.llm-badge { margin-top: 0.4rem; opacity: 0.7; }
+@media (max-width: 640px) { .npc-list li { flex-direction: column; align-items: stretch; } .bubble { max-width: 92%; } }

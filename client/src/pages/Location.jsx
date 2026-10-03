@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { monsterIcon, Icon } from '../icons.jsx';
 import SceneBackdrop from '../scenes.jsx';
+import Talk from '../Talk.jsx';
 
 export default function LocationPage() {
   const { id } = useParams();
@@ -10,10 +11,13 @@ export default function LocationPage() {
   const [location, setLocation] = useState(null);
   const [characters, setCharacters] = useState([]);
   const [heroId, setHeroId] = useState('');
+  const [npcs, setNpcs] = useState([]);
+  const [talking, setTalking] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     api.getLocation(id).then(setLocation).catch((e) => setError(e.message));
+    api.npcsAtLocation(id).then(setNpcs).catch(() => {});
     api.listCharacters().then((list) => {
       setCharacters(list);
       if (list.length) setHeroId(String(list[0].id));
@@ -51,6 +55,41 @@ export default function LocationPage() {
       </div>
 
       {error && <div className="error">{error}</div>}
+
+      {npcs.length > 0 && (
+        <div className="card">
+          <h2>Обитатели</h2>
+          <p className="muted small">С ними можно поговорить. Они запоминают ваши слова, и их отношение меняется.</p>
+          <ul className="npc-list">
+            {npcs.map((n) => (
+              <li key={n.id}>
+                <div className="npc-line">
+                  <span className="portrait small" style={{ borderColor: '#a08a6a' }}>
+                    {n.portrait ? <Icon src={n.portrait} alt={n.name} size={28} />
+                      : <span className="portrait-initial">{n.name[0]}</span>}
+                  </span>
+                  <span>
+                    <b>{n.name}</b> <span className="muted small">· {n.role}</span>
+                    <div className="muted small">{n.description}</div>
+                    <div className="traits">
+                      {[...n.plus, ...n.minus].map((t) => (
+                        <span key={t.name} className={`chip trait ${t.kind}`}>{t.name}</span>
+                      ))}
+                    </div>
+                  </span>
+                </div>
+                <button type="button" onClick={() => setTalking(talking === n.id ? null : n.id)}>
+                  {talking === n.id ? 'Свернуть' : 'Поговорить'}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {talking && heroId && (
+            <Talk leaderId={Number(heroId)} kind="npc" refId={talking} onClose={() => setTalking(null)} />
+          )}
+          {talking && !heroId && <p className="error">Сначала создайте героя, чтобы говорить.</p>}
+        </div>
+      )}
 
       <div className="grid2">
         <div className="card">
