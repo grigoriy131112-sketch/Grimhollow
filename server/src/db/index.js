@@ -14,7 +14,16 @@ export function getDb() {
   db = new DatabaseSync(dbPath);
   db.exec('PRAGMA foreign_keys = ON;');
   db.exec(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'));
+  migrate(db);
   return db;
+}
+
+// Additive migrations for databases created before a column existed.
+function migrate(d) {
+  const columns = (table) => d.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+  if (!columns('battles').includes('result')) {
+    d.exec('ALTER TABLE battles ADD COLUMN result TEXT');
+  }
 }
 
 export function transaction(fn) {

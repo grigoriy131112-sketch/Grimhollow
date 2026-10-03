@@ -6,7 +6,7 @@
 // leader and toward every other member.
 
 import { getDb, transaction } from '../db/index.js';
-import { deriveCharacter } from '../game/rules.js';
+import { deriveCharacter, levelFromXp } from '../game/rules.js';
 import { CLASSES } from '../game/classes.js';
 import {
   COMPANIONS, RECRUIT_SOURCES, PORTRAITS,
@@ -277,6 +277,43 @@ export function setMemberStatus(memberId, status) {
   if (!allowed.includes(status)) throw new Error('Недопустимый статус спутника');
   return getDb().prepare("UPDATE party_members SET status = ?, updated_at = datetime('now') WHERE id = ?")
     .run(status, memberId).changes > 0;
+}
+
+// A companion who falls in battle is dead for good (until a resurrection ritual).
+export function markDead(memberId) {
+  const db = getDb();
+  const member = db.prepare('SELECT * FROM party_members WHERE id = ?').get(memberId);
+  if (!member) return false;
+  const log = parseJson(member.recruit_log, []);
+  log.push({ text: `${member.name} погибает в бою.` });
+  db.prepare("UPDATE party_members SET status = 'dead', hp = 0, recruit_log = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(JSON.stringify(log), memberId);
+  return true;
+}
+
+// Persist a companion's resources after a fight, applying level-ups from XP.
+export function grantMemberXp(memberId, { xpGained = 0, hp, mana, stamina } = {}) {
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM party_members WHERE id = ?').get(memberId);
+  if (!row) throw new Error('Спутник не найден');
+
+  const newXp = row.xp + xpGained;
+  const newLevel = levelFromXp(newXp);
+  const leveledUp = newLevel > row.level;
+
+  const before = deriveCharacter({ ...row, hp: null, mana: null, stamina: null });
+  const fresh = deriveCharacter({ ...row, level: newLevel, xp: newXp, hp: null, mana: null, stamina: null });
+  const next = (value, field) => {
+    if (value === null || value === undefined) return fresh.stats[field];
+    if (leveledUp) return fresh.stats[field];
+    return Math.max(0, Math.min(value, fresh.stats[field]));
+  };
+
+  db.prepare(
+    "UPDATE party_members SET level=?, xp=?, hp=?, mana=?, stamina=?, updated_at=datetime('now') WHERE id=?",
+  ).run(newLevel, newXp, next(hp, 'maxHp'), next(mana, 'maxMana'), next(stamina, 'maxStamina'), memberId);
+
+  return { xp: newXp, level: newLevel, leveledUp, maxHp: fresh.stats.maxHp, previousMaxHp: before.stats.maxHp };
 }
 
 export { PORTRAITS };

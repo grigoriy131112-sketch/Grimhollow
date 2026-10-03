@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
-import { abilityIcon, monsterIcon, Icon } from '../icons.jsx';
+import { abilityIcon, monsterIcon, classColor, Icon } from '../icons.jsx';
 
 const STAT_RU = { attack: 'атака', defense: 'защита', accuracy: 'точность', evasion: 'уклонение', speed: 'скорость' };
 
@@ -33,18 +33,40 @@ function Stat({ label, value, max }) {
   );
 }
 
-function CombatantCard({ c, active }) {
-  const icon = c.side === 'enemy' ? monsterIcon(c.name) : null;
+// Portrait with the class accent colour, matching the party page.
+function Portrait({ c, size = 40 }) {
+  const color = c.side === 'enemy' ? '#8a3a3a' : classColor(c.classKey);
+  const src = c.portrait;
+  const icon = !src && c.side === 'enemy' ? monsterIcon(c.name) : null;
   return (
-    <div className={`combatant ${c.side} ${active ? 'active' : ''} ${c.hp <= 0 ? 'down' : ''}`}>
+    <div className="portrait" style={{ width: size, height: size, borderColor: color, background: `${color}1a` }}>
+      {src ? <Icon src={src} alt={c.name} size={size - 12} />
+        : icon ? <Icon src={icon} alt={c.name} size={size - 12} />
+          : <span className="portrait-initial" style={{ fontSize: size * 0.42 }}>{c.name?.[0] || '?'}</span>}
+    </div>
+  );
+}
+
+function CombatantCard({ c, active, selected, onSelect }) {
+  const enemy = c.side === 'enemy';
+  const clickable = enemy && c.hp > 0 && !!onSelect;
+  const role = c.kind === 'leader' ? 'лидер' : c.kind === 'ally' ? 'спутник' : 'враг';
+  return (
+    <div
+      className={`combatant ${c.side} ${active ? 'active' : ''} ${c.hp <= 0 ? 'down' : ''} ${selected ? 'targeted' : ''} ${clickable ? 'clickable' : ''}`}
+      onClick={clickable ? () => onSelect(c.key) : undefined}
+      role={clickable ? 'button' : undefined}
+      title={clickable ? 'Выбрать целью' : undefined}
+    >
       <div className="hero-top">
-        <b style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          {icon && <Icon src={icon} alt={c.name} size={26} />}
-          {c.name}
-        </b>
+        <Portrait c={c} />
+        <div className="combatant-name">
+          <b>{c.name}</b>
+          <span className="small muted">{role} · ур. {c.level}</span>
+        </div>
         {active && <span className="badge">ход</span>}
+        {selected && <span className="badge target-badge">цель</span>}
       </div>
-      <div className="small muted">Ур. {c.level}</div>
       <Stat label="Здоровье" value={c.hp} max={c.maxHp} />
       <Bar value={c.hp} max={c.maxHp} kind="hp" />
       <div className="res-bars">
@@ -60,79 +82,150 @@ function CombatantCard({ c, active }) {
 
 export default function BattlePage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [battle, setBattle] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState('basic');
   const [preview, setPreview] = useState(null);
   const [options, setOptions] = useState(null);
+  const [targetKey, setTargetKey] = useState(null);
+  const [results, setResults] = useState(null);
   const logRef = useRef(null);
 
   useEffect(() => { api.getOptions().then(setOptions).catch(() => {}); }, []);
 
-  const load = () => api.getBattle(id).then(setBattle).catch((e) => setError(e.message));
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => {
+    api.getBattle(id).then((b) => {
+      setBattle(b);
+      if (b.result) setResults(b.result);   // keep the report after a reload
+    }).catch((e) => setError(e.message));
+  }, [id]);
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [battle]);
 
-  const player = battle?.combatants.find((c) => c.side === 'player');
+  const allies = battle?.combatants.filter((c) => c.side === 'player') || [];
   const enemies = battle?.combatants.filter((c) => c.side === 'enemy') || [];
-  const target = enemies.find((c) => c.hp > 0);
+  const livingEnemies = enemies.filter((c) => c.hp > 0);
   const actor = battle?.combatants.find((c) => c.key === battle.activeKey);
+  const isLeaderTurn = actor?.kind === 'leader';
+  const enemyKeys = livingEnemies.map((c) => c.key).join(',');
+
+  // Reset the chosen ability when a different party member becomes active.
+  useEffect(() => { setSelected('basic'); }, [battle?.activeKey]);
+
+  // Default target: first living enemy; keep an explicit pick while it lives.
+  useEffect(() => {
+    if (!livingEnemies.length) { setTargetKey(null); return; }
+    setTargetKey((k) => (k && livingEnemies.some((c) => c.key === k) ? k : livingEnemies[0].key));
+  }, [battle?.activeKey, enemyKeys]);
 
   const myAbilities = useMemo(() => {
-    if (!player || !options) return [];
-    const klass = options.classes.find((k) => k.key === player.classKey);
-    return (klass?.abilities || []).filter((a) => !a.passive && a.unlockLevel <= player.level);
-  }, [player, options]);
+    if (!actor || !options || !actor.classKey) return [];
+    const klass = options.classes.find((k) => k.key === actor.classKey);
+    return (klass?.abilities || []).filter((a) => !a.passive && a.unlockLevel <= actor.level);
+  }, [actor, options]);
 
   // Ask the server for the honest hit chance/damage of the selected ability.
   useEffect(() => {
-    if (!battle?.isPlayerTurn || !target) { setPreview(null); return; }
+    if (!battle?.isPlayerTurn || !targetKey) { setPreview(null); return; }
     let alive = true;
-    api.preview(id, selected, target.key)
+    api.preview(id, selected, targetKey)
       .then((p) => { if (alive) setPreview(p); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [battle?.isPlayerTurn, selected, target?.key, id]);
+  }, [battle?.isPlayerTurn, battle?.activeKey, selected, targetKey, id]);
 
   const act = async (action) => {
     setBusy(true); setError('');
-    try { setBattle(await api.battleAction(id, action)); }
-    catch (err) { setError(err.message); }
+    try {
+      const view = await api.battleAction(id, action);
+      setBattle(view);
+      if (view.rewards) setResults(view.rewards);
+    } catch (err) { setError(err.message); }
     finally { setBusy(false); }
   };
 
-  const attack = () => act({ type: 'attack', abilityId: selected === 'basic' ? undefined : selected, targetKey: target?.key });
+  const attack = () => act({ type: 'attack', abilityId: selected === 'basic' ? undefined : selected, targetKey });
+
+  // Where "Назад" leads: back to the location we fought in, else the hero sheet.
+  const backTo = battle?.locationId ? `/world/locations/${battle.locationId}` : battle?.characterId ? `/characters/${battle.characterId}` : '/characters';
+  const backLabel = battle?.locationId ? '← Назад' : '← Назад к герою';
 
   if (error && !battle) return <div className="error">{error}</div>;
   if (!battle) return <div className="muted center">Загрузка…</div>;
 
   const over = !battle.active;
   const won = battle.status === 'won';
+  const lost = battle.status === 'lost';
+  const fled = battle.status === 'fled';
+  const target = enemies.find((e) => e.key === targetKey);
 
   return (
     <div>
-      <Link to="/characters" className="muted">← Герои</Link>
+      <Link to={backTo} className="muted">{backLabel}</Link>
       <div className="page-head">
-        <h1>Бой</h1>
+        <h1>Бой отрядом</h1>
         <span className="badge">Раунд {battle.round}</span>
+        <span className="badge">{allies.filter((c) => c.hp > 0).length} из {allies.length} в строю</span>
       </div>
       {error && <div className="error">{error}</div>}
 
+      {!over && actor && (
+        <div className={`turn-banner ${actor.side}`}>
+          {actor.side === 'player'
+            ? <span>Ваш ход: <b>{actor.name}</b>{actor.kind === 'ally' ? ' (спутник)' : ' (лидер)'} — выберите способность и цель</span>
+            : <span>Ход противника…</span>}
+        </div>
+      )}
+
+      <h2 className="side-title">Отряд</h2>
       <div className="arena">
-        {battle.combatants.map((c) => <CombatantCard key={c.key} c={c} active={c.key === battle.activeKey && !over} />)}
+        {allies.map((c) => <CombatantCard key={c.key} c={c} active={c.key === battle.activeKey && !over} />)}
+      </div>
+
+      <h2 className="side-title">Противники</h2>
+      <div className="arena">
+        {enemies.map((c) => (
+          <CombatantCard key={c.key} c={c} active={c.key === battle.activeKey && !over}
+            selected={c.key === targetKey && c.hp > 0 && !over} onSelect={setTargetKey} />
+        ))}
       </div>
 
       {over && (
         <div className="card reward">
-          {won
-            ? `🏆 Победа! +${battle.rewardXp} опыта, +${battle.rewardGold} золота.`
-            : battle.status === 'lost'
-              ? `💀 Поражение… вы уходите с единственным очком здоровья${battle.rewards?.goldLost ? ` и теряете ${battle.rewards.goldLost} золота` : ''}.`
-              : 'Вы покинули поле боя.'}
+          <h2>{won ? '🏆 Победа!' : lost ? '💀 Поражение' : '🏃 Отступление'}</h2>
+          <p>
+            {won && `Получено ${battle.rewardXp} опыта и ${battle.rewardGold} золота.`}
+            {lost && `Вы уходите с единственным очком здоровья${results?.goldLost ? ` и теряете ${results.goldLost} золота` : ''}.`}
+            {fled && 'Вы покинули поле боя.'}
+          </p>
+
+          {results?.leveledUp && <p className="good-tag">Лидер поднял уровень!</p>}
+
+          {results?.members?.length > 0 && (
+            <div className="results-block">
+              <div className="small muted">Спутники</div>
+              <ul className="stats">
+                {results.members.map((m) => (
+                  <li key={m.id}>
+                    <span>{m.name}</span>
+                    <b className={m.dead ? 'dead-tag' : ''}>{m.dead ? 'погиб' : `${m.hp} HP${m.leveledUp ? ' · новый уровень!' : ''}`}</b>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {results?.fallen?.length > 0 && (
+            <p className="dead-tag">Павшие навсегда: {results.fallen.map((f) => f.name).join(', ')}. Их можно вернуть лишь ритуалом воскрешения.</p>
+          )}
+
+          <div className="actions">
+            <button type="button" className="btn" onClick={() => navigate(backTo)}>{backLabel}</button>
+          </div>
         </div>
       )}
 
@@ -146,7 +239,7 @@ export default function BattlePage() {
             {myAbilities.map((a) => {
               const cd = actor?.cooldowns?.[a.id];
               const blocked = !!cd;
-              const lacks = (a.resource === 'mana' && player.mana < a.cost) || (a.resource === 'stamina' && player.stamina < a.cost);
+              const lacks = (a.resource === 'mana' && actor.mana < a.cost) || (a.resource === 'stamina' && actor.stamina < a.cost);
               return (
                 <button key={a.id} type="button" disabled={blocked}
                   className={`ability-btn ${selected === a.id ? 'selected' : ''}`}
@@ -161,17 +254,17 @@ export default function BattlePage() {
           </div>
 
           <div className="actions">
-            <button type="button" disabled={busy || !battle.isPlayerTurn} onClick={attack}>
-              {preview?.kind === 'attack' ? `Удар (${preview.chance}% · ~${preview.damage} урона)` : 'Применить способность'}
+            <button type="button" disabled={busy || !battle.isPlayerTurn || !targetKey} onClick={attack}>
+              {preview?.kind === 'attack' ? `Ударить ${target?.name} (${preview.chance}% · ~${preview.damage})` : 'Применить способность'}
             </button>
-            <button type="button" className="danger" disabled={busy || !battle.isPlayerTurn}
-              onClick={() => act({ type: 'flee' })}>🏃 Бежать</button>
+            {isLeaderTurn && (
+              <button type="button" className="danger" disabled={busy || !battle.isPlayerTurn}
+                onClick={() => act({ type: 'flee' })}>🏃 Бежать</button>
+            )}
             {!battle.isPlayerTurn && <span className="muted">Ход противника…</span>}
           </div>
         </>
       )}
-
-      {over && <div className="actions"><Link className="btn" to="/characters">К героям</Link></div>}
 
       <div className="card">
         <h2>Хроника</h2>

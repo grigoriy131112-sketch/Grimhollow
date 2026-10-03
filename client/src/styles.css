@@ -245,3 +245,20 @@ ul.stats span { color: var(--muted); }
 .recruit-result.ok { border-color: #355a37; color: #a8e0b0; }
 .recruit-result.no { border-color: #5a3535; color: #e0a8a8; }
 
+/* ---- party battle ---- */
+.turn-banner { padding: 0.6rem 0.9rem; border-radius: 10px; margin: 0.6rem 0 1rem; border: 1px solid var(--line); }
+.turn-banner.player { background: #1a2418; border-color: #355a37; }
+.turn-banner.enemy { background: #241616; border-color: #5a3535; }
+.side-title { margin: 1rem 0 0.5rem; font-size: 0.95rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.combatant-portrait { flex: none; display: flex; }
+.combatant-name { display: flex; flex-direction: column; line-height: 1.15; margin-right: auto; }
+.combatant.clickable { cursor: pointer; }
+.combatant.clickable:hover { border-color: var(--gold); transform: translateY(-2px); }
+.combatant.targeted { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(210, 170, 90, 0.35); }
+.target-badge { background: #4a3a12; color: var(--gold-soft); }
+
+.results-block { margin: 0.6rem 0; }
+.dead-tag { color: #e07f7f; font-weight: 600; }
+.good-tag { color: #7fc98a; font-weight: 600; }
+

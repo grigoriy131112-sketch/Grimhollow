@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS battles (
   log           TEXT NOT NULL DEFAULT '[]',
   reward_xp     INTEGER NOT NULL DEFAULT 0,
   reward_gold   INTEGER NOT NULL DEFAULT 0,
+  result        TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );

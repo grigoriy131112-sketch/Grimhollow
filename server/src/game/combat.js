@@ -49,6 +49,7 @@ function makeCombatant(source, side, key) {
   return {
     key,
     side,
+    kind: source.kind || (side === 'enemy' ? 'enemy' : key === 'p1' ? 'leader' : 'ally'),
     refId: source.id ?? null,
     name: source.name,
     portrait: source.portrait ?? null,
@@ -76,11 +77,16 @@ function makeCombatant(source, side, key) {
   };
 }
 
-export function createBattle({ player, opponents }, rng = Math.random) {
+// Build a battle. `player` is the leader (key 'p1'); `allies` are the rest of
+// the party, each controlled by the human and given keys a1, a2, ... Every
+// member of the party side is controlled by the player, so turn order still
+// returns control whenever a player-side combatant is up.
+export function createBattle({ player, allies = [], opponents }, rng = Math.random) {
   if (!player) throw new Error('player combatant is required');
   if (!Array.isArray(opponents) || opponents.length === 0) throw new Error('at least one opponent is required');
 
   const combatants = [makeCombatant(player, 'player', 'p1')];
+  allies.forEach((a, i) => combatants.push(makeCombatant(a, 'player', `a${i + 1}`)));
   opponents.forEach((o, i) => combatants.push(makeCombatant(o, 'enemy', `e${i + 1}`)));
 
   // Order by speed, descending; ties broken by side (player first), then key.
