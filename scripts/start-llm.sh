@@ -9,7 +9,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BIN="$ROOT/models/llama/llama-server"
-GGUF="${LLM_MODEL_PATH:-$ROOT/models/qwen2.5-1.5b-instruct-q4_k_m.gguf}"
+GGUF="${LLM_MODEL_PATH:-$ROOT/models/qwen2.5-3b-instruct-q4_k_m.gguf}"
 PORT="${LLM_PORT:-8080}"
 THREADS="${LLM_THREADS:-4}"
 

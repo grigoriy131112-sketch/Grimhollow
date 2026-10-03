@@ -14,7 +14,7 @@ const repoRoot = path.resolve(__dirname, '../../..');
 export const config = {
   provider: (process.env.LLM_PROVIDER || 'auto').toLowerCase(), // auto | local | cloud | off
   localUrl: process.env.LLM_LOCAL_URL || 'http://127.0.0.1:8080',
-  localModelPath: process.env.LLM_MODEL_PATH || path.join(repoRoot, 'models', 'qwen2.5-1.5b-instruct-q4_k_m.gguf'),
+  localModelPath: process.env.LLM_MODEL_PATH || path.join(repoRoot, 'models', 'qwen2.5-3b-instruct-q4_k_m.gguf'),
   llamaBin: process.env.LLM_LLAMA_BIN || path.join(repoRoot, 'models', 'llama', 'llama-server'),
   cloudKey: process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || '',
   cloudBase: process.env.LLM_BASE_URL || 'https://api.openai.com/v1',
@@ -43,14 +43,14 @@ async function localHealthy() {
   return localHealth.ok;
 }
 
-async function chat(url, { key, model, messages, timeout }) {
+async function chat(url, { key, model, messages, timeout, maxTokens = 80, temperature = 0.65, topP = 0.9 }) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeout);
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(key ? { Authorization: `Bearer ${key}` } : {}) },
-      body: JSON.stringify({ model, messages, max_tokens: 80, temperature: 0.65, top_p: 0.9 }),
+      body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature, top_p: topP }),
       signal: ctrl.signal,
     });
     if (!res.ok) throw new Error(`LLM ${res.status}`);
@@ -60,12 +60,22 @@ async function chat(url, { key, model, messages, timeout }) {
 }
 
 export function tidyReply(text) {
-  return String(text || '')
+  let out = String(text || '')
     .trim()
     .replace(/^(ответ|ассистент|персонаж|реплика|assistant)\s*[:\-—]\s*/i, '')
+    // Small models like to frame their line: "Вот мой ответ: ...", "Мой ответ: ...".
+    .replace(/^(вот\s+)?(мой|твой|это\s+мой|это\s+твой)\s+ответ\s*[:\-—]\s*/i, '')
     .replace(/^["«'\-—\s]+|["»'\s]+$/g, '')
-    .replace(/\s+/g, ' ')
-    .slice(0, 400);
+    // A lone Latin word dropped into a Russian line ("...верю в rightness...")
+    // is model noise; strip it.
+    .replace(/\b[A-Za-z]{2,}\b/g, ' ')
+    .replace(/\s+/g, ' ');
+  // A cut-off line ends on a conjunction, preposition or comma. Trim it back to
+  // the last complete sentence so the reply never trails off mid-thought.
+  out = out.replace(/\s+(и|а|но|что|как|чтобы|если|или|же|ли|бы|не|в|на|с|к|по|от|до|за|из|о|об)\s*$/i, '');
+  out = out.replace(/[,;:\-—\s]+$/, '');
+  if (out && !/[.!?…]$/.test(out)) out += '.';
+  return out.slice(0, 420);
 }
 
 // Reject model output that drifted: empty, absurdly short/long, containing
@@ -75,7 +85,11 @@ export function acceptReply(text, briefing, draft = '') {
   if (!text) return false;
   // A reply must carry at least a couple of words; one-word answers ("Привет")
   // sound like a bug, not a character.
-  if (text.length < 10 || text.length > 300) return false;
+  if (text.length < 10) return false;
+  // Free-form answers (a question about the character's own past) may run longer
+  // than the terse template beat, so give them more room.
+  const cap = briefing?.free ? 420 : 300;
+  if (text.length > cap) return false;
   if (text.split(/\s+/).filter(Boolean).length < 2) return false;
   if (/[<>{}|\\]/.test(text)) return false;
   // The local Qwen model occasionally slips into Chinese. Require the line to be
@@ -110,6 +124,57 @@ export function acceptReply(text, briefing, draft = '') {
     if (dw.size && ![...stems(text)].some((w) => dw.has(w))) return false;
   }
   return true;
+}
+
+// Answer an open question from the player in the character's own words. This is
+// the "living dialogue" path: the model is the author, not a reworder, so it can
+// speak about anything — the character's past, the world, the player. The engine
+// draft is only a fallback, kept if the model drifts, and is NOT shown to the
+// model (so it cannot echo a wrong template). Returns null if no model is
+// reachable, letting the caller fall back to the template beat.
+export async function answerQuestion(briefing, fallbackText = '', avoid = '') {
+  if (config.provider === 'off') return null;
+  const same = (t) => (avoid && t.trim().toLowerCase() === avoid.trim().toLowerCase())
+    || (fallbackText && t.trim().toLowerCase() === fallbackText.trim().toLowerCase());
+
+  const messages = [
+    { role: 'system', content: briefing.system },
+    {
+      role: 'user',
+      content: `Собеседник говорит: «${briefing.playerText}».\nОтветь ему одной живой репликой от лица ${briefing.name}.`,
+    },
+  ];
+
+  if (await localHealthy()) {
+    try {
+      const out = tidyReply(await chat(`${config.localUrl}/v1/chat/completions`, {
+        key: '', model: 'local', messages, timeout: config.timeoutMs,
+        maxTokens: 120, temperature: 0.75, topP: 0.9,
+      }));
+      if (acceptReply(out, { ...briefing, free: true }, '') && !same(out)) return { text: out, source: 'local' };
+      const retry = [...messages, {
+        role: 'user',
+        content: 'Ответь одной живой фразой по-русски, не короче трёх слов, по существу вопроса.',
+      }];
+      const out2 = tidyReply(await chat(`${config.localUrl}/v1/chat/completions`, {
+        key: '', model: 'local', messages: retry, timeout: config.timeoutMs,
+        maxTokens: 120, temperature: 0.75, topP: 0.9,
+      }));
+      if (acceptReply(out2, { ...briefing, free: true }, '') && !same(out2)) return { text: out2, source: 'local' };
+    } catch { localHealth = { ok: false, at: Date.now() }; }
+  }
+
+  if (config.cloudKey && config.provider !== 'local') {
+    try {
+      const out = tidyReply(await chat(`${config.cloudBase}/chat/completions`, {
+        key: config.cloudKey, model: config.cloudModel, messages, timeout: config.timeoutMs,
+        maxTokens: 120, temperature: 0.75, topP: 0.9,
+      }));
+      if (acceptReply(out, { ...briefing, free: true }, '')) return { text: out, source: 'cloud' };
+    } catch { /* fall through to the template beat */ }
+  }
+
+  return null;
 }
 
 // Reword a template reply with whichever model is available. Always returns a

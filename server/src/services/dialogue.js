@@ -5,12 +5,12 @@
 import { getDb, transaction } from '../db/index.js';
 import {
   TOPICS, classifyTopic, topicInfo, relationDelta, moodFor, extractFacts,
-  composeReply, memoryAside, llmBriefing,
+  composeReply, memoryAside, llmBriefing, freeAnswer,
 } from '../game/dialogue.js';
 import { getNpc } from './npcs.js';
 import { getMember } from './party.js';
 import { getCharacter } from './characters.js';
-import { rewordReply } from './llm.js';
+import { rewordReply, answerQuestion } from './llm.js';
 
 const parseJson = (v, fallback) => {
   try { return v ? JSON.parse(v) : fallback; } catch { return fallback; }
@@ -86,7 +86,8 @@ function resolvePersona(leaderId, kind, refId) {
     const npc = getNpc(refId);
     if (!npc) throw new Error('Собеседник не найден');
     return {
-      kind, refId, name: npc.name, role: npc.role, traits: npc.traits,
+      kind, refId, name: npc.name, role: npc.role, className: npc.class,
+      backstory: npc.description, traits: npc.traits,
       portrait: npc.portrait, description: npc.description,
       relation: npcRelation(leaderId, refId),
     };
@@ -96,7 +97,8 @@ function resolvePersona(leaderId, kind, refId) {
   const raw = getDb().prepare('SELECT pluses, minuses FROM party_members WHERE id = ?').get(refId);
   const traits = [...parseJson(raw?.pluses, []), ...parseJson(raw?.minuses, [])];
   return {
-    kind, refId, name: member.name, role: member.className, traits,
+    kind, refId, name: member.name, role: member.className, className: member.className,
+    backstory: member.history, traits,
     portrait: member.portrait, description: member.history,
     relation: companionRelation(leaderId, refId),
   };
@@ -157,13 +159,18 @@ export async function say(leaderId, kind, refId, text) {
   const lastReply = getDb().prepare(
     "SELECT text FROM dialogue_messages WHERE leader_id=? AND kind=? AND ref_id=? AND speaker='other' ORDER BY id DESC LIMIT 1",
   ).get(leaderId, kind, refId)?.text || '';
-  const llm = LLM_TOPICS.has(topic)
-    ? await rewordReply(
-        llmBriefing({ ...persona, traits: traitKeys }, { topic, relation: after, memory, playerText: clean }),
-        reply,
-        lastReply,
-      )
-    : { text: reply, source: 'engine' };
+  const briefing = llmBriefing({ ...persona, traits: traitKeys }, { topic, relation: after, memory, playerText: clean });
+  // An open question ("почему ты стала воином?") is answered by the model itself,
+  // so it can talk about anything instead of rephrasing a canned beat about the
+  // wrong thing. If no model answers, we fall back to the beat below.
+  const free = freeAnswer(clean, topic);
+  let llm = null;
+  if (free) llm = await answerQuestion(briefing, reply, lastReply);
+  if (!llm) {
+    llm = LLM_TOPICS.has(topic)
+      ? await rewordReply(briefing, reply, lastReply)
+      : { text: reply, source: 'engine' };
+  }
 
   // A remembered aside is appended after rewording, occasionally, so the living
   // answer always comes first — and never the same aside twice in a row.

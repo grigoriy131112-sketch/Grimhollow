@@ -12,7 +12,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODELS="$ROOT/models"
 LLAMA_DIR="$MODELS/llama"
 LLAMA_TAG="${LLAMA_TAG:-b11379}"
-GGUF="$MODELS/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+GGUF="$MODELS/qwen2.5-3b-instruct-q4_k_m.gguf"
 
 mkdir -p "$LLAMA_DIR"
 
@@ -27,9 +27,9 @@ else
 fi
 
 if [ ! -f "$GGUF" ]; then
-  echo "==> Downloading Qwen2.5-1.5B-Instruct (Q4_K_M, ~1.1 GB)"
+  echo "==> Downloading Qwen2.5-3B-Instruct (Q4_K_M, ~2.0 GB)"
   curl -fL --progress-bar -o "$GGUF" \
-    "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+    "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf"
 else
   echo "==> Qwen model already present"
 fi

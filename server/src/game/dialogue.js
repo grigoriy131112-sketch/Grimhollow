@@ -31,6 +31,7 @@ export const TOPICS = {
   faith: { label: 'разговор о вере', delta: 1, mood: 'neutral' },
   lore: { label: 'расспрос о крае', delta: 1, mood: 'neutral' },
   smalltalk: { label: 'пустой разговор', delta: 0, mood: 'neutral' },
+  question: { label: 'вопрос о персонаже', delta: 0, mood: 'neutral' },
 };
 
 // Keyword banks. Russian is inflected, so we match on stems where it helps.
@@ -107,11 +108,29 @@ export function classifyTopic(text) {
   for (const [topic, keys] of PATTERNS) {
     if (keys.some((k) => t.includes(k))) return topic;
   }
+  // Anything else that is a real question — "почему ты стала воином?", "чего
+  // ты боишься?" — is its own beat, answered freely rather than by a canned line.
+  if (DEEP_QUESTION.test(t) || /[?？]/.test(t)) return 'question';
   return 'smalltalk';
 }
 
 export function topicInfo(topic) {
   return TOPICS[topic] || TOPICS.smalltalk;
+}
+
+// True when the player asked something the canned beats cannot answer — an open
+// question about the character, the world, or a reason ("почему", "зачем",
+// "расскажи"). Such lines are answered by the model directly, so the dialogue
+// stays alive instead of snapping to a template about the wrong thing.
+const DEEP_QUESTION = /почему|зачем|отчего|расскажи|поведай|как ты (стал|стала|оказал|оказалась)|как вы (стал|стали)|откуда ты|кто ты|что ты (знаешь|думаешь|помнишь) о|боишься|мечта|любишь|нравится|веришь|хочешь ли/i;
+
+export function freeAnswer(text, topic = 'smalltalk') {
+  const t = String(text || '').trim();
+  if (t.length < 3) return false;
+  // A deep question always goes free. A plain question mark only counts when the
+  // line was classified as an open question — short social beats ("как ты?")
+  // keep their reliable canned reply.
+  return DEEP_QUESTION.test(t) || topic === 'question';
 }
 
 // How a listener's traits colour the reaction to a topic.
@@ -197,6 +216,7 @@ const MOOD_LINES = {
     greeting: ['Чего тебе?', 'Я тебя не звал.'],
     wellbeing: ['Тебе-то что? Жив, как видишь.', 'Не твоя забота, как я.'],
     mood: ['Мне-то? Как всегда. Без твоей помощи.', 'Живу. Тебя это удивляет?'],
+    question: ['Зачем тебе знать? Скажи, что тебе нужно.', 'Спрашиваешь много. Отвечу, если будет толк.'],
     smalltalk: ['Говори по делу или уходи.', 'Мне не о чем с тобой болтать.'],
     compliment: ['Не подлизывайся. Тебе это не идёт.', 'Лесть от тебя — как соль в ране.'],
     insult: ['Ещё слово — и я проверю, крепка ли твоя шея.', 'Ты забываешься. Я это запомню.'],
@@ -218,6 +238,7 @@ const MOOD_LINES = {
     greeting: ['А, это ты.', 'Здорово... наверное.'],
     wellbeing: ['Живу помаленьку. Чего хотел?', 'Да как у всех — терплю.'],
     mood: ['Так же, как и раньше. Без перемен.', 'Да ничего нового.'],
+    question: ['К чему тебе это? Но слушай, если охота.', 'Много будешь знать — плохо спать будешь.'],
     smalltalk: ['Ну, говори, если есть что.', 'Не задерживай меня.'],
     compliment: ['Спасибо. Хотя я тебе не верю.', 'Не думай, что это что-то меняет.'],
     insult: ['Придержи язык.', 'Ещё раз — и разговор закончится плохо.'],
@@ -239,6 +260,7 @@ const MOOD_LINES = {
     greeting: ['Приветствую. Чем обязан?', 'Здравствуй.'],
     wellbeing: ['Да ничего, держусь. А ты?', 'Потихоньку. Спасибо, что спросил.'],
     mood: ['Да как обычно. Всё по-старому.', 'Тихо. Живу, и ладно.'],
+    question: ['Спрашивай, коли интересно. Что именно?', 'Хм. Об этом можно и поговорить.'],
     smalltalk: ['День как день. А что?', 'Пусто вокруг. Но живём.'],
     compliment: ['Благодарю. Приятно слышать.', 'Спасибо на добром слове.'],
     insult: ['Это было лишним.', 'Зачем оскорблять? Мы ведь не враги.'],
@@ -260,6 +282,7 @@ const MOOD_LINES = {
     greeting: ['Рад тебя видеть.', 'О, ты вернулся. Хорошо.'],
     wellbeing: ['Да хорошо, раз ты рядом. А ты как?', 'Держусь. Спасибо, что не забываешь.'],
     mood: ['Как и ты — потихоньку. Спасибо, что спросил.', 'Неплохо, особенно когда ты рядом.'],
+    question: ['Спроси, я отвечу. О чём думаешь?', 'Люблю, когда ты спрашиваешь. Говори.'],
     smalltalk: ['Всегда рад поболтать.', 'Рассказывай, я слушаю.'],
     compliment: ['Ты меня смущаешь. Но спасибо.', 'Доброе слово и здесь греет.'],
     insult: ['За что? Я ведь к тебе по-доброму.', 'Больше не говори так.'],
@@ -281,6 +304,7 @@ const MOOD_LINES = {
     greeting: ['Ты пришёл! Я знал.', 'Мой друг. Всегда рад.'],
     wellbeing: ['Пока ты со мной — всё хорошо.', 'Что мне сделается, когда ты рядом.'],
     mood: ['С тобой — хорошо. Правда.', 'Спасибо, что спросил. Мне спокойно рядом с тобой.'],
+    question: ['Спрашивай что угодно — для тебя отвечу на всё.', 'Ты хочешь знать? Тогда слушай.'],
     smalltalk: ['С тобой хоть в огонь.', 'Говори, я всё сделаю.'],
     compliment: ['Твоё слово для меня дороже золота.', 'Я сделаю всё, чтобы ты не разочаровался.'],
     insult: ['Даже от тебя это больно. Но я стерплю.', 'Ты расстроен? Прости меня.'],
@@ -332,6 +356,18 @@ export function memoryAside(memory = [], relation = 50, seed = 0) {
   return `${lead}${m.text.toLowerCase().replace(/\.$/, '')}.`;
 }
 
+// The instruction block is byte-identical on every request, so llama.cpp can
+// reuse its cached prefix. All per-turn data goes after it — that keeps prompt
+// evaluation cheap, which is the difference between a snappy and a sluggish NPC.
+const SYSTEM_RULES = [
+  'Ты — персонаж тёмного фэнтези-мира Гримхоулл. Ты говоришь собеседнику (предводителю отряда) одну живую реплику.',
+  'Правила: отвечай на «ты», по-русски, в характере и в нужном настроении; можешь говорить о чём угодно — о себе, о своём прошлом, о мире, о собеседнике.',
+  'Если чего-то не знаешь — уклоняйся в характере, но не выдумывай фактов о собеседнике.',
+  'Отвечай утверждением о себе, а не встречным вопросом и не пересказом вопроса.',
+  'Не называй собеседника своим именем и не повторяй его слова — отвечай от себя.',
+  'Не пересказывай воспоминания списком. Только русский язык, без других языков и иероглифов.',
+].join('\n');
+
 // Everything the LLM layer needs to reword a reply without changing its meaning.
 export function llmBriefing(persona, { topic, relation, memory = [], playerText = '' }) {
   const mood = moodFor(relation);
@@ -341,17 +377,13 @@ export function llmBriefing(persona, { topic, relation, memory = [], playerText 
     topic: topicInfo(topic).label,
     playerText,
     system: [
-      'Ты играешь одного персонажа тёмного фэнтези-мира Гримхоулл и говоришь ЕГО реплику собеседнику (предводителю отряда).',
-      `Твой персонаж: ${persona.name}, ${persona.role || 'житель'}.`,
+      SYSTEM_RULES,
+      `Персонаж: ${persona.name}, ${persona.role || 'житель'}${persona.className ? `, ${persona.className}` : ''}.`,
+      persona.backstory ? `Предыстория: ${persona.backstory}` : '',
       `Черты характера: ${(persona.traits || []).map((t) => traitInfo(t).name).join(', ') || 'нет'}.`,
-      `Твоё отношение к собеседнику: ${moodRu} (${relation}/100).`,
-      playerText ? `Собеседник только что сказал: «${playerText}». Ответь именно ему.` : '',
-      memory.length ? `Ты помнишь о нём: ${memory.map((m) => m.text).join(' ')}` : '',
-      'Отвечай ЖИВОЙ разговорной репликой на русском, на «ты», в характере и в нужном настроении.',
-      'Говори ТОЛЬКО по-русски — никаких других языков и иероглифов.',
-      'Никогда не называй собеседника своим собственным именем.',
-      'Не повторяй и не передразнивай слова собеседника — отвечай от себя.',
-      'Не пересказывай свои воспоминания списком — просто ответь по-человечески.',
+      `Отношение к собеседнику: ${moodRu} (${relation}/100).`,
+      memory.length ? `Помнишь о собеседнике: ${memory.map((m) => m.text).join(' ')}` : '',
+      playerText ? `Собеседник сказал: «${playerText}». Ответь именно ему.` : '',
     ].filter(Boolean).join('\n'),
   };
 }

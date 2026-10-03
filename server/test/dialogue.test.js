@@ -219,6 +219,24 @@ test('tidyReply strips a leading label and wrapping quotes', async () => {
   const { tidyReply } = await import('../src/services/llm.js');
   assert.equal(tidyReply('Ответ: Хорошо, спасибо.'), 'Хорошо, спасибо.');
   assert.equal(tidyReply('«Держусь. Спасибо, что спросил.»'), 'Держусь. Спасибо, что спросил.');
+  // Small-model framing and noise.
+  assert.equal(tidyReply('Вот мой ответ: Я стала воином из-за города.'), 'Я стала воином из-за города.');
+  assert.equal(tidyReply('Мой ответ — я боюсь темноты.'), 'я боюсь темноты.');
+  assert.equal(tidyReply('Я верю в rightness своих решений.'), 'Я верю в своих решений.');
+  // A line cut off mid-thought is trimmed and closed.
+  assert.equal(tidyReply('Я держала ворота, пока город не'), 'Я держала ворота, пока город.');
+});
+
+test('an open question is its own beat, answered freely', async () => {
+  const { freeAnswer, classifyTopic } = await import('../src/game/dialogue.js');
+  assert.equal(classifyTopic('почему ты решила стать воином?'), 'question');
+  assert.equal(classifyTopic('чего ты боишься?'), 'question');
+  assert.equal(classifyTopic('расскажи о своём прошлом'), 'question');
+  assert.equal(freeAnswer('почему ты решила стать воином?', 'question'), true);
+  assert.equal(freeAnswer('чего ты боишься?', 'question'), true);
+  // A short social beat keeps its reliable canned reply.
+  assert.equal(freeAnswer('как ты?', 'wellbeing'), false);
+  assert.equal(freeAnswer('привет', 'greeting'), false);
 });
 
 

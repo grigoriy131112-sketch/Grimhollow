@@ -151,21 +151,42 @@ each character's attitude toward the leader moves with what is said.
 
 ### The AI layer is optional and layered
 
-`server/src/services/llm.js` rewords the engine's draft reply, in order:
+`server/src/services/llm.js` produces the spoken reply, in order:
 
-1. **local** — llama.cpp `llama-server` with Qwen2.5-1.5B-Instruct Q4_K_M.
+1. **local** — llama.cpp `llama-server` with Qwen2.5-3B-Instruct Q4_K_M.
 2. **cloud** — any OpenAI-compatible endpoint, only if `LLM_CLOUD_KEY` is set.
 3. **template** — the deterministic engine line, always available.
 
+There are two paths, and the difference matters:
+
+- **Free answer (`answerQuestion`)** — for open questions the player asks about
+  the character, the world or a reason ("почему ты стала воином?", "чего ты
+  боишься?", "расскажи о прошлом"). Here the model *authors* the line; the engine
+  draft is a fallback that is **not** shown to the model, so it cannot echo a
+  wrong template. This is what makes an NPC able to talk about anything.
+- **Reword (`rewordReply`)** — for the recognised "safe" topics, the model
+  rewords the engine draft. Volatile beats (insult, threat, apology, join) keep
+  the engine's exact wording.
+
+The briefing (`llmBriefing`) always carries the character's **backstory**
+(`description` for NPCs, `history` for companions) and `className`, so the model
+knows why, say, Марта became a warrior. The static instruction block
+(`SYSTEM_RULES`) is a module-level constant and comes first in the system prompt,
+with all per-turn data after it — llama.cpp reuses the cached prefix, which is
+the difference between a ~3 s and a ~12 s reply.
+
 If nothing is running, dialogue still works. Config via env: `LLM_PROVIDER`
 (`auto|local|cloud|off`), `LLM_LOCAL_URL` (default `http://127.0.0.1:8080`),
-`LLM_CLOUD_KEY`, `LLM_CLOUD_BASE`, `LLM_CLOUD_MODEL`, `LLM_TIMEOUT_MS`.
+`LLM_MODEL_PATH`, `LLM_CLOUD_KEY`, `LLM_CLOUD_BASE`, `LLM_CLOUD_MODEL`,
+`LLM_TIMEOUT_MS`.
 
-A small local model drifts off-register, so the layer only rewords "safe"
+A small local model drifts off-register, so the reword path only touches "safe"
 topics; volatile beats (insult, threat, apology, join) keep the engine's exact
 wording. Model output is rejected (falling back to the engine) if it is empty,
 too long, mostly Latin, contains markup, uses the speaker's own name for the
-listener, or drifts off the draft's subject.
+listener, or drifts off the draft's subject. `tidyReply` also strips small-model
+framing ("Вот мой ответ:"), stray Latin words, and a line cut off on a trailing
+conjunction or preposition.
 
 Models are never committed: `models/` is gitignored. Recreate the local layer
 with `npm run llm:setup` then `npm run llm:start`. The weights are open and the
@@ -237,3 +258,21 @@ as long as the machine does.
 - `smalltalk` never changes the relationship (`TRAIT_REACTIONS.smalltalk = {}`); empty chatter is neutral, not an offence.
 - "хорошо"/"отлично" are deliberately absent from the mood patterns: they belong to the `compliment` topic and would otherwise hijack "Ты отлично держишься".
 - The UI badge shows "ответ: движок (характер)" whenever Qwen was not used — either the topic is intentionally engine-only (insult/threat/apology/join) or the model's line was rejected by `acceptReply` and the draft was kept.
+
+## Free answers (open questions)
+
+- Any real question that is not a recognised beat — "почему ты стала воином?",
+  "чего ты боишься?", "расскажи о прошлом" — classifies as topic `question`
+  (`DEEP_QUESTION` in `game/dialogue.js`) and is answered by the model directly
+  via `answerQuestion`, not by a canned beat. This is what stops the old failure
+  mode where a misclassified question made Qwen faithfully rephrase the *wrong*
+  template ("почему решила стать воином" → "мне тоже кажется, что здесь пусто").
+- A short social beat with a question mark ("как ты?") keeps its reliable canned
+  reply: `freeAnswer` is true only for a deep question or a line classified as
+  `question`, never for `greeting`/`wellbeing`/`mood`/`farewell`.
+- `question` is in `TOPICS` and every mood defines `MOOD_LINES.question`, so the
+  engine fallback (when no model is reachable) is still in character — the
+  "every mood answers every topic" test covers it.
+- On the free path the engine draft is a **fallback only** and is not put into
+  the prompt, so the model cannot echo it. `answerQuestion` returns null on any
+  failure and the caller keeps the engine line.
