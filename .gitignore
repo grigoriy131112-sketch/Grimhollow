@@ -1,0 +1,13 @@
+node_modules/
+dist/
+build/
+*.log
+.env
+.env.*
+!.env.example
+server/src/data/*.sqlite
+server/src/data/*.json
+!server/src/data/.gitkeep
+.DS_Store
+.agent_tmp/
+coverage/

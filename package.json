@@ -1,0 +1,18 @@
+{
+  "name": "grimhollow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Grimhollow - a dark-fantasy RPG without dice: classes, abilities, turn-based battles, a world of continents and locations.",
+  "type": "module",
+  "workspaces": ["server", "client"],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace client run dev",
+    "build": "npm --workspace client run build",
+    "test": "npm --workspace server run test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

@@ -1,0 +1,27 @@
+async function request(method, path, body) {
+  const res = await fetch(`/api${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (res.status === 204) return null;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+
+export const api = {
+  getOptions: () => request('GET', '/characters/options'),
+  listCharacters: () => request('GET', '/characters'),
+  getCharacter: (id) => request('GET', `/characters/${id}`),
+  createCharacter: (payload) => request('POST', '/characters', payload),
+  deleteCharacter: (id) => request('DELETE', `/characters/${id}`),
+  getWorld: () => request('GET', '/world'),
+  getLocation: (id) => request('GET', `/world/locations/${id}`),
+  listMonsters: () => request('GET', '/world/monsters'),
+  startBattle: (payload) => request('POST', '/battles', payload),
+  getBattle: (id) => request('GET', `/battles/${id}`),
+  preview: (id, abilityId, targetKey) =>
+    request('GET', `/battles/${id}/preview?abilityId=${abilityId}&targetKey=${targetKey}`),
+  battleAction: (id, action) => request('POST', `/battles/${id}/action`, action),
+};

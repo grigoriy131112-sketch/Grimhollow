@@ -1,0 +1,183 @@
+:root {
+  --bg: #0d0b10;
+  --bg-2: #16121b;
+  --panel: #1d1822;
+  --panel-2: #262030;
+  --ink: #e8e0d4;
+  --muted: #9b8f9f;
+  --gold: #c9a227;
+  --gold-soft: #e0c060;
+  --blood: #8b1e1e;
+  --blood-bright: #c0392b;
+  --mana: #3b6ea5;
+  --stamina: #7a8b3a;
+  --hp: #a83232;
+  --line: #3a3142;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #241a2c 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, #08070a 100%);
+  color: var(--ink);
+  font-family: 'Spectral', Georgia, serif;
+  min-height: 100vh;
+}
+
+h1, h2, h3, .brand, button, .badge {
+  font-family: 'Cinzel', 'Spectral', serif;
+  letter-spacing: 0.02em;
+}
+
+h1 { font-size: 2rem; margin: 0; }
+h2 { font-size: 1.25rem; margin: 0 0 0.75rem; color: var(--gold-soft); }
+h3 { font-size: 1.05rem; margin: 0 0 0.35rem; }
+a { color: var(--gold-soft); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.muted { color: var(--muted); }
+.small { font-size: 0.82rem; }
+.center { text-align: center; padding: 3rem; }
+
+/* layout */
+.app { min-height: 100vh; }
+.container { max-width: 1040px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0.5rem 0 1rem; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+
+/* nav */
+.nav {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  background: linear-gradient(180deg, rgba(30,22,36,0.95), rgba(16,12,20,0.95));
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 20;
+  backdrop-filter: blur(6px);
+}
+.brand { font-weight: 700; font-size: 1.1rem; color: var(--gold); }
+.links { display: flex; gap: 1rem; }
+.links a { color: var(--muted); font-family: 'Cinzel', serif; }
+.links a.active { color: var(--gold-soft); }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+
+/* cards */
+.card {
+  background: linear-gradient(180deg, var(--panel), var(--bg-2));
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 1.1rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+}
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+
+/* buttons */
+button, .btn {
+  font-family: 'Cinzel', serif;
+  background: linear-gradient(180deg, #3a2d44, #241c2c);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0.5rem 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.05s, background 0.15s;
+}
+button:hover:not(:disabled), .btn:hover { border-color: var(--gold); color: var(--gold-soft); text-decoration: none; }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.danger, .danger { border-color: #5a2020; color: #e0a0a0; }
+button.danger:hover { border-color: var(--blood-bright); color: #ffb3b3; }
+.tabs { display: flex; gap: 0.5rem; margin: 1rem 0; }
+.tabs button.active { border-color: var(--gold); color: var(--gold-soft); }
+
+/* forms */
+label { display: block; margin-bottom: 0.75rem; font-size: 0.9rem; color: var(--muted); }
+input, select, textarea {
+  display: block; width: 100%; margin-top: 0.3rem;
+  background: #100d14; color: var(--ink);
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 0.55rem 0.7rem; font-family: 'Spectral', serif; font-size: 1rem;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); }
+fieldset.abilities { border: 1px solid var(--line); border-radius: 8px; padding: 0.75rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+fieldset.abilities legend { color: var(--gold-soft); font-size: 0.85rem; padding: 0 0.4rem; }
+
+.error { background: rgba(139,30,30,0.25); border: 1px solid var(--blood); color: #ffc9c9; padding: 0.6rem 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
+
+/* auth */
+.auth { max-width: 420px; margin: 4rem auto; text-align: center; }
+.auth .card { text-align: left; }
+
+/* hero card */
+.hero-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.badge { font-size: 0.72rem; background: #2a2130; border: 1px solid var(--line); color: var(--gold-soft); padding: 0.15rem 0.5rem; border-radius: 20px; }
+.badge.safe { color: #9fd0a0; border-color: #355a37; }
+.stat-row { display: flex; flex-wrap: wrap; gap: 0.7rem; margin: 0.6rem 0; font-size: 0.9rem; }
+.stat-row.small { font-size: 0.78rem; color: var(--muted); }
+.hero-actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+
+/* hp bar */
+.hpbar { height: 10px; background: #241a1a; border-radius: 6px; overflow: hidden; border: 1px solid #3a2626; }
+.hpfill { height: 100%; background: linear-gradient(90deg, #7d1f1f, #c0392b); transition: width 0.3s; }
+.hpfill.enemy { background: linear-gradient(90deg, #4a1f5a, #8e44ad); }
+
+/* stats list */
+ul.stats { list-style: none; padding: 0; margin: 0; }
+ul.stats li { display: flex; justify-content: space-between; padding: 0.3rem 0; border-bottom: 1px dashed var(--line); }
+ul.stats li:last-child { border-bottom: none; }
+ul.stats span { color: var(--muted); }
+
+/* abilities grid */
+.ability-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.ability { text-align: center; background: #14101a; border: 1px solid var(--line); border-radius: 8px; padding: 0.6rem 0.3rem; }
+.ability .score { font-size: 1.4rem; color: var(--gold-soft); font-family: 'Cinzel', serif; }
+.ability .mod { font-size: 0.85rem; color: var(--muted); }
+
+/* world */
+.continent { margin-bottom: 2rem; }
+.region { margin: 1rem 0 1.5rem; padding-left: 0.75rem; border-left: 2px solid var(--line); }
+.loc-card { display: block; }
+.danger-tag { color: #d98a8a; font-size: 0.8rem; }
+
+/* battle arena */
+.arena { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.9rem; margin-bottom: 1rem; }
+.combatant { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 10px; padding: 0.8rem; }
+.combatant.active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 0 20px rgba(201,162,39,0.25); }
+.combatant.down { opacity: 0.5; filter: grayscale(0.6); }
+.combatant.enemy { background: linear-gradient(180deg, #241726, #170f1a); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin-bottom: 1rem; }
+.abilities-bar { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; margin-bottom: 1rem; }
+.ability-btn { text-align: left; padding: 0.5rem 0.65rem; }
+.ability-btn .cost { display: block; font-size: 0.72rem; color: var(--muted); }
+.ability-btn.selected { border-color: var(--gold); }
+
+.log { max-height: 240px; overflow-y: auto; font-size: 0.92rem; }
+.logline { padding: 0.2rem 0; border-bottom: 1px dashed rgba(58,49,66,0.5); }
+.logline.hit { color: #f0c0a0; }
+.logline.miss { color: var(--muted); }
+.logline.heal { color: #9fd0a0; }
+.logline.status { color: #b9a0d0; }
+.logline.down { color: #ff9a9a; font-weight: 600; }
+.logline.info { color: var(--muted); }
+
+.reward { border-color: var(--gold); color: var(--gold-soft); text-align: center; }
+
+/* resources */
+.res-bars { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.4rem 0; font-size: 0.8rem; }
+.res { flex: 1; min-width: 90px; }
+.res .bar { height: 6px; background: #14101a; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+.res .fill { height: 100%; }
+.fill.mana { background: linear-gradient(90deg, #24435f, #4a90d9); }
+.fill.stamina { background: linear-gradient(90deg, #4a5420, #9bbf4a); }
+.fill.hp { background: linear-gradient(90deg, #7d1f1f, #c0392b); }
+
+/* icons */
+.icon { filter: invert(0.82) sepia(0.25) saturate(1.4) hue-rotate(5deg); vertical-align: middle; }
+.combatant.enemy .icon { filter: invert(0.7) sepia(0.4) saturate(2) hue-rotate(-20deg); }
+

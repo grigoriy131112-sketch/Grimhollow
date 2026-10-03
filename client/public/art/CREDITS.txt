@@ -1,0 +1,16 @@
+Art credits
+===========
+
+Icons (abilities and monsters) are from the game-icons.net collection,
+released under the Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+license. Each icon is by its original author (e.g. Lorc, Delapouite, Skoll,
+Willdabeast, Sbed, Caro Asercion, DarkZaitzev).
+
+  https://game-icons.net/
+  License: https://creativecommons.org/licenses/by/3.0/
+
+The icons copied into client/public/art/{abilities,monsters}/ keep their
+original filenames' authorship as listed on game-icons.net. If you redistribute
+this project, keep this credit file.
+
+No paid or API-generated art is used in this project.
