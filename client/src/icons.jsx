@@ -50,6 +50,18 @@ const MONSTER_ICONS = {
 export const abilityIcon = (ability) =>
   (ability?.id && ABILITY_ICONS[ability.id]) ? `/art/abilities/${ABILITY_ICONS[ability.id]}.svg` : null;
 
+// Portraits resolve straight from the stored slug (/art/portraits/<slug>.svg).
+export const portraitIcon = (member) =>
+  (member?.portrait ? member.portrait : (member?.portraitSlug ? `/art/portraits/${member.portraitSlug}.svg` : null));
+
+// A stable accent colour per class, used for portrait frames and name plates.
+export const CLASS_COLORS = {
+  fighter: '#c96a4a', barbarian: '#b3452f', paladin: '#d9b44a', ranger: '#6fae5a',
+  rogue: '#8a7bd8', bard: '#d98ac0', monk: '#4fb3a6', druid: '#7bbf5a',
+  cleric: '#e0d3a0', wizard: '#5a8fd8', sorcerer: '#d86fae', warlock: '#9a5ad8',
+};
+export const classColor = (key) => CLASS_COLORS[key] || '#a08a6a';
+
 export const monsterIcon = (name) =>
   MONSTER_ICONS[name] ? `/art/monsters/${MONSTER_ICONS[name]}.svg` : null;
 

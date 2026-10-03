@@ -101,3 +101,34 @@ Wave 1 ability icons; their filenames already match the game-icons.net names.
   infernal_shield.svg  <-  lorc/fire-shield
   doom_bolt.svg  <-  lorc/magic-portal
   dark_blessing.svg  <-  delapouite/soul-vessel
+
+
+Per-file sources (Wave 3A companion portraits)
+==========================================
+Each file client/public/art/portraits/<slug>.svg is derived from the game-icons.net
+icon named on the right.
+
+  marta_veil.svg  <-  lorc/visored-helm
+  rayven.svg  <-  darkzaitzev/hooded-figure
+  dorin_stone.svg  <-  cathelineau/nun-face
+  kael_vane.svg  <-  delapouite/wizard-face
+  gorr.svg  <-  delapouite/orc-head
+  lute.svg  <-  delapouite/portrait
+  yara_thorn.svg  <-  cathelineau/witch-face
+  bo.svg  <-  delapouite/monk-face
+  sera_dawn.svg  <-  delapouite/black-knight-helm
+  fin.svg  <-  delapouite/eagle-head
+  ember.svg  <-  delapouite/woman-elf-face
+  vashek.svg  <-  delapouite/warlock-hood
+  old_pell.svg  <-  lorc/beard
+  nyla.svg  <-  darkzaitzev/ninja-head
+  brann.svg  <-  delapouite/sun-priest
+  ash.svg  <-  delapouite/kenku-head
+  morrigan.svg  <-  delapouite/executioner-hood
+  tob.svg  <-  delapouite/hoodie
+  iris.svg  <-  delapouite/oak-leaf
+  cass.svg  <-  delapouite/viking-head
+  hale.svg  <-  delapouite/person
+  sable.svg  <-  darkzaitzev/hooded-assassin
+  pious_odo.svg  <-  delapouite/spartan-helmet
+  wolf.svg  <-  lorc/wolf-head

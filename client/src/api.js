@@ -24,4 +24,11 @@ export const api = {
   preview: (id, abilityId, targetKey) =>
     request('GET', `/battles/${id}/preview?abilityId=${abilityId}&targetKey=${targetKey}`),
   battleAction: (id, action) => request('POST', `/battles/${id}/action`, action),
+  getParty: (leaderId) => request('GET', `/party/${leaderId}`),
+  getSources: (leaderId) => request('GET', `/party/${leaderId}/sources`),
+  getRecruits: (leaderId, source) => request('GET', `/party/${leaderId}/recruits${source ? `?source=${source}` : ''}`),
+  recruit: (leaderId, payload) => request('POST', `/party/${leaderId}/recruit`, payload),
+  adjustRelation: (memberId, payload) => request('POST', `/party/member/${memberId}/relation`, payload),
+  sweepParty: (leaderId) => request('POST', `/party/${leaderId}/sweep`),
+  setMemberStatus: (memberId, status) => request('POST', `/party/member/${memberId}/status`, { status }),
 };

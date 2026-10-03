@@ -4,6 +4,8 @@ import CharacterSheetPage from './pages/CharacterSheet.jsx';
 import WorldPage from './pages/World.jsx';
 import LocationPage from './pages/Location.jsx';
 import BattlePage from './pages/Battle.jsx';
+import PartyPage from './pages/Party.jsx';
+import RecruitPage from './pages/Recruit.jsx';
 
 function Nav() {
   return (
@@ -28,6 +30,8 @@ export default function App() {
         <Routes>
           <Route path="/characters" element={<CharactersPage />} />
           <Route path="/characters/:id" element={<CharacterSheetPage />} />
+          <Route path="/party/:leaderId" element={<PartyPage />} />
+          <Route path="/party/:leaderId/recruit" element={<RecruitPage />} />
           <Route path="/world" element={<WorldPage />} />
           <Route path="/world/locations/:id" element={<LocationPage />} />
           <Route path="/battles/:id" element={<BattlePage />} />

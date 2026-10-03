@@ -54,6 +54,39 @@ npm start                   # run the API, serving client/dist if built
 - Icons are CC BY 3.0 from game-icons.net (see `client/public/art/CREDITS.txt`
   for the per-file source manifest).
 
+## Party (отряд)
+
+- A party is a **leader** (a normal character) plus **companions** stored in
+  `party_members`; each companion is a full sheet of its class/level.
+- **14 recruitment sources** live in `game/companions.js` (`RECRUIT_SOURCES`):
+  tavern, road, rescue, quest, arena, mercy, ransom, necromancy, guild, beast,
+  sermon, deed, favor, orphan. Methods: free | gold | trial | quest | tame |
+  raise | persuade | favor.
+- `COMPANIONS` holds ready-made people with a history, two pluses, two minuses,
+  a starting opinion, a portrait slug and the sources they can appear from.
+  Traits live in `TRAITS` (each with `effects` and `likes`/`dislikes`).
+- **Relationships** are directed and clamped 0..100: each member feels something
+  toward the leader (`to_member_id IS NULL`) and toward every other member.
+  `LEAVE_THRESHOLD = 25` — below it with *anyone*, the companion leaves
+  (`sweepDepartures`). A fresh bond is seeded 30..90 so nobody leaves on day one.
+- Recruitment may be **refused**; `acceptanceChance` is an honest 5..95% shown to
+  the player. Deterministic pieces (prices, seeded opinions/bonds) keep it fair;
+  `rng` is injectable for tests.
+- Endpoints live under `/api/party` (see `routes/party.js`); the UI is
+  `pages/Party.jsx` (cards + relation bars) and `pages/Recruit.jsx` (source chips
+  + candidates).
+- Companion portraits are game-icons faces under `client/public/art/portraits/`
+  (map `PORTRAITS` in `game/companions.js`, credited in CREDITS.txt).
+
+### Still to come (approved waves, not yet built)
+
+- 3C battle as a party (control every member; permadeath).
+- 3D party upgrade tree paid with a separate **Очки отряда** resource
+  (`party_upgrades` table already exists).
+- 3E living AI dialogue with the party — self-contained, no external key,
+  never breaks the game.
+- 3F resurrection rituals (animal sacrifice, no currency).
+
 ## Conventions
 
 - ES modules everywhere. Server code has no build step.

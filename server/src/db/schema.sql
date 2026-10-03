@@ -87,3 +87,46 @@ CREATE TABLE IF NOT EXISTS battles (
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Party (отряд): companions recruited by a leader, with their own sheet.
+CREATE TABLE IF NOT EXISTS party_members (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  leader_id     INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  template_key  TEXT NOT NULL,
+  name          TEXT NOT NULL,
+  class         TEXT NOT NULL,
+  level         INTEGER NOT NULL DEFAULT 1,
+  xp            INTEGER NOT NULL DEFAULT 0,
+  hp            INTEGER,
+  mana          INTEGER,
+  stamina       INTEGER,
+  portrait      TEXT,
+  history       TEXT NOT NULL DEFAULT '',
+  pluses        TEXT NOT NULL DEFAULT '[]',
+  minuses       TEXT NOT NULL DEFAULT '[]',
+  source        TEXT NOT NULL DEFAULT 'road',
+  status        TEXT NOT NULL DEFAULT 'active',   -- active | dead | left
+  recruit_log   TEXT NOT NULL DEFAULT '[]',
+  joined_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Directed relationships: a party member's feeling toward another party member.
+-- The leader is stored as leader_id, so a row is (from_member -> to_member|leader).
+CREATE TABLE IF NOT EXISTS party_relations (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  leader_id      INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  from_member_id INTEGER NOT NULL REFERENCES party_members(id) ON DELETE CASCADE,
+  to_member_id   INTEGER REFERENCES party_members(id) ON DELETE CASCADE,  -- NULL = the leader
+  value          INTEGER NOT NULL DEFAULT 50,
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (from_member_id, to_member_id)
+);
+
+-- Party upgrade tree: points spent per node, per leader.
+CREATE TABLE IF NOT EXISTS party_upgrades (
+  leader_id  INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  node       TEXT NOT NULL,
+  points     INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (leader_id, node)
+);

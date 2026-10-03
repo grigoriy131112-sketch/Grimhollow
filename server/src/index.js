@@ -7,6 +7,7 @@ import { seedWorld } from './db/seed.js';
 import characterRoutes from './routes/characters.js';
 import worldRoutes from './routes/world.js';
 import battleRoutes from './routes/battles.js';
+import partyRoutes from './routes/party.js';
 
 export function createApp() {
   const app = express();
@@ -16,6 +17,7 @@ export function createApp() {
   app.use('/api/characters', characterRoutes);
   app.use('/api/world', worldRoutes);
   app.use('/api/battles', battleRoutes);
+  app.use('/api/party', partyRoutes);
 
   // Serve the built SPA when present (production / work-host preview).
   const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
