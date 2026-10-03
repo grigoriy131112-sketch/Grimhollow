@@ -50,7 +50,7 @@ async function chat(url, { key, model, messages, timeout }) {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(key ? { Authorization: `Bearer ${key}` } : {}) },
-      body: JSON.stringify({ model, messages, max_tokens: 80, temperature: 0.4, top_p: 0.85 }),
+      body: JSON.stringify({ model, messages, max_tokens: 80, temperature: 0.65, top_p: 0.9 }),
       signal: ctrl.signal,
     });
     if (!res.ok) throw new Error(`LLM ${res.status}`);
@@ -59,9 +59,10 @@ async function chat(url, { key, model, messages, timeout }) {
   } finally { clearTimeout(t); }
 }
 
-function tidy(text) {
+export function tidyReply(text) {
   return String(text || '')
     .trim()
+    .replace(/^(ответ|ассистент|персонаж|реплика|assistant)\s*[:\-—]\s*/i, '')
     .replace(/^["«'\-—\s]+|["»'\s]+$/g, '')
     .replace(/\s+/g, ' ')
     .slice(0, 400);
@@ -70,23 +71,30 @@ function tidy(text) {
 // Reject model output that drifted: empty, absurdly short/long, containing
 // markup or Latin chatter, or addressing the listener by the speaker's own name
 // (a small-model confusion). On rejection the caller keeps the template line.
-function accept(text, briefing, draft = '') {
+export function acceptReply(text, briefing, draft = '') {
   if (!text) return false;
-  // A reply must carry at least a few words; one-word answers ("Привет") sound
-  // like a bug, not a character.
-  if (text.length < 12 || text.length > 300) return false;
-  if (text.split(/\s+/).filter(Boolean).length < 3) return false;
+  // A reply must carry at least a couple of words; one-word answers ("Привет")
+  // sound like a bug, not a character.
+  if (text.length < 10 || text.length > 300) return false;
+  if (text.split(/\s+/).filter(Boolean).length < 2) return false;
   if (/[<>{}|\\]/.test(text)) return false;
+  // The local Qwen model occasionally slips into Chinese. Require the line to be
+  // Russian and reject other scripts (CJK, fullwidth, Arabic, Hebrew, Greek).
+  if (!/[\u0400-\u04ff]/.test(text)) return false;
+  if (/[\u3000-\u9fff\uff00-\uffef\u0590-\u05ff\u0600-\u06ff\u0370-\u03ff]/.test(text)) return false;
   if (briefing?.name) {
     const parts = briefing.name.toLowerCase().split(/\s+/).filter((w) => w.length >= 4);
     const low = text.toLowerCase();
     if (parts.some((p) => low.includes(p))) return false; // never use the speaker's own name
+    // ...nor a truncated form of it: "Март" for "Марта Вейл".
+    const tokens = low.replace(/[^a-zа-яё ]/g, ' ').split(/\s+/).filter((w) => w.length >= 4);
+    if (tokens.some((w) => parts.some((p) => p.startsWith(w) || w.startsWith(p)))) return false;
   }
   const latin = (text.match(/[A-Za-z]/g) || []).length;
   if (latin > text.length * 0.3) return false; // a Russian line should not be mostly Latin
   // A short line may differ freely; a longer one must stay on the draft's topic,
   // which we approximate by sharing at least one substantial word.
-  if (text.length > 25 && draft) {
+  if (text.length > 30 && draft) {
     const words = (s) => new Set(s.toLowerCase().replace(/[^a-zа-яё0-9 ]/gi, ' ').split(/\s+/).filter((w) => w.length >= 5));
     const dw = words(draft);
     if (dw.size && ![...words(text)].some((w) => dw.has(w))) return false;
@@ -96,37 +104,46 @@ function accept(text, briefing, draft = '') {
 
 // Reword a template reply with whichever model is available. Always returns a
 // usable line: on any failure the template text comes back untouched.
-export async function rewordReply(briefing, fallbackText) {
+export async function rewordReply(briefing, fallbackText, avoid = '') {
   if (config.provider === 'off') return { text: fallbackText, source: 'template' };
+  const same = (t) => avoid && t.trim().toLowerCase() === avoid.trim().toLowerCase();
 
   const messages = [
     {
       role: 'system',
-      content: `${briefing.system}\n\nЧерновая реплика ниже — правильная по смыслу и настроению. Перепиши её своими словами, сохранив смысл и настроение. Ответь ТОЛЬКО одной короткой фразой на русском, без кавычек и пояснений.`,
+      content: `${briefing.system}\n\nНиже дана черновая реплика — она верна по смыслу и настроению. Перепиши её своими словами, живой разговорной речью, сохранив смысл и настроение. Ответь ТОЛЬКО одной короткой фразой на русском, без кавычек и пояснений.`,
     },
-    { role: 'user', content: `Черновик: «${fallbackText}»\nТема разговора: ${briefing.topic}.` },
+    {
+      role: 'user',
+      content: `${briefing.playerText ? `Собеседник сказал: «${briefing.playerText}».\n` : ''}Черновик ответа: «${fallbackText}»\nТема разговора: ${briefing.topic}.`,
+    },
   ];
 
   if (await localHealthy()) {
     try {
-      const out = tidy(await chat(`${config.localUrl}/v1/chat/completions`, {
+      const out = tidyReply(await chat(`${config.localUrl}/v1/chat/completions`, {
         key: '', model: 'local', messages, timeout: config.timeoutMs,
       }));
-      if (accept(out, briefing, fallbackText)) return { text: out, source: 'local' };
-      // One retry: small models often produce a one-word stub on the first go.
-      const out2 = tidy(await chat(`${config.localUrl}/v1/chat/completions`, {
-        key: '', model: 'local', messages, timeout: config.timeoutMs,
+      if (acceptReply(out, briefing, fallbackText) && !same(out)) return { text: out, source: 'local' };
+      // One retry with a nudge: small models often produce a one-word stub, slip
+      // into another language, or repeat the previous line on the first go.
+      const retry = [...messages, {
+        role: 'user',
+        content: `${same(out) ? `Не повторяй это же. ` : ''}Ответь одной живой фразой по-русски, не короче трёх слов.`,
+      }];
+      const out2 = tidyReply(await chat(`${config.localUrl}/v1/chat/completions`, {
+        key: '', model: 'local', messages: retry, timeout: config.timeoutMs,
       }));
-      if (accept(out2, briefing, fallbackText)) return { text: out2, source: 'local' };
+      if (acceptReply(out2, briefing, fallbackText) && !same(out2)) return { text: out2, source: 'local' };
     } catch { localHealth = { ok: false, at: Date.now() }; }
   }
 
   if (config.cloudKey && config.provider !== 'local') {
     try {
-      const out = tidy(await chat(`${config.cloudBase}/chat/completions`, {
+      const out = tidyReply(await chat(`${config.cloudBase}/chat/completions`, {
         key: config.cloudKey, model: config.cloudModel, messages, timeout: config.timeoutMs,
       }));
-      if (accept(out, briefing, fallbackText)) return { text: out, source: 'cloud' };
+      if (acceptReply(out, briefing, fallbackText)) return { text: out, source: 'cloud' };
     } catch { /* fall through to template */ }
   }
 

@@ -64,7 +64,7 @@ function rememberFact(leaderId, kind, refId, { key, text }) {
   ).get(leaderId, kind, refId, key);
   if (row) {
     db.prepare("UPDATE dialogue_memory SET weight = ?, text = ?, updated_at = datetime('now') WHERE id = ?")
-      .run(Math.min(9, row.weight + 1), text, row.id);
+      .run(Math.min(5, row.weight + 1), text, row.id);
   } else {
     db.prepare('INSERT INTO dialogue_memory (leader_id, kind, ref_id, fact_key, text) VALUES (?, ?, ?, ?, ?)')
       .run(leaderId, kind, refId, key, text);
@@ -148,18 +148,33 @@ export async function say(leaderId, kind, refId, text) {
   for (const fact of extractFacts(topic)) rememberFact(leaderId, kind, refId, fact);
 
   // Compose the in-character reply, then let the LLM layer reword it if present.
-  let reply = composeReply({ topic, traits: traitKeys, relation: after, name: persona.name, facts: memory }, clean.length + refId);
-  const aside = memoryAside(memory, after, clean.length);
-  if (aside && Math.random() < 0.5) reply = `${reply} ${aside}`;
-
+  // The LLM only ever sees the clean spoken line, never the mechanical memory
+  // aside — otherwise a small model rewrites the aside and loses the answer.
+  const turn = getDb().prepare(
+    'SELECT COUNT(*) AS n FROM dialogue_messages WHERE leader_id = ? AND kind = ? AND ref_id = ?',
+  ).get(leaderId, kind, refId).n;
+  const reply = composeReply({ topic, traits: traitKeys, relation: after, name: persona.name, facts: memory }, turn + refId);
+  const lastReply = getDb().prepare(
+    "SELECT text FROM dialogue_messages WHERE leader_id=? AND kind=? AND ref_id=? AND speaker='other' ORDER BY id DESC LIMIT 1",
+  ).get(leaderId, kind, refId)?.text || '';
   const llm = LLM_TOPICS.has(topic)
-    ? await rewordReply(llmBriefing({ ...persona, traits: traitKeys }, { topic, relation: after, memory }), reply)
+    ? await rewordReply(
+        llmBriefing({ ...persona, traits: traitKeys }, { topic, relation: after, memory, playerText: clean }),
+        reply,
+        lastReply,
+      )
     : { text: reply, source: 'engine' };
+
+  // A remembered aside is appended after rewording, occasionally, so the living
+  // answer always comes first — and never the same aside twice in a row.
+  const aside = memoryAside(memory, after, clean.length);
+  let finalText = llm.text;
+  if (aside && !lastReply.includes(aside) && Math.random() < 0.3) finalText = `${finalText} ${aside}`;
 
   // Store the final reply text (overwrite the placeholder row).
   getDb().prepare(
     "UPDATE dialogue_messages SET text = ? WHERE id = (SELECT id FROM dialogue_messages WHERE leader_id=? AND kind=? AND ref_id=? AND speaker='other' ORDER BY id DESC LIMIT 1)",
-  ).run(llm.text, leaderId, kind, refId);
+  ).run(finalText, leaderId, kind, refId);
 
   return {
     topic,
@@ -167,7 +182,7 @@ export async function say(leaderId, kind, refId, text) {
     delta,
     relation: after,
     mood: moodFor(after),
-    reply: llm.text,
+    reply: finalText,
     llm: llm.source,           // 'local' | 'cloud' | 'template'
     memory: recallMemory(leaderId, kind, refId),
   };

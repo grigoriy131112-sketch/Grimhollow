@@ -197,3 +197,18 @@ as long as the machine does.
 - The LLM layer must not answer with a one-word stub. `accept()` rejects replies
   under three words and retries the local model once before falling back to the
   engine line, so "привет, как ты?" never comes back as just "Привет".
+
+## Local AI rewording (Wave 6 follow-up)
+
+- The LLM layer only ever rewords the **clean spoken line**. A remembered aside
+  is appended afterwards (30% of the time, never twice in a row), otherwise a
+  small model rewrites the mechanical aside and loses the actual answer.
+- `llmBriefing` passes `playerText` so the model answers the real question
+  instead of parroting the draft.
+- `acceptReply` (services/llm.js) rejects: replies under 10 chars or 2 words,
+  anything without Cyrillic, CJK/fullwidth/Arabic/Hebrew/Greek scripts, mostly
+  Latin lines, and any line containing the speaker's own name **or a truncation
+  of it** ("Март" for "Марта Вейл"). `rewordReply` retries the local model once
+  with a nudge, then falls back to the engine line.
+- Memory weight is capped at 5 and `memoryAside` only recalls weight >= 2, so a
+  frequently repeated fact cannot monopolise every reply.

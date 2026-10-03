@@ -75,7 +75,7 @@ const TRAIT_REACTIONS = {
 
 // Facts a line plants in memory. These are what the character will recall later.
 const FACT_RULES = [
-  ['greeting', 'greeted', 'С тобой здоровались.'],
+  ['greeting', 'greeted', 'Ты здоровался со мной.'],
   ['wellbeing', 'checked_in', 'Ты спрашивал, как у меня дела.'],
   ['compliment', 'praised', 'Ты хвалил меня.'],
   ['insult', 'insulted', 'Ты оскорблял меня.'],
@@ -287,12 +287,13 @@ export function composeReply({ topic, traits = [], relation = 50, name = '', fac
   return pick(moodPool[topic] || moodPool.default, seed + mood.length);
 }
 
-// A short, in-character aside that references something remembered.
+// A short, in-character aside that references something remembered. Only strong
+// memories (said more than once, or a strong beat like an insult) are recalled
+// out loud, so the character does not parrot every greeting back at the player.
 export function memoryAside(memory = [], relation = 50, seed = 0) {
-  if (!memory.length) return null;
   const strong = memory.filter((m) => m.weight >= 2);
-  const pool = strong.length ? strong : memory;
-  const m = pick(pool, seed + relation);
+  if (!strong.length) return null;
+  const m = pick(strong, seed + relation);
   if (!m) return null;
   const mood = moodFor(relation);
   const lead = mood === 'hostile' || mood === 'cold' ? 'Я помню: ' : 'Я помню, ';
@@ -300,20 +301,24 @@ export function memoryAside(memory = [], relation = 50, seed = 0) {
 }
 
 // Everything the LLM layer needs to reword a reply without changing its meaning.
-export function llmBriefing(persona, { topic, relation, memory = [] }) {
+export function llmBriefing(persona, { topic, relation, memory = [], playerText = '' }) {
   const mood = moodFor(relation);
   const moodRu = { hostile: 'враждебное', cold: 'холодное', neutral: 'ровное', warm: 'тёплое', devoted: 'преданное' }[mood];
   return {
     name: persona.name,
     topic: topicInfo(topic).label,
+    playerText,
     system: [
       'Ты играешь одного персонажа тёмного фэнтези-мира Гримхоулл и говоришь ЕГО реплику собеседнику (предводителю отряда).',
       `Твой персонаж: ${persona.name}, ${persona.role || 'житель'}.`,
       `Черты характера: ${(persona.traits || []).map((t) => traitInfo(t).name).join(', ') || 'нет'}.`,
       `Твоё отношение к собеседнику: ${moodRu} (${relation}/100).`,
-      memory.length ? `Ты помнишь: ${memory.map((m) => m.text).join(' ')}` : '',
+      playerText ? `Собеседник только что сказал: «${playerText}». Ответь именно ему.` : '',
+      memory.length ? `Ты помнишь о нём: ${memory.map((m) => m.text).join(' ')}` : '',
+      'Отвечай ЖИВОЙ разговорной репликой на русском, на «ты», в характере и в нужном настроении.',
+      'Говори ТОЛЬКО по-русски — никаких других языков и иероглифов.',
       'Никогда не называй собеседника своим собственным именем.',
-      'Отвечай одной короткой фразой на русском, на «ты», в характере и в нужном настроении.',
+      'Не пересказывай свои воспоминания списком — просто ответь по-человечески.',
     ].filter(Boolean).join('\n'),
   };
 }

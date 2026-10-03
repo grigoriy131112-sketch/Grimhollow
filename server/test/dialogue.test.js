@@ -200,3 +200,24 @@ test('dialogue options list every topic', () => {
   assert.ok(opts.length >= 10);
   assert.ok(opts.some((o) => o.key === 'greeting'));
 });
+
+// --- LLM drift guard (pure helpers) -----------------------------------------
+
+test('acceptReply rejects stubs, non-Russian and the speaker\'s own name', async () => {
+  const { acceptReply } = await import('../src/services/llm.js');
+  const b = { name: 'Брокер Сарн' };
+  assert.equal(acceptReply('Привет', b, 'Здравствуй.'), false, 'one word is a stub');
+  assert.equal(acceptReply('Хорошо', b, 'Как дела?'), false, 'too short');
+  assert.equal(acceptReply('И挺好, держусь. Ты?', b, 'Потихоньку.'), false, 'chinese characters');
+  assert.equal(acceptReply('Hello there friend', b, 'Приветствую.'), false, 'not Russian');
+  assert.equal(acceptReply('Сарн, приветствую тебя.', b, 'Приветствую тебя.'), false, 'own name');
+  assert.equal(acceptReply('Здоров, Март.', { name: 'Марта Вейл' }, 'Приветствую.'), false, 'truncated own name');
+  assert.equal(acceptReply('Да ничего, держусь. А ты как?', b, 'Да ничего, держусь.'), true, 'a real line');
+});
+
+test('tidyReply strips a leading label and wrapping quotes', async () => {
+  const { tidyReply } = await import('../src/services/llm.js');
+  assert.equal(tidyReply('Ответ: Хорошо, спасибо.'), 'Хорошо, спасибо.');
+  assert.equal(tidyReply('«Держусь. Спасибо, что спросил.»'), 'Держусь. Спасибо, что спросил.');
+});
+
