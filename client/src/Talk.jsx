@@ -120,6 +120,7 @@ export default function Talk({ leaderId, kind, refId, onClose, onRelationChange 
 function promptFor(topic) {
   return {
     greeting: 'Приветствую тебя.',
+    wellbeing: 'Привет, как ты? Как себя чувствуешь?',
     farewell: 'Прощай, увидимся.',
     compliment: 'Ты отлично держишься, я восхищён.',
     insult: 'Ты жалкий трус и дурак.',

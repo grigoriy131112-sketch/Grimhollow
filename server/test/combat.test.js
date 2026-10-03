@@ -1,4 +1,5 @@
 import test from 'node:test';
+import "../test-support/env.js";
 import assert from 'node:assert/strict';
 import {
   createBattle, takePlayerAction, hitChance, damageOf, activeCombatant,

@@ -171,3 +171,29 @@ Models are never committed: `models/` is gitignored. Recreate the local layer
 with `npm run llm:setup` then `npm run llm:start`. The weights are open and the
 runtime is offline, so this layer has no API key and no expiry — it keeps working
 as long as the machine does.
+
+## Testing rules (important)
+
+- **Tests must never touch the live game data.** `server/test-support/env.js`
+  points `DB_PATH` at a throwaway `server/test-support/.tmp/test.sqlite` and
+  turns the LLM layer off. It MUST be the first import in every test file,
+  before anything that opens the database or reads LLM config:
+  `import '../test-support/env.js';`
+- Never create scratch characters against the live database (`server/src/data/`).
+  If you need to try something by hand, run it against the test DB by setting
+  `DB_PATH` first, or through the API and delete it afterwards.
+- Tests run serially (`node --test --test-concurrency=1`) because they share one
+  SQLite file.
+
+## Dialogue nuance: greetings vs caring questions
+
+- A bare hello ("привет", "здравствуй") is topic `greeting`. A caring question
+  ("как ты", "как дела", "как себя чувствуешь", "ты в порядке") is topic
+  `wellbeing` and is matched **before** `greeting`, otherwise the word "привет"
+  swallows the whole line.
+- `wellbeing` is a small positive for most characters (never a penalty). It used
+  to fall through to `smalltalk`, which gloomy/paranoid characters dislike, so
+  asking someone how they were could cost you relationship — that was wrong.
+- The LLM layer must not answer with a one-word stub. `accept()` rejects replies
+  under three words and retries the local model once before falling back to the
+  engine line, so "привет, как ты?" never comes back as just "Привет".

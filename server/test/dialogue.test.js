@@ -1,4 +1,5 @@
 import test from 'node:test';
+import "../test-support/env.js";
 import assert from 'node:assert/strict';
 import { getDb, closeDb } from '../src/db/index.js';
 import { seedWorld } from '../src/db/seed.js';
@@ -11,9 +12,7 @@ import {
   classifyTopic, relationDelta, moodFor, traitReaction, extractFacts, composeReply,
 } from '../src/game/dialogue.js';
 
-// The LLM layer is off in tests: replies come from the deterministic engine.
-process.env.LLM_PROVIDER = 'off';
-
+// The LLM layer is off (set in test.env.js): replies come from the engine.
 test.after(() => closeDb());
 
 function hero(name = `Герой ${Math.floor(Math.random() * 1e6)}`) {
@@ -32,7 +31,7 @@ function npcIn(locationName) {
 // --- pure engine ------------------------------------------------------------
 
 test('classifyTopic recognises the main intents from free text', () => {
-  assert.equal(classifyTopic('Привет, как дела?'), 'greeting');
+  assert.equal(classifyTopic('Приветствую.'), 'greeting');
   assert.equal(classifyTopic('Ты жалкий дурак!'), 'insult');
   assert.equal(classifyTopic('Если предашь — убью тебя'), 'threat');
   assert.equal(classifyTopic('Расскажи о себе, откуда ты?'), 'history');
@@ -40,6 +39,21 @@ test('classifyTopic recognises the main intents from free text', () => {
   assert.equal(classifyTopic('Пойдём со мной, вступай в отряд'), 'join');
   assert.equal(classifyTopic('Ха-ха, смешно!'), 'joke');
   assert.equal(classifyTopic('абракадабра'), 'smalltalk');
+});
+
+test('"how are you" is a caring question, not a bare greeting or small talk', () => {
+  assert.equal(classifyTopic('Привет, как ты?'), 'wellbeing');
+  assert.equal(classifyTopic('Как себя чувствуешь?'), 'wellbeing');
+  assert.equal(classifyTopic('Как дела?'), 'wellbeing');
+  assert.equal(classifyTopic('Ты в порядке?'), 'wellbeing');
+  // A plain hello with no question stays a greeting.
+  assert.equal(classifyTopic('Привет.'), 'greeting');
+});
+
+test('a wellbeing question does not offend a gloomy character into a loss', () => {
+  // Previously it fell through to small talk, which gloomy dislikes.
+  assert.ok(relationDelta('wellbeing', ['gloomy'], 50) >= 0);
+  assert.ok(relationDelta('wellbeing', ['kind'], 50) > 0);
 });
 
 test('a threat is not misread as an insult even with an insult word inside', () => {
@@ -100,6 +114,16 @@ test('every NPC has traits and a base opinion', () => {
 });
 
 // --- conversation -----------------------------------------------------------
+
+test('"привет, как ты?" gets a real answer, not a one-word echo', async () => {
+  const h = hero();
+  const npc = npcIn('Перекрёсток висельников');
+  const r = await say(h.id, 'npc', npc.id, 'Привет, как ты? Как себя чувствуешь?');
+  assert.equal(r.topic, 'wellbeing');
+  assert.ok(r.reply.trim().split(/\s+/).length >= 3, 'a full line, not just "привет"');
+  assert.notEqual(r.reply.toLowerCase().replace(/[.!?]/g, '').trim(), 'привет');
+  assert.ok(r.delta >= 0, 'a caring question never costs you');
+});
 
 test('greeting raises opinion and insult lowers it, with memory recorded', async () => {
   const h = hero();

@@ -75,8 +75,8 @@ function rememberFact(leaderId, kind, refId, { key, text }) {
 // join) keep the engine's exact wording: a small local model drifts off-register
 // on those, and getting the tone wrong there is worse than sounding repetitive.
 const LLM_TOPICS = new Set([
-  'greeting', 'farewell', 'smalltalk', 'lore', 'history', 'faith',
-  'party', 'help', 'gold', 'compliment', 'joke',
+  'greeting', 'wellbeing', 'farewell', 'smalltalk', 'lore', 'history',
+  'faith', 'party', 'help', 'gold', 'compliment', 'joke',
 ]);
 
 // Resolve who is being spoken to, as a uniform persona. `traits` holds raw

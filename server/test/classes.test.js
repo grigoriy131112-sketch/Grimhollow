@@ -1,4 +1,5 @@
 import test from 'node:test';
+import "../test-support/env.js";
 import assert from 'node:assert/strict';
 import { CLASSES, CLASS_KEYS, abilitiesForClass, findAbility, BASIC_ATTACK } from '../src/game/classes.js';
 

@@ -72,7 +72,10 @@ function tidy(text) {
 // (a small-model confusion). On rejection the caller keeps the template line.
 function accept(text, briefing, draft = '') {
   if (!text) return false;
-  if (text.length < 2 || text.length > 300) return false;
+  // A reply must carry at least a few words; one-word answers ("Привет") sound
+  // like a bug, not a character.
+  if (text.length < 12 || text.length > 300) return false;
+  if (text.split(/\s+/).filter(Boolean).length < 3) return false;
   if (/[<>{}|\\]/.test(text)) return false;
   if (briefing?.name) {
     const parts = briefing.name.toLowerCase().split(/\s+/).filter((w) => w.length >= 4);
@@ -110,6 +113,11 @@ export async function rewordReply(briefing, fallbackText) {
         key: '', model: 'local', messages, timeout: config.timeoutMs,
       }));
       if (accept(out, briefing, fallbackText)) return { text: out, source: 'local' };
+      // One retry: small models often produce a one-word stub on the first go.
+      const out2 = tidy(await chat(`${config.localUrl}/v1/chat/completions`, {
+        key: '', model: 'local', messages, timeout: config.timeoutMs,
+      }));
+      if (accept(out2, briefing, fallbackText)) return { text: out2, source: 'local' };
     } catch { localHealth = { ok: false, at: Date.now() }; }
   }
 

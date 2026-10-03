@@ -14,3 +14,4 @@ coverage/
 
 # Local LLM weights and the llama.cpp runtime are downloaded, never committed.
 models/
+server/test-support/.tmp/

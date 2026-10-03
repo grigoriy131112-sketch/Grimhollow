@@ -14,6 +14,7 @@ import { traitInfo } from './companions.js';
 
 export const TOPICS = {
   greeting: { label: 'приветствие', delta: 2, mood: 'warm' },
+  wellbeing: { label: 'участливый вопрос', delta: 1, mood: 'warm' },
   farewell: { label: 'прощание', delta: 0, mood: 'neutral' },
   compliment: { label: 'похвала', delta: 4, mood: 'warm' },
   insult: { label: 'оскорбление', delta: -8, mood: 'cold' },
@@ -32,6 +33,9 @@ export const TOPICS = {
 
 // Keyword banks. Russian is inflected, so we match on stems where it helps.
 const PATTERNS = [
+  // "how are you" is caring, not small talk, so it must be recognised before a
+  // bare "привет" would swallow the line as a plain greeting.
+  ['wellbeing', ['как ты', 'как дела', 'как оно', 'как сам', 'как жизнь', 'как настроен', 'как себя чувств', 'как ты себя', 'как пожива', 'как здоровь', 'что с тобой', 'ты в порядке', 'тебе как', 'самочувств', 'как вы']],
   ['greeting', ['привет', 'здравств', 'здорово', 'добрый день', 'доброе утро', 'добрый вечер', 'хай', 'салют', 'приветств']],
   ['farewell', ['пока', 'прощай', 'до встреч', 'до свидан', 'увидимся', 'бывай', 'покеда']],
   ['compliment', ['молодец', 'умниц', 'красив', 'хорош', 'восхищ', 'спасибо', 'благодар', 'сильн', 'храбр', 'отличн', 'велик']],
@@ -66,11 +70,13 @@ const TRAIT_REACTIONS = {
   greeting: { cheerful: 3, gloomy: -2, paranoid: -1, kind: 2 },
   farewell: { loyal: 2, paranoid: -1 },
   smalltalk: { cheerful: 2, gloomy: -2, paranoid: -1 },
+  wellbeing: { cheerful: 3, kind: 3, gloomy: -1, paranoid: -2, cruel: -2, honest: 2, loyal: 2 },
 };
 
 // Facts a line plants in memory. These are what the character will recall later.
 const FACT_RULES = [
   ['greeting', 'greeted', 'С тобой здоровались.'],
+  ['wellbeing', 'checked_in', 'Ты спрашивал, как у меня дела.'],
   ['compliment', 'praised', 'Ты хвалил меня.'],
   ['insult', 'insulted', 'Ты оскорблял меня.'],
   ['threat', 'threatened', 'Ты мне угрожал.'],
@@ -172,6 +178,7 @@ const TRAIT_LINES = {
 const MOOD_LINES = {
   hostile: {
     greeting: ['Чего тебе?', 'Я тебя не звал.'],
+    wellbeing: ['Тебе-то что? Жив, как видишь.', 'Не твоя забота, как я.'],
     smalltalk: ['Говори по делу или уходи.', 'Мне не о чем с тобой болтать.'],
     compliment: ['Не подлизывайся. Тебе это не идёт.', 'Лесть от тебя — как соль в ране.'],
     insult: ['Ещё слово — и я проверю, крепка ли твоя шея.', 'Ты забываешься. Я это запомню.'],
@@ -189,6 +196,7 @@ const MOOD_LINES = {
   },
   cold: {
     greeting: ['А, это ты.', 'Здорово... наверное.'],
+    wellbeing: ['Живу помаленьку. Чего хотел?', 'Да как у всех — терплю.'],
     smalltalk: ['Ну, говори, если есть что.', 'Не задерживай меня.'],
     compliment: ['Спасибо. Хотя я тебе не верю.', 'Не думай, что это что-то меняет.'],
     insult: ['Придержи язык.', 'Ещё раз — и разговор закончится плохо.'],
@@ -206,6 +214,7 @@ const MOOD_LINES = {
   },
   neutral: {
     greeting: ['Приветствую. Чем обязан?', 'Здравствуй.'],
+    wellbeing: ['Да ничего, держусь. А ты?', 'Потихоньку. Спасибо, что спросил.'],
     smalltalk: ['День как день. А что?', 'Пусто вокруг. Но живём.'],
     compliment: ['Благодарю. Приятно слышать.', 'Спасибо на добром слове.'],
     insult: ['Это было лишним.', 'Зачем оскорблять? Мы ведь не враги.'],
@@ -223,6 +232,7 @@ const MOOD_LINES = {
   },
   warm: {
     greeting: ['Рад тебя видеть.', 'О, ты вернулся. Хорошо.'],
+    wellbeing: ['Да хорошо, раз ты рядом. А ты как?', 'Держусь. Спасибо, что не забываешь.'],
     smalltalk: ['Всегда рад поболтать.', 'Рассказывай, я слушаю.'],
     compliment: ['Ты меня смущаешь. Но спасибо.', 'Доброе слово и здесь греет.'],
     insult: ['За что? Я ведь к тебе по-доброму.', 'Больше не говори так.'],
@@ -240,6 +250,7 @@ const MOOD_LINES = {
   },
   devoted: {
     greeting: ['Ты пришёл! Я знал.', 'Мой друг. Всегда рад.'],
+    wellbeing: ['Пока ты со мной — всё хорошо.', 'Что мне сделается, когда ты рядом.'],
     smalltalk: ['С тобой хоть в огонь.', 'Говори, я всё сделаю.'],
     compliment: ['Твоё слово для меня дороже золота.', 'Я сделаю всё, чтобы ты не разочаровался.'],
     insult: ['Даже от тебя это больно. Но я стерплю.', 'Ты расстроен? Прости меня.'],
