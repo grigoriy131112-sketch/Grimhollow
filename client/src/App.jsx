@@ -12,6 +12,9 @@ function Nav() {
       <div className="links">
         <NavLink to="/characters">Heroes</NavLink>
         <NavLink to="/world">World</NavLink>
+        <span className="muted small" style={{ marginLeft: 'auto', opacity: 0.6 }} title="build id">
+          build {typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev'}
+        </span>
       </div>
     </nav>
   );

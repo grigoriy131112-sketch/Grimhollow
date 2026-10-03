@@ -12,15 +12,23 @@ function Bar({ value, max, kind }) {
 // resource spend are obvious even when the delta is small.
 function Stat({ label, value, max }) {
   const [flash, setFlash] = useState('');
+  const [delta, setDelta] = useState(null);
   const prev = useRef(value);
   useEffect(() => {
     if (prev.current === value) return;
-    setFlash(value < prev.current ? 'drop' : 'gain');
+    const d = value - prev.current;
+    setFlash(d < 0 ? 'drop' : 'gain');
+    setDelta(d);
     prev.current = value;
-    const t = setTimeout(() => setFlash(''), 700);
+    const t = setTimeout(() => { setFlash(''); setDelta(null); }, 900);
     return () => clearTimeout(t);
   }, [value]);
-  return <div className={`small stat ${flash}`}>{label} {value}/{max}</div>;
+  return (
+    <div className={`small stat ${flash}`}>
+      {label} {value}/{max}
+      {delta != null && <span className={`delta ${delta < 0 ? 'drop' : 'gain'}`}>{delta > 0 ? '+' : ''}{delta}</span>}
+    </div>
+  );
 }
 
 function CombatantCard({ c, active }) {
