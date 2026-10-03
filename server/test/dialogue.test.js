@@ -252,3 +252,24 @@ test('every mood answers every topic — no falls through to the battle default'
   }
 });
 
+
+test('answering "как ты" is a mood beat, not small talk or an insult', () => {
+  assert.equal(classifyTopic('да также, потихоньку'), 'mood');
+  assert.equal(classifyTopic('нормально'), 'mood');
+  assert.equal(classifyTopic('да ничего'), 'mood');
+  assert.equal(classifyTopic('как обычно'), 'mood');
+  assert.equal(classifyTopic('устал, если честно'), 'mood');
+  // A plain answer to "how are you" must never cost relationship, whatever the
+  // listener's mood. Previously gloomy companions docked -2 for it.
+  assert.ok(relationDelta('mood', ['gloomy'], 50) >= 0);
+  assert.ok(relationDelta('mood', ['cheerful'], 50) >= 0);
+  // Empty chatter is neutral too — it is not an offence.
+  assert.ok(relationDelta('smalltalk', ['gloomy', 'paranoid'], 50) >= 0);
+});
+
+test('praise still beats the mood patterns', () => {
+  // "хорошо/отлично" must not hijack the compliment topic.
+  assert.equal(classifyTopic('Ты отлично держишься, я восхищён'), 'compliment');
+  assert.equal(classifyTopic('спасибо тебе'), 'compliment');
+});
+

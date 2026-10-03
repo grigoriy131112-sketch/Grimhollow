@@ -230,3 +230,10 @@ as long as the machine does.
   still allowing synonyms ("привет" ~ "приветствую").
 - The reply seed counts only the character's own lines (`speaker='other'`),
   because each turn writes two rows and the parity used to get stuck.
+
+## Answering "how are you?" (mood topic)
+
+- A player *answering* "как ты?" — "да также, потихоньку", "нормально", "как обычно" — is the `mood` topic, not `smalltalk`. `smalltalk` had no real reply for it and gloomy listeners docked -2, which read as "you cannot just talk to a companion".
+- `smalltalk` never changes the relationship (`TRAIT_REACTIONS.smalltalk = {}`); empty chatter is neutral, not an offence.
+- "хорошо"/"отлично" are deliberately absent from the mood patterns: they belong to the `compliment` topic and would otherwise hijack "Ты отлично держишься".
+- The UI badge shows "ответ: движок (характер)" whenever Qwen was not used — either the topic is intentionally engine-only (insult/threat/apology/join) or the model's line was rejected by `acceptReply` and the draft was kept.

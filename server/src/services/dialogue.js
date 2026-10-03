@@ -75,7 +75,7 @@ function rememberFact(leaderId, kind, refId, { key, text }) {
 // join) keep the engine's exact wording: a small local model drifts off-register
 // on those, and getting the tone wrong there is worse than sounding repetitive.
 const LLM_TOPICS = new Set([
-  'greeting', 'wellbeing', 'battle', 'farewell', 'smalltalk', 'lore', 'history',
+  'greeting', 'wellbeing', 'mood', 'battle', 'farewell', 'smalltalk', 'lore', 'history',
   'faith', 'party', 'help', 'gold', 'compliment', 'joke',
 ]);
 
