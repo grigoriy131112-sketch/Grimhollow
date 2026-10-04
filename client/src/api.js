@@ -17,7 +17,8 @@ export const api = {
   createCharacter: (payload) => request('POST', '/characters', payload),
   deleteCharacter: (id) => request('DELETE', `/characters/${id}`),
   getWorld: () => request('GET', '/world'),
-  getMap: () => request('GET', '/world/map'),
+  getMap: (characterId) => request('GET', `/world/map${characterId ? `?characterId=${characterId}` : ''}`),
+  visitLocation: (id, characterId) => request('POST', `/world/locations/${id}/visit`, { characterId }),
   getLocation: (id) => request('GET', `/world/locations/${id}`),
   listMonsters: () => request('GET', '/world/monsters'),
   startBattle: (payload) => request('POST', '/battles', payload),
@@ -37,4 +38,7 @@ export const api = {
   npcsAtLocation: (locationId) => request('GET', `/dialogue/npc/${locationId}`),
   getConversation: (leaderId, kind, refId) => request('GET', `/dialogue/${leaderId}/${kind}/${refId}`),
   say: (leaderId, kind, refId, text) => request('POST', `/dialogue/${leaderId}/${kind}/${refId}`, { text }),
+  startTravel: (payload) => request('POST', '/travel', payload),
+  getTravel: (id) => request('GET', `/travel/${id}`),
+  chooseTravel: (id, choice) => request('POST', `/travel/${id}/choose`, { choice }),
 };

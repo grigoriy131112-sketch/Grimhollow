@@ -50,6 +50,29 @@ const MONSTER_ICONS = {
 export const abilityIcon = (ability) =>
   (ability?.id && ABILITY_ICONS[ability.id]) ? `/art/abilities/${ABILITY_ICONS[ability.id]}.svg` : null;
 
+// World-map landmarks: each location's scene key names a file in
+// /art/landmarks, falling back to its biome. Unknown keys simply render nothing.
+const SCENE_LANDMARKS = {
+  crossroads: 'crossroads',
+  hollow: 'quicksand',          // the weeping hollow: sucking bog
+  drowned_road: 'drowned_road',
+  ash_forest: 'dead_wood',      // charred trunks
+  harbor: 'harbor',
+  tide_caves: 'cave_entrance',  // the sea-gnawed caves
+  sunken_chapel: 'church',
+  bone_field: 'dinosaur_bones', // ribs on the plain
+  black_spire: 'guarded_tower',
+};
+const BIOME_LANDMARKS = {
+  waste: 'mountains', marsh: 'swamp', forest: 'forest', coast: 'sea', bonefield: 'graveyard',
+};
+
+export const landmarkIcon = (location) => {
+  if (location?.scene && SCENE_LANDMARKS[location.scene]) return `/art/landmarks/${SCENE_LANDMARKS[location.scene]}.svg`;
+  if (location?.biome && BIOME_LANDMARKS[location.biome]) return `/art/landmarks/${BIOME_LANDMARKS[location.biome]}.svg`;
+  return null;
+};
+
 // Portraits resolve straight from the stored slug (/art/portraits/<slug>.svg).
 export const portraitIcon = (member) =>
   (member?.portrait ? member.portrait : (member?.portraitSlug ? `/art/portraits/${member.portraitSlug}.svg` : null));

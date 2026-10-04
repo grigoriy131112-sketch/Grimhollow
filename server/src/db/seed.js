@@ -1,4 +1,5 @@
 import { getDb, transaction } from './index.js';
+import { travelMinutes } from '../game/travel.js';
 
 // A grim-dark world: a dying continent, its blighted regions, and the things
 // that wait in them. Each location lists outgoing roads by name.
@@ -66,11 +67,35 @@ function backfillMap() {
   });
 }
 
+// Travel time is derived from the drawn map, so it is recomputed (not stored in
+// the world definition) and written for every road, including old databases.
+function backfillTravel() {
+  const d = getDb();
+  const rows = d.prepare(
+    `SELECT c.id, a.map_x ax, a.map_y ay, a.biome ab, a.danger ad,
+            b.map_x bx, b.map_y by, b.biome bb, b.danger bd
+     FROM connections c
+     JOIN locations a ON a.id = c.from_id
+     JOIN locations b ON b.id = c.to_id`,
+  ).all();
+  const upd = d.prepare('UPDATE connections SET minutes = ? WHERE id = ?');
+  transaction(() => {
+    rows.forEach((r) => {
+      const minutes = travelMinutes({
+        from: { x: r.ax, y: r.ay, biome: r.ab, danger: r.ad },
+        to: { x: r.bx, y: r.by, biome: r.bb, danger: r.bd },
+      });
+      upd.run(minutes, r.id);
+    });
+  });
+}
+
 export function seedWorld() {
   const db = getDb();
   const existing = db.prepare('SELECT COUNT(*) AS n FROM continents').get().n;
   if (existing > 0) {
     backfillMap();
+    backfillTravel();
     return { skipped: true };
   }
 
@@ -116,5 +141,6 @@ export function seedWorld() {
       names.forEach((n, i) => { const mid = monIds.get(n); if (mid) insSpawn.run(lid, mid, Math.max(1, 5 - i)); });
     });
   });
+  backfillTravel();
   return { continents: WORLD.length, monsters: MONSTERS.length };
 }

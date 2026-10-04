@@ -11,8 +11,18 @@ CREATE TABLE IF NOT EXISTS characters (
   stamina     INTEGER,
   gold        INTEGER NOT NULL DEFAULT 0,
   portrait    TEXT,
+  location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Fog of war: which places a character has stood in. The map reveals visited
+-- places and their immediate roads, so travel opens the world up as you go.
+CREATE TABLE IF NOT EXISTS character_visits (
+  character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  location_id  INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+  visited_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (character_id, location_id)
 );
 
 CREATE TABLE IF NOT EXISTS continents (
@@ -49,7 +59,23 @@ CREATE TABLE IF NOT EXISTS connections (
   from_id  INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
   to_id    INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
   label    TEXT NOT NULL DEFAULT '',
+  minutes  INTEGER,
   UNIQUE (from_id, to_id)
+);
+
+-- One in-progress road trip per character. Kept in the DB so a page reload does
+-- not lose the journey; the road itself is deterministic, so this only records
+-- where the party is along it.
+CREATE TABLE IF NOT EXISTS travels (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  from_id      INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+  to_id        INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+  minutes      INTEGER NOT NULL,
+  state        TEXT NOT NULL,
+  arrived      INTEGER NOT NULL DEFAULT 0,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS monsters (

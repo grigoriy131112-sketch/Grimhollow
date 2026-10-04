@@ -3,7 +3,8 @@ import "../test-support/env.js";
 import assert from 'node:assert/strict';
 import { getDb, closeDb } from '../src/db/index.js';
 import { seedWorld } from '../src/db/seed.js';
-import { getMap, getLocation } from '../src/services/world.js';
+import { getMap, getLocation, characterExploration, recordVisit } from '../src/services/world.js';
+import { createCharacter } from '../src/services/characters.js';
 
 test.after(() => closeDb());
 
@@ -49,6 +50,33 @@ test('the map reports how many monsters haunt each location', () => {
   assert.ok(withMonsters.length >= 7, 'most dangerous locations have encounters');
   const spire = map.locations.find((l) => l.scene === 'black_spire');
   assert.equal(spire.monsterCount, 3);
+});
+
+test('a fresh character starts in a safe place, alone in the fog', () => {
+  seedWorld();
+  const hero = createCharacter({ name: `Соглядатай ${Math.floor(Math.random() * 1e6)}`, class: 'ranger' });
+  const seen = characterExploration(hero.id);
+  assert.ok(seen.locationId != null, 'the party has a home location');
+  const home = getLocation(seen.locationId);
+  assert.equal(home.is_safe, true, 'characters begin somewhere safe');
+  assert.deepEqual(seen.visited, [seen.locationId], 'only the home place is known');
+  assert.equal(seen.travel, null, 'no road under foot');
+
+  // The map carries that same knowledge for the client.
+  const map = getMap(hero.id);
+  assert.equal(map.character.locationId, seen.locationId);
+  assert.deepEqual(map.character.visited, [seen.locationId]);
+});
+
+test('standing somewhere new reveals it on the map', () => {
+  seedWorld();
+  const hero = createCharacter({ name: `Ходок ${Math.floor(Math.random() * 1e6)}`, class: 'fighter' });
+  characterExploration(hero.id); // assign the home
+  const far = getMap().locations.find((l) => l.id !== getDb().prepare('SELECT location_id FROM characters WHERE id = ?').get(hero.id).location_id);
+  recordVisit(hero.id, far.id);
+  const seen = characterExploration(hero.id);
+  assert.ok(seen.visited.includes(far.id), 'the new place is remembered');
+  assert.equal(seen.locationId, far.id, 'the party now stands there');
 });
 
 test('re-seeding backfills map data without duplicating the world', () => {

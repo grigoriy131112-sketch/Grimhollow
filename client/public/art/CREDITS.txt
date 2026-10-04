@@ -132,3 +132,81 @@ icon named on the right.
   sable.svg  <-  darkzaitzev/hooded-assassin
   pious_odo.svg  <-  delapouite/spartan-helmet
   wolf.svg  <-  lorc/wolf-head
+
+
+Per-file sources (Wave 7A world-map landmarks)
+==============================================
+Each file client/public/art/landmarks/<name>.svg is derived from the
+game-icons.net icon named on the right (the black background square has been
+removed so the icon can sit on the map).
+
+  crossroads.svg    <-  delapouite/crossroad
+  swamp.svg         <-  delapouite/swamp
+  drowned_road.svg  <-  delapouite/road
+  ash_forest.svg    <-  delapouite/burning-forest
+  harbor.svg        <-  delapouite/harbor-dock
+  tide_caves.svg    <-  delapouite/mountain-cave
+  sunken_chapel.svg <-  delapouite/byzantin-temple
+  bonefield.svg     <-  lorc/crossed-bones
+  black_spire.svg   <-  delapouite/evil-tower
+  mountains.svg     <-  lorc/mountains
+  forest.svg        <-  delapouite/forest
+  hills.svg         <-  delapouite/hills
+  desert.svg        <-  delapouite/desert
+  graveyard.svg     <-  delapouite/graveyard
+  village.svg       <-  delapouite/huts-village
+  watchtower.svg    <-  delapouite/watchtower
+  well.svg          <-  delapouite/well
+  windmill.svg      <-  delapouite/windmill
+  volcano.svg       <-  lorc/volcano
+  sea.svg           <-  delapouite/black-sea
+  island.svg        <-  delapouite/island
+  lighthouse.svg    <-  delapouite/lighthouse
+  obelisk.svg       <-  delapouite/obelisk
+  caravan.svg       <-  delapouite/caravan
+  camp.svg          <-  delapouite/camping-tent
+  ruins.svg         <-  delapouite/ancient-ruins
+
+Per-file sources (Wave 8 extra world-map landmarks)
+===================================================
+Second batch of CC BY 3.0 game-icons.net icons for the livelier atlas (terrain
+accents, road stamps and the re-skinned named places).
+
+  stone_bridge.svg      <-  delapouite/stone-bridge
+  dead_wood.svg         <-  lorc/dead-wood
+  cave_entrance.svg     <-  delapouite/cave-entrance
+  church.svg            <-  delapouite/church
+  ship_wreck.svg        <-  delapouite/ship-wreck
+  sinking_ship.svg      <-  delapouite/sinking-ship
+  guarded_tower.svg     <-  lorc/guarded-tower
+  direction_signs.svg   <-  delapouite/direction-signs
+  dinosaur_bones.svg    <-  lorc/dinosaur-bones
+  pine_tree.svg         <-  lorc/pine-tree
+  quicksand.svg         <-  lorc/quicksand
+  campfire.svg          <-  lorc/campfire
+  tombstone.svg         <-  lorc/tombstone
+  waterfall.svg         <-  delapouite/waterfall
+  ancient_columns.svg   <-  delapouite/ancient-columns
+  castle_ruins.svg      <-  delapouite/castle-ruins
+  kraken_tentacle.svg   <-  delapouite/kraken-tentacle
+  mountain_road.svg     <-  delapouite/mountain-road
+  rock.svg              <-  delapouite/stone-pile
+  reeds.svg             <-  lorc/water-splash
+
+Textures (one licensed raster, deliberate exception)
+====================================================
+The world map is otherwise pure vector, but the parchment paper itself is a
+single raster texture. It is public domain, so no attribution is legally
+required; the credit is kept anyway.
+
+  textures/parchment.jpg
+    Source: Wikimedia Commons, "Pergament.1.jpg"
+    https://commons.wikimedia.org/wiki/File:Pergament.1.jpg
+    Author: Membeth
+    License: CC0 1.0 (public domain dedication)
+    https://creativecommons.org/publicdomain/zero/1.0/
+
+  Derived work: the luminance gradient of the original (one side was much
+  darker) was flattened in code, and the tone was normalised to a uniform aged
+  paper colour; only the fibre grain remains. Do not replace this with a
+  paid or non-free texture.

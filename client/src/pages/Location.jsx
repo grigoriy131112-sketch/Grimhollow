@@ -36,6 +36,19 @@ export default function LocationPage() {
     } catch (err) { setError(err.message); }
   };
 
+  const travelTo = async (toId) => {
+    if (!heroId) return setError('Сначала создайте героя.');
+    setError('');
+    try {
+      const trip = await api.startTravel({ characterId: Number(heroId), fromId: Number(id), toId: Number(toId) });
+      // A safe road has no stops, so there is nothing to walk through.
+      if (trip.arrived) {
+        await api.visitLocation(trip.to.id, Number(heroId)).catch(() => {});
+        navigate(`/world/locations/${trip.to.id}`);
+      } else navigate(`/travel/${trip.id}`);
+    } catch (err) { setError(err.message); }
+  };
+
   if (error && !location) return <div className="error">{error}</div>;
   if (!location) return <div className="muted center">Загрузка…</div>;
 
@@ -95,11 +108,17 @@ export default function LocationPage() {
         <div className="card">
           <h2>Путешествие</h2>
           {location.connections.length === 0 && <p className="muted">Отсюда не ведут известные дороги.</p>}
+          {location.connections.length > 0 && (
+            <p className="muted small">Дорога занимает время. В пути отряд может встретить попутчиков или беду.</p>
+          )}
           <ul className="stats">
             {location.connections.map((c) => (
               <li key={c.id}>
-                <Link to={`/world/locations/${c.toId}`}>{c.toName}</Link>
-                <span className="muted small">{c.label}</span>
+                <span>
+                  <b>{c.toName}</b>
+                  {c.minutes != null && <span className="muted small"> · {c.minutes} мин</span>}
+                </span>
+                <button type="button" onClick={() => travelTo(c.toId)}>В путь</button>
               </li>
             ))}
           </ul>

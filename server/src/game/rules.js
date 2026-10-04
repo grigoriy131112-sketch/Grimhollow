@@ -88,6 +88,7 @@ export function deriveCharacter(row) {
     mana: clampResource(row.mana, maxMana),
     stamina: clampResource(row.stamina, maxStamina),
     gold: Number(row.gold) || 0,
+    locationId: row.location_id ?? null,
     abilities: abilities.map((a) => ({ ...a })),
     portrait: row.portrait || null,
   };

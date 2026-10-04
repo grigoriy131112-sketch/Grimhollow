@@ -6,10 +6,29 @@ import SceneBackdrop from '../scenes.jsx';
 
 export default function WorldPage() {
   const [map, setMap] = useState(null);
+  const [characters, setCharacters] = useState([]);
+  const [heroId, setHeroId] = useState('');
   const [error, setError] = useState('');
   const [view, setView] = useState('map');
 
-  useEffect(() => { api.getMap().then(setMap).catch((e) => setError(e.message)); }, []);
+  useEffect(() => {
+    api.listCharacters().then((list) => {
+      setCharacters(list);
+      setHeroId((prev) => prev || (list.length ? String(list[0].id) : ''));
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    const load = () => api.getMap(heroId ? Number(heroId) : undefined)
+      .then((m) => { if (alive) setMap(m); })
+      .catch((e) => { if (alive) setError(e.message); });
+    load();
+    // The party may be mid-road: keep the marker moving. No hero, no clock.
+    if (!heroId) return () => { alive = false; };
+    const t = setInterval(load, 5000);
+    return () => { alive = false; clearInterval(t); };
+  }, [heroId]);
 
   const stats = useMemo(() => {
     if (!map) return null;
@@ -26,6 +45,11 @@ export default function WorldPage() {
     <div>
       <div className="page-head">
         <h1>Атлас Гримхоула</h1>
+        {characters.length > 0 && (
+          <select value={heroId} onChange={(e) => setHeroId(e.target.value)} title="Чьими глазами смотреть на карту">
+            {characters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        )}
         <div className="tabs" style={{ margin: 0 }}>
           <button type="button" className={view === 'map' ? 'active' : ''} onClick={() => setView('map')}>Карта</button>
           <button type="button" className={view === 'list' ? 'active' : ''} onClick={() => setView('list')}>Список</button>
@@ -64,19 +88,27 @@ export default function WorldPage() {
                 <h3>{region.name}</h3>
                 <p className="muted small">{region.description}</p>
                 <div className="cards">
-                  {map.locations.filter((l) => l.regionId === region.id).map((loc) => (
-                    <Link key={loc.id} className="card loc-card" to={`/world/locations/${loc.id}`}>
-                      <div className="loc-thumb">
-                        <SceneBackdrop scene={loc.scene} biome={loc.biome} danger={loc.danger} name={loc.name} />
-                      </div>
-                      <div className="hero-top">
-                        <b>{loc.name}</b>
-                        {loc.isSafe && <span className="badge safe">Безопасно</span>}
-                      </div>
-                      <p className="muted small">{loc.description}</p>
-                      <span className="danger-tag">Опасность {'★'.repeat(Math.min(loc.danger, 5))}</span>
-                    </Link>
-                  ))}
+                  {map.locations.filter((l) => l.regionId === region.id).map((loc) => {
+                    const known = !map.character || map.character.visited.includes(loc.id);
+                    const rumoured = !known && map.character && map.connections.some((c) =>
+                      (c.from === loc.id && map.character.visited.includes(c.to))
+                      || (c.to === loc.id && map.character.visited.includes(c.from)));
+                    return (
+                      <Link key={loc.id} className={`card loc-card${known ? '' : rumoured ? ' rumoured' : ' fogged'}`} to={`/world/locations/${loc.id}`}>
+                        <div className="loc-thumb">
+                          <SceneBackdrop scene={loc.scene} biome={loc.biome} danger={loc.danger} name={loc.name} />
+                        </div>
+                        <div className="hero-top">
+                          <b>{known ? loc.name : rumoured ? `${loc.name}?` : 'Неизвестное место'}</b>
+                          {known && loc.isSafe && <span className="badge safe">Безопасно</span>}
+                        </div>
+                        <p className="muted small">
+                          {known ? loc.description : rumoured ? 'Место известно по слухам, но отряд там не был.' : 'Здесь ещё не ступала нога отряда.'}
+                        </p>
+                        {known && <span className="danger-tag">Опасность {'★'.repeat(Math.min(loc.danger, 5))}</span>}
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             ))}

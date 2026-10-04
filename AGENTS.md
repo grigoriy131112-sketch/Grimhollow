@@ -6,13 +6,14 @@ with a React (Vite) client.
 ## Layout
 
 - `server/` — Express API, game engine, SQLite storage.
-  - `src/game/` — pure rules: `classes.js`, `rules.js`, `combat.js`.
+  - `src/game/` — pure rules: `classes.js`, `rules.js`, `combat.js`, `travel.js`.
   - `src/db/` — `schema.sql`, connection (`index.js`), world seed (`seed.js`).
-  - `src/services/` — persistence + orchestration (`characters`, `world`, `battles`).
+  - `src/services/` — persistence + orchestration (`characters`, `world`, `battles`, `travel`).
   - `src/routes/` — HTTP layer.
   - `test/` — `node:test` suites.
 - `client/` — React + Vite SPA (`src/pages`, `src/api.js`, `src/icons.jsx`).
-  - `public/art/` — CC BY 3.0 icons from game-icons.net (see `CREDITS.txt`).
+  - `public/art/` — CC BY 3.0 icons from game-icons.net, plus one CC0 parchment
+    texture for the world map (see `CREDITS.txt`).
 
 ## Commands
 
@@ -119,10 +120,11 @@ npm start                   # run the API, serving client/dist if built
   databases that predate the columns (no duplicates, keyed by location name).
 - `GET /api/world/map` (see `services/world.js#getMap`) returns flat locations
   with coordinates plus undirected roads and per-location monster counts.
-- All art is procedural SVG, no rasters: `client/src/WorldMap.jsx` is the
-  interactive atlas, `client/src/scenes.jsx` renders layered scene backdrops
-  (biome palette + location-specific accents) reused by location cards, the
-  location hero and the battle arena.
+- Art is vector (SVG) except the map's paper: `client/src/WorldMap.jsx` is the
+  interactive atlas (built on the CC0 parchment texture), `client/src/scenes.jsx`
+  renders layered scene backdrops (biome palette + location-specific accents)
+  reused by location cards, the location hero and the battle arena. Do not add
+  other rasters.
 - The arena in `client/src/pages/Battle.jsx` turns the engine's event stream
   into transient VFX (floating damage/heal numbers, hit shake, heal pulse,
   dodge, screen flash); `getBattleView` exposes the location's scene/biome.
@@ -197,6 +199,108 @@ Models are never committed: `models/` is gitignored. Recreate the local layer
 with `npm run llm:setup` then `npm run llm:start`. The weights are open and the
 runtime is offline, so this layer has no API key and no expiry — it keeps working
 as long as the machine does.
+
+## Travel: the road between places (Wave 7B)
+
+Roads are journeys, not teleports. `GET /api/world/map` and
+`GET /api/world/locations/:id` expose `minutes` on every road; the client shows
+"В путь" on each connection and sends the player to `/travel/:id`.
+
+- **Minutes are derived, never authored.** `game/travel.js#travelMinutes` scales
+  the drawn map distance by the average of both endpoints' terrain factors, so a
+  longer road always takes longer and a road takes the same time either way.
+  `seedWorld()` recomputes them into `connections.minutes` (including on old
+  databases, via `backfillTravel`). Changing the map geometry therefore changes
+  travel times on the next seed — do not hand-write minutes into `seed.js`.
+- **Everything on a road is deterministic.** Encounters are re-derived from
+  `hashString('<from>-><to>:<minute>')`, so a reload cannot reroll a roll and the
+  journey state (`travels.state`) stores only `{ events, cursor, pending,
+  walkedMs, segmentStart }` — how far the party is, not what it met.
+- **The road runs on the real clock, not on clicks.** `MS_PER_MINUTE = 10_000`
+  (10 real seconds per game minute). `elapsedWalkMs(state, now)` is
+  `walkedMs + (now - segmentStart)`; `currentMinute` floors that. `tick()` moves
+  the clock forward and pauses exactly on the minute a stop is due; `resume()`
+  clears the stop and restarts `segmentStart`. There is no `advance` endpoint —
+  the client just polls `GET /api/travel/:id`, and progress is a function of
+  wall-clock time. Never add a click that moves time.
+- **The client poll must outlive an encounter.** `Travel.jsx` re-polls
+  `GET /api/travel/:id` every 2s until the view reports `arrived`, including
+  while an encounter is pending; stopping the loop on a stop meant the bar never
+  resumed after the player answered. The view is stamped with `fetchedAt` on
+  every poll so the bar can interpolate smoothly between them. A 404 here only
+  means the trip is gone, so the page returns to the map rather than freezing on
+  an error.
+- **Arrival is checked on read and on choice, and it is idempotent.** `hasArrived(state, minutes, now)`
+  is `!pending && cursor >= events.length && elapsedWalkMs >= minutes*MS_PER_MINUTE`.
+  Both `getTravelView` and `commit` call it: the moment it is true the trip is
+  marked `arrived = 1`, `recordVisit()` marks the destination, and the view keeps
+  reporting `arrived: true`. The row is kept on purpose — the client polls the
+  road until it sees `arrived`, so the finishing poll must get that view rather
+  than a 404 (deleting the row made the bar freeze at the end of every road).
+  `startTravel` only reuses trips with `arrived = 0`, so a finished road never
+  blocks the next one. A safe road with no stops therefore arrives on the first
+  read instead of leaving a stuck journey.
+- **One road per character.** `startTravel` returns the existing unfinished trip
+  instead of replacing it; `travels.character_id` is not unique but is treated as
+  such.
+- **Encounters map onto what exists.** Outcomes are `gold` / `heal` / `mana` /
+  `battle` / `nothing`; there are no inventory or potions, so merchants cost gold
+  and inns/shrines restore resources. An ambush calls `startBattle` at the
+  *destination*; it is wrapped in try/catch and degrades to a quiet outcome,
+  because a road can end where no monster spawns.
+- **`getLocation()` returns DB rows (`map_x`/`map_y`); the engine wants `x`/`y`.**
+  Always pass coordinates through `services/travel.js#roadPoint` — feeding raw
+  rows made every trip exactly `MIN_TRAVEL` (15 min).
+
+## The map: a live screen with fog of war (Wave 7B)
+
+The atlas is a real in-game screen, not a static picture. It carries a hero
+marker and reveals the world only as far as the party has actually been.
+
+- **Position lives on the character.** `characters.location_id` (added by the
+  `ensureColumns()` migration) and a `character_visits` table track where a hero
+  stands and everywhere they have stood. `services/world.js#recordVisit` writes
+  both; it is called on arrival (`services/travel.js`) and when a safe road is
+  skipped (`POST /api/world/locations/:id/visit`). A hero with no location is
+  lazily assigned the first safe place the first time the map asks.
+- **`GET /api/world/map?characterId=`** adds a `character` block:
+  `{ locationId, visited, travel }`, where `travel` carries live `minute`,
+  `progress` and `paused` while a road is under foot. Without `characterId` the
+  map returns the full atlas (used by tests and any pre-hero view).
+- **Fog of war has three tiers, computed client-side** in `WorldMap.jsx`:
+  visited (full name, landmark icon, danger pip, solid roads) → rumoured (a
+  direct neighbour of a visited place: dashed ring, `name?`, no travel time) →
+  unknown (`?` and `· · ·`). Only reachable places are clickable. Do not collapse
+  this to a single "known" set: the graph is dense enough that one hop from a
+  visited node lights up almost the whole map.
+- **The marker is interpolated, never stored.** `services/world.js` reports
+  `progress` from the travel clock; the client places the dot on the same
+  quadratic Bézier the roads use (`(a.x+b.x)/2, (a.y+b.y)/2 - 30`). It must match
+  the drawn curve or the dot drifts off the road.
+- **The atlas is an ink-and-parchment chart (Wave 8).** `WorldMap.jsx` draws an
+  aged-paper landmass (`landGrad`) on a cool sea, with hachured relief — short
+  parallel ink ticks (`hachure`, `hill`, `drawHills`, `drawTrees`, `drawMarsh`,
+  `drawWaves`, `drawBones`) scattered per biome and clipped to `landClip`. Keep
+  the palette muted: one sepia ink family (`INK`), colour reserved for danger.
+  Chart furniture is a compass rose, a grid, a vignette and a frame.
+- **Places are inked seals, not glowing dots.** `.seal` is a cream disc with a
+  sepia ring (`.rumour` dashed, `.fogged` greyed); the landmark sits inside it
+  and is tinted sepia via a CSS `filter`. Named places re-skin through
+  `SCENE_LANDMARKS` in `icons.jsx` (`hollow` → `quicksand`, `bone_field` →
+  `dinosaur_bones`, `sunken_chapel` → `church`, `tide_caves` → `cave_entrance`,
+  `ash_forest` → `dead_wood`, `black_spire` → `guarded_tower`).
+- **The party is an inked cross** (`.party-x`), pulsing while it walks. Do not
+  add scattered icons or "stamps" to the map: an earlier attempt was rejected as
+  visual noise — the chart must stay calm and readable.
+- **All of it stays vector — with one deliberate exception.** The map and icons
+  are vector; the paper itself is a single **CC0 public-domain** raster,
+  `client/public/art/textures/parchment.jpg` (Membeth, Wikimedia Commons), tiled
+  via an SVG `<pattern id="parch">`. Sea and land reuse that same paper, tinted
+  cool (`seaTint`) and warm (`landTint`). If you add art, keep it CC BY 3.0 SVG
+  from game-icons.net and credit the `<author>/<icon>` pair in `CREDITS.txt`;
+  do not add further rasters.
+- **The list view mirrors the map.** `pages/World.jsx` applies the same three
+  tiers (`.fogged` / `.rumoured`) so the two tabs never disagree.
 
 ## Testing rules (important)
 

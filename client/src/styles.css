@@ -280,21 +280,66 @@ ul.stats span { color: var(--muted); }
 /* map */
 .atlas { display: grid; grid-template-columns: minmax(0, 3fr) minmax(240px, 1fr); gap: 1rem; align-items: start; }
 @media (max-width: 860px) { .atlas { grid-template-columns: 1fr; } }
-.map-wrap { position: relative; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+.map-wrap { position: relative; border: 1px solid #b9a06a; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
 .world-map { display: block; width: 100%; height: auto; }
-.road { stroke: #6b5a3a; stroke-width: 1.6; stroke-dasharray: 6 6; opacity: 0.55; }
-.road.hot { stroke: var(--gold-soft); stroke-width: 2.4; opacity: 1; }
+.road { stroke: #6b5335; stroke-width: 1.6; stroke-dasharray: 5 5; opacity: 0.6; }
+.road.hot { stroke: #a8862a; stroke-width: 2.4; opacity: 1; }
 .map-node { cursor: pointer; }
-.map-node .node-ring { fill: none; stroke: var(--gold-soft); stroke-width: 2; opacity: 0.7; animation: ringPulse 1.6s ease-out infinite; }
-.map-node:hover circle { filter: brightness(1.3); }
-.node-label { fill: #e8e0d4; font-size: 12px; font-family: 'Cinzel', serif; text-anchor: middle; paint-order: stroke; stroke: #08070a; stroke-width: 3px; }
-.map-legend { position: absolute; right: 10px; bottom: 10px; background: rgba(13,11,16,0.82); border: 1px solid var(--line); border-radius: 8px; padding: 0.5rem 0.7rem; font-size: 0.75rem; }
-.legend-row { display: flex; align-items: center; gap: 0.4rem; margin: 0.2rem 0; color: var(--muted); }
+.map-node .node-ring { fill: none; stroke: #a8862a; stroke-width: 2; opacity: 0.75; animation: ringPulse 1.6s ease-out infinite; }
+.node-label { fill: #3a2c1a; font-size: 12px; font-family: 'Cinzel', serif; text-anchor: middle; paint-order: stroke; stroke: #f2e7cd; stroke-width: 3px; }
+.map-legend { position: absolute; right: 10px; bottom: 10px; background: rgba(242,231,205,0.9); border: 1px solid #b9a06a; border-radius: 8px; padding: 0.5rem 0.7rem; font-size: 0.75rem; box-shadow: 0 2px 8px rgba(74,56,38,0.25); }
+.legend-row { display: flex; align-items: center; gap: 0.4rem; margin: 0.2rem 0; color: #4a3826; }
+.legend-title { color: #4a3826; }
 .legend-row .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+.legend-sep { height: 1px; background: #c3ab7e; margin: 0.45rem 0; }
+.road-time { fill: #6b5335; font-size: 10px; font-family: 'Cinzel', serif; text-anchor: middle; paint-order: stroke; stroke: #f2e7cd; stroke-width: 3px; }
+.map-node .landmark { pointer-events: none; }
+.map-node.fogged { cursor: default; }
+.node-unknown { fill: #8a7a5a; font-size: 14px; font-family: 'Cinzel', serif; text-anchor: middle; pointer-events: none; }
+.party-marker { pointer-events: none; }
+.party-pulse { fill: none; stroke: #8a2020; stroke-width: 2; animation: partyPulse 2s ease-out infinite; }
+.party-pulse.paused { stroke: #b5672f; animation-duration: 0.8s; }
+.party-x { stroke: #8a2020; stroke-width: 2.4; stroke-linecap: round; }
+.legend-row .dot.party { background: #8a2020; }
+.party-road { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.6rem; background: rgba(160,140,106,0.07); }
+.road-track.mini { height: 7px; margin: 0.3rem 0; }
+.loc-card.fogged { opacity: 0.5; filter: grayscale(0.7); }
+.loc-card.rumoured { opacity: 0.78; }
+.road.rumour { stroke-dasharray: 2 6; opacity: 0.6; }
+.map-node.rumoured .node-label { fill: #6b5335; font-style: italic; }
+.legend-row .dot.rumour { background: transparent; border: 1px dashed #8a7f6a; }
+
+/* Wave 8: ink-and-parchment atlas — relief, seals, chart furniture */
+.seal { fill: #f6eed6; stroke: #4a3826; stroke-width: 1.8; }
+.seal.rumour { fill: #efe4c6; stroke-dasharray: 3 3; }
+.seal.fogged { fill: #e6dcc2; stroke: #b3a582; stroke-width: 1.4; }
+.map-node:hover .seal { fill: #fbf5e2; }
+.map-node.active .seal { stroke: #a8862a; stroke-width: 2.4; }
+.map-frame { fill: none; stroke: #4a3826; stroke-width: 2; opacity: 0.55; }
+.compass-ring { fill: rgba(242,231,205,0.55); stroke: #4a3826; stroke-width: 1.4; opacity: 0.8; }
+.compass-ring.thin { fill: none; stroke-dasharray: 2 4; opacity: 0.55; }
+.compass-needle { fill: #6b5335; opacity: 0.75; }
+.compass-north { fill: #8a2020; }
+.compass-label { fill: #4a3826; font-size: 12px; font-family: 'Cinzel', serif; text-anchor: middle; }
+
+@keyframes partyPulse { 0% { r: 8; opacity: 0.9; } 100% { r: 22; opacity: 0; } }
+.map-scale { position: absolute; left: 10px; bottom: 10px; display: flex; align-items: center; gap: 0.5rem; background: rgba(242,231,205,0.9); border: 1px solid #b9a06a; border-radius: 8px; padding: 0.35rem 0.6rem; box-shadow: 0 2px 8px rgba(74,56,38,0.25); }
+.map-scale .muted { color: #6b5335 !important; }
+.map-scale .scale-bar { display: inline-block; width: 54px; height: 8px; border: 1px solid #4a3826; border-top: none; background: linear-gradient(to right, #4a3826 0 50%, transparent 50% 100%); opacity: 0.85; }
 .map-detail { margin-bottom: 0; }
 .map-detail-meta { display: flex; gap: 1rem; align-items: center; margin: 0.5rem 0; }
 
-@keyframes ringPulse { 0% { r: 14; opacity: 0.8; } 100% { r: 26; opacity: 0; } }
+@keyframes ringPulse { 0% { r: 20; opacity: 0.8; } 100% { r: 34; opacity: 0; } }
+
+/* the road */
+.road-track { position: relative; height: 10px; margin: 1rem 0 0.4rem; background: #1a1622; border: 1px solid var(--line); border-radius: 6px; overflow: visible; }
+.road-fill { height: 100%; background: linear-gradient(to right, #6b5a3a, var(--gold-soft)); border-radius: 6px; transition: width 0.4s ease; }
+.road-here { position: absolute; top: -4px; width: 3px; height: 18px; background: var(--gold-soft); box-shadow: 0 0 8px var(--gold-soft); transform: translateX(-50%); transition: left 0.4s ease; }
+.road-meta { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 1rem; }
+.road-event { border-top: 1px dashed var(--line); padding-top: 0.8rem; }
+.road-event h2 { margin: 0.2rem 0; }
+.road-outcome { margin-top: 0.8rem; padding: 0.6rem 0.8rem; border-left: 3px solid var(--gold-soft); background: rgba(160,140,106,0.08); border-radius: 4px; font-style: italic; }
+.road-arrived { border-top: 1px dashed var(--line); padding-top: 0.8rem; }
 
 /* scene backdrop */
 .scene { display: block; width: 100%; height: 100%; }

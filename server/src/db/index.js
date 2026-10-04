@@ -29,6 +29,13 @@ function migrate(d) {
   if (!locCols.includes('map_y')) d.exec('ALTER TABLE locations ADD COLUMN map_y REAL');
   if (!locCols.includes('scene')) d.exec('ALTER TABLE locations ADD COLUMN scene TEXT');
   if (!locCols.includes('biome')) d.exec('ALTER TABLE locations ADD COLUMN biome TEXT');
+  if (!columns('connections').includes('minutes')) d.exec('ALTER TABLE connections ADD COLUMN minutes INTEGER');
+  if (!columns('travels').includes('arrived')) {
+    d.exec('ALTER TABLE travels ADD COLUMN arrived INTEGER NOT NULL DEFAULT 0');
+  }
+  if (!columns('characters').includes('location_id')) {
+    d.exec('ALTER TABLE characters ADD COLUMN location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL');
+  }
 }
 
 export function transaction(fn) {

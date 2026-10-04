@@ -10,6 +10,7 @@ import worldRoutes from './routes/world.js';
 import battleRoutes from './routes/battles.js';
 import partyRoutes from './routes/party.js';
 import dialogueRoutes from './routes/dialogue.js';
+import travelRoutes from './routes/travel.js';
 
 export function createApp() {
   const app = express();
@@ -21,6 +22,7 @@ export function createApp() {
   app.use('/api/battles', battleRoutes);
   app.use('/api/party', partyRoutes);
   app.use('/api/dialogue', dialogueRoutes);
+  app.use('/api/travel', travelRoutes);
 
   // Serve the built SPA when present (production / work-host preview).
   const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
