@@ -158,6 +158,7 @@ export default function BattlePage() {
 
   const backTo = battle?.locationId ? `/world/locations/${battle.locationId}` : battle?.characterId ? `/characters/${battle.characterId}` : '/characters';
   const backLabel = battle?.locationId ? '← Назад' : '← Назад к герою';
+  const selectedAbility = selected === 'basic' ? null : myAbilities.find((a) => a.id === selected);
 
   if (error && !battle) return <div className="error">{error}</div>;
   if (!battle) return <div className="muted center">Загрузка…</div>;
@@ -212,10 +213,12 @@ export default function BattlePage() {
 
       {over && (
         <div className="card reward">
-          <h2>{won ? '🏆 Победа!' : lost ? '💀 Поражение' : '🏃 Отступление'}</h2>
+          <h2>{results?.leaderDead ? '🪦 Герой пал' : won ? '🏆 Победа!' : lost ? '💀 Поражение' : '🏃 Отступление'}</h2>
           <p>
             {won && `Получено ${battle.rewardXp} опыта и ${battle.rewardGold} золота.`}
-            {lost && `Вы уходите с единственным очком здоровья${results?.goldLost ? ` и теряете ${results.goldLost} золота` : ''}.`}
+            {results?.leaderDead
+              ? 'Отряд полёг целиком. Некому было вытащить героя — он остался в этом бою навсегда.'
+              : lost && `Вы уходите с единственным очком здоровья${results?.goldLost ? ` и теряете ${results.goldLost} золота` : ''}.`}
             {fled && 'Вы покинули поле боя.'}
           </p>
           {results?.leveledUp && <p className="good-tag">Лидер поднял уровень!</p>}
@@ -236,13 +239,23 @@ export default function BattlePage() {
             </div>
           )}
           {results?.revived && (
-            <p className="good-tag">✨ {results.revived.name} вырван(а) из царства мёртвых и снова в строю!</p>
+            <>
+              <p className="good-tag">✨ {results.revived.name} вырван(а) из царства мёртвых и снова в строю!</p>
+              {results.revival?.witnesses?.length > 0 && (
+                <p className="muted small">
+                  Видели, как вы шли в смерть за своим: {results.revival.witnesses.map((w) => w.name).join(', ')} — их отношение к вам выросло.
+                </p>
+              )}
+            </>
           )}
           {results?.fallen?.length > 0 && (
             <p className="dead-tag">Павшие навсегда: {results.fallen.map((f) => f.name).join(', ')}. Их можно вернуть лишь ритуалом воскрешения.</p>
           )}
           <div className="actions">
             <button type="button" className="btn" onClick={() => navigate(backTo)}>{backLabel}</button>
+            {results?.leaderDead && (
+              <button type="button" className="btn" onClick={() => navigate('/characters')}>Выбрать другого героя</button>
+            )}
           </div>
         </div>
       )}
@@ -263,10 +276,36 @@ export default function BattlePage() {
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <Icon src={abilityIcon(a)} alt={a.name} size={20} /> {a.name}
                   </span>
+                  <span className="ability-desc">{a.description}</span>
                   <span className="cost">{a.cost > 0 ? `${a.cost} ${a.resource === 'mana' ? 'маны' : 'выносливости'}${lacks ? ' (мало)' : ''}` : 'без затрат'}{cd ? ` · перезарядка ${cd}` : ''}</span>
                 </button>
               );
             })}
+          </div>
+
+          <div className="ability-detail">
+            {selectedAbility ? (
+              <>
+                <div className="ability-detail-head">
+                  <Icon src={abilityIcon(selectedAbility)} alt={selectedAbility.name} size={22} />
+                  <b>{selectedAbility.name}</b>
+                  <span className="muted small">
+                    {selectedAbility.cost > 0
+                      ? `${selectedAbility.cost} ${selectedAbility.resource === 'mana' ? 'маны' : 'выносливости'}`
+                      : 'без затрат'}
+                    {selectedAbility.cooldown > 0 ? ` · перезарядка ${selectedAbility.cooldown}` : ''}
+                  </span>
+                </div>
+                <p className="small">{selectedAbility.description}</p>
+                {preview?.kind === 'attack' && (
+                  <p className="small">
+                    Шанс попадания <b>{preview.chance}%</b> · урон ~<b>{preview.damage}</b>
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="muted small">Обычная атака без затрат ресурсов.</p>
+            )}
           </div>
 
           <div className="actions">

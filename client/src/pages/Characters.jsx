@@ -71,9 +71,9 @@ export default function CharactersPage() {
 
       <div className="cards">
         {characters.map((c) => (
-          <Link className="card hero-card" key={c.id} to={`/characters/${c.id}`}>
+          <Link className={`card hero-card ${c.fate === 'dead' ? 'hero-dead' : ''}`} key={c.id} to={`/characters/${c.id}`}>
             <div className="hero-top">
-              <h3>{c.name}</h3>
+              <h3>{c.name} {c.fate === 'dead' && <span className="dead-tag">🪦 пал</span>}</h3>
               <span className="badge">Ур. {c.level}</span>
             </div>
             <p className="muted">{c.className}</p>

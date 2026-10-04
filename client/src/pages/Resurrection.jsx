@@ -41,8 +41,8 @@ export default function ResurrectionPage() {
         <h2>{ritual.realm.name}</h2>
         <p className="muted">{ritual.realm.description}</p>
         <p className="small">
-          Цена возвращения — не жертва и не золото, а сам путь. Победите владыку царства мёртвых,
-          и он отпустит одного павшего.
+          Цена возвращения — не жертва и не золото, а сам путь: место, ключ и живой отряд за спиной.
+          Победите владыку царства мёртвых, и он отпустит одного павшего.
         </p>
         {ritual.realm.boss && (
           <div className="enemy-line">
@@ -51,6 +51,22 @@ export default function ResurrectionPage() {
             <p className="muted small">{ritual.realm.boss.description}</p>
           </div>
         )}
+      </div>
+
+      <div className="card">
+        <h2>Условия ритуала</h2>
+        <ul className="stats">
+          {ritual.requirements.map((r) => (
+            <li key={r.key}>
+              <span>{r.met ? '✅' : '⬜'} {r.label}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="muted small">
+          Место: {ritual.site.name}
+          {ritual.site.current ? ' — вы здесь.' : ritual.site.visited ? ' — вы бывали здесь, но сейчас не стоите в ней.' : ' — вы ещё не находили это место.'}
+          {' '}Ключ: «{ritual.item.name}» — {ritual.item.have ? 'у вас есть.' : 'нужно добыть, впервые войдя в часовню.'}
+        </p>
       </div>
 
       {ritual.gate && (
@@ -76,11 +92,15 @@ export default function ResurrectionPage() {
               <button
                 type="button"
                 className="btn"
-                disabled={busy || !!ritual.gate}
+                disabled={busy || !ritual.canOpen}
+                title={ritual.canOpen ? '' : 'Не все условия выполнены'}
                 onClick={() => openGate(m.id)}
               >
                 Открыть врата за {m.name}
               </button>
+              {!ritual.canOpen && (
+                <p className="muted small">Пока нельзя: {ritual.requirements.filter((r) => !r.met).map((r) => r.label.toLowerCase()).join('; ')}.</p>
+              )}
             </div>
           ))}
         </div>

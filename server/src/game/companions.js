@@ -38,7 +38,7 @@ export const TRAITS = {
   paranoid: { name: 'Подозрительный', kind: 'minus', blurb: 'В каждом друге видит нож.', effects: { bond: -6 }, likes: [], dislikes: ['cheerful', 'kind'] },
 };
 
-export const traitInfo = (key) => TRAITS[key] || { name: key, kind: 'plus', blurb: '', effects: {}, likes: [], dislikes: [] };
+export const traitInfo = (key) => (TRAITS[key] ? { key, ...TRAITS[key] } : { key, name: key, kind: 'plus', blurb: '', effects: {}, likes: [], dislikes: [] });
 
 // Compatibility of two people from their traits: -1 (clash) .. +1 (kinship).
 export function traitCompat(traitKeysA = [], traitKeysB = []) {

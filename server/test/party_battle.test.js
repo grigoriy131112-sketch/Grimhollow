@@ -110,7 +110,7 @@ test('surviving companions keep their HP and gain XP on a win', () => {
   assert.ok(row.xp > 0, 'companions gain XP from the win');
 });
 
-test('the leader survives defeat with 1 HP and loses a quarter of the gold', () => {
+test('a lone leader who falls dies for good (no one left to drag them out)', () => {
   const leader = leaderWith(400);
   const battle = startBattle({ characterId: leader.id, monsterId: firstMonster() });
   const state = JSON.parse(getDb().prepare('SELECT state FROM battles WHERE id=?').get(battle.id).state);
@@ -121,10 +121,31 @@ test('the leader survives defeat with 1 HP and loses a quarter of the gold', () 
 
   const res = takeTurn(battle.id, { type: 'attack', abilityId: 'basic', targetKey: 'e1' });
   assert.equal(res.status, 'lost');
-  const row = getDb().prepare('SELECT hp, gold FROM characters WHERE id=?').get(leader.id);
+  assert.equal(res.rewards.leaderDead, true);
+  const row = getDb().prepare('SELECT hp, fate FROM characters WHERE id=?').get(leader.id);
+  assert.equal(row.fate, 'dead', 'a full wipe kills the hero');
+});
+
+test('the leader survives defeat with 1 HP while an ally still stands', () => {
+  const leader = leaderWith(400);
+  addCompanion(leader.id, 'marta_veil');
+  const goldBefore = getDb().prepare('SELECT gold FROM characters WHERE id=?').get(leader.id).gold;
+  const battle = startBattle({ characterId: leader.id, monsterId: firstMonster() });
+  const state = JSON.parse(getDb().prepare('SELECT state FROM battles WHERE id=?').get(battle.id).state);
+  state.combatants.find((c) => c.kind === 'leader').hp = 0;
+  state.combatants.find((c) => c.kind === 'ally').hp = 12;
+  state.combatants.find((c) => c.side === 'enemy').hp = 5;
+  state.over = true; state.winner = 'enemy';
+  getDb().prepare('UPDATE battles SET state=? WHERE id=?').run(JSON.stringify(state), battle.id);
+
+  const res = takeTurn(battle.id, { type: 'attack', abilityId: 'basic', targetKey: 'e1' });
+  assert.equal(res.status, 'lost');
+  assert.equal(res.rewards.leaderDead, false);
+  const row = getDb().prepare('SELECT hp, gold, fate FROM characters WHERE id=?').get(leader.id);
   assert.equal(row.hp, 1);
-  assert.equal(row.gold, 300);
-  assert.equal(res.rewards.goldLost, 100);
+  assert.equal(row.fate, 'alive');
+  assert.equal(res.rewards.goldLost, Math.floor(goldBefore * 0.25));
+  assert.equal(row.gold, goldBefore - res.rewards.goldLost);
 });
 
 test('the view exposes where "Назад" should return to', () => {

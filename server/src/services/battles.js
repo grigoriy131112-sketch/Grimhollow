@@ -5,7 +5,10 @@ import {
 } from '../game/combat.js';
 import { getCharacter, applyBattleRewards } from './characters.js';
 import { getMonster, getLocation } from './world.js';
-import { activeMembers, getMember, markDead, grantMemberXp, reviveMember } from './party.js';
+import { activeMembers, getMember, markDead, grantMemberXp, reviveMember, applyRevivalRelations } from './party.js';
+import { grantItem } from './items.js';
+import { revivalDelta, WITNESS_DELTA } from '../game/revival.js';
+import { RITUAL_ITEM } from '../game/items.js';
 import { getBonuses, awardPartyPoints } from './upgrades.js';
 import { applyBonusesToSource, POINTS_PER_WIN, POINTS_PER_LEVEL } from '../game/party_upgrades.js';
 
@@ -38,6 +41,7 @@ function monsterSource(monster) {
 export function startBattle({ characterId, monsterId, locationId, kind = 'normal', reviveMember = null, opponent = null }) {
   const character = getCharacter(characterId);
   if (!character) throw new Error('Персонаж не найден');
+  if (character.fate === 'dead') throw new Error('Герой пал — им больше нельзя сражаться');
 
   let monster = opponent || (monsterId ? getMonster(monsterId) : null);
   let location = locationId ? getLocation(locationId) : null;
@@ -151,16 +155,27 @@ function settle(battle, state, status) {
 
   let leaderResult;
   if (fallenLeader) {
-    // Defeat is survivable: stagger away with 1 HP. A loss also costs a quarter
-    // of the gold, but if the party still won, the leader keeps the rewards.
-    const row = getDb().prepare('SELECT gold FROM characters WHERE id = ?').get(battle.character_id);
-    const goldLost = won ? 0 : Math.floor((row?.gold ?? 0) * DEFEAT_GOLD_PENALTY);
-    leaderResult = {
-      goldLost,
-      ...applyBattleRewards(battle.character_id, {
-        hp: 1, mana: 0, stamina: 0, xpGained: won ? xpGained : 0, goldGained: won ? goldGained : -goldLost,
-      }),
-    };
+    // Hardcore death: if the whole party fell with the leader, the hero dies
+    // too — for good (no auto-revive). Death is only survivable when allies
+    // pulled through: then the leader staggers away with 1 HP.
+    const anyAllyAlive = state.combatants.some((c) => c.side === 'player' && c.kind === 'ally' && c.hp > 0);
+    const partyWiped = !anyAllyAlive;
+    if (partyWiped) {
+      getDb().prepare("UPDATE characters SET fate = 'dead', fate_ref = ?, hp = 0, updated_at = datetime('now') WHERE id = ?")
+        .run(battle.id, battle.character_id);
+      leaderResult = { dead: true, goldLost: 0, ...applyBattleRewards(battle.character_id, { hp: 0, mana: 0, stamina: 0, xpGained: 0, goldGained: 0 }) };
+    } else {
+      // Defeat is survivable: stagger away with 1 HP. A loss also costs a
+      // quarter of the gold, but if the party still won, the leader keeps rewards.
+      const row = getDb().prepare('SELECT gold FROM characters WHERE id = ?').get(battle.character_id);
+      const goldLost = won ? 0 : Math.floor((row?.gold ?? 0) * DEFEAT_GOLD_PENALTY);
+      leaderResult = {
+        goldLost,
+        ...applyBattleRewards(battle.character_id, {
+          hp: 1, mana: 0, stamina: 0, xpGained: won ? xpGained : 0, goldGained: won ? goldGained : -goldLost,
+        }),
+      };
+    }
   } else {
     leaderResult = applyBattleRewards(battle.character_id, {
       hp: player.hp, mana: player.mana, stamina: player.stamina, xpGained, goldGained,
@@ -168,7 +183,7 @@ function settle(battle, state, status) {
   }
 
   getDb().prepare('UPDATE battles SET reward_xp=?, reward_gold=?, result=? WHERE id=?')
-    .run(xpGained, goldGained, JSON.stringify({ members: memberResults, fallen, goldLost: leaderResult.goldLost ?? 0 }), battle.id);
+    .run(xpGained, goldGained, JSON.stringify({ members: memberResults, fallen, goldLost: leaderResult.goldLost ?? 0, leaderDead: !!leaderResult.dead }), battle.id);
 
   // Очки отряда: a won fight pays, and every leader level-up pays.
   let pointsGained = 0;
@@ -177,12 +192,22 @@ function settle(battle, state, status) {
   if (pointsGained) awardPartyPoints(battle.character_id, pointsGained);
 
   // Death realm: beating the boss calls the bound companion back from the dead.
+  // Who they are decides how being pulled back lands, and the living who watched
+  // the leader walk into death for a peer warm to them too. The boss drops the
+  // key that opens the next gate, so the ritual is repeatable.
   let revived = null;
+  let revival = null;
   if (won && battle.kind === 'death_realm' && battle.revive_member) {
     const member = getMember(battle.revive_member);
     if (member && member.status === 'dead') {
       const back = reviveMember(battle.revive_member);
-      revived = { id: back.id, name: back.name, level: back.level, hp: back.hp };
+      const traits = [...back.plus, ...back.minus].map((t) => t.key);
+      revival = applyRevivalRelations(battle.revive_member, {
+        revivalDelta: revivalDelta(traits),
+        witnessDelta: WITNESS_DELTA,
+      });
+      grantItem(battle.character_id, RITUAL_ITEM, 1);
+      revived = { id: back.id, name: back.name, level: back.level, hp: back.hp, relation: revival.revived };
     }
   }
 
@@ -190,10 +215,12 @@ function settle(battle, state, status) {
     xpGained, goldGained, status,
     leveledUp: leaderResult.leveledUp,
     goldLost: leaderResult.goldLost ?? 0,
+    leaderDead: !!leaderResult.dead,
     pointsGained,
     members: memberResults,
     fallen,
     revived,
+    revival,
   };
 }
 

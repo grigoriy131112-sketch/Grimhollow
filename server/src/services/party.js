@@ -331,6 +331,24 @@ export function reviveMember(memberId) {
   return getMember(memberId);
 }
 
+// How a revival lands, by character: the one pulled back feels gratitude or
+// resentment according to their traits, and the living who watched the leader
+// walk into death for a peer warm to them a little.
+export function applyRevivalRelations(memberId, { revivalDelta, witnessDelta }) {
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM party_members WHERE id = ?').get(memberId);
+  if (!row) return { revived: 0, witnesses: [] };
+
+  const revivedDelta = adjustRelation(memberId, null, revivalDelta);
+  const witnesses = [];
+  for (const m of activeMembers(row.leader_id)) {
+    if (m.id === memberId) continue;
+    const value = adjustRelation(m.id, null, witnessDelta);
+    witnesses.push({ memberId: m.id, name: m.name, relation: value, delta: witnessDelta });
+  }
+  return { revived: revivedDelta, witnesses };
+}
+
 // Everyone who fell and can still be called back, for the ritual screen.
 export function fallenMembers(leaderId) {
   return getDb().prepare("SELECT * FROM party_members WHERE leader_id = ? AND status = 'dead' ORDER BY id")

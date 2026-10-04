@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS characters (
   portrait    TEXT,
   location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
   party_points INTEGER NOT NULL DEFAULT 0,
+  fate        TEXT NOT NULL DEFAULT 'alive',   -- alive | dead
+  fate_ref    INTEGER,                          -- battle that killed the hero
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -217,4 +219,14 @@ CREATE TABLE IF NOT EXISTS npc_relations (
   value      INTEGER NOT NULL DEFAULT 50,
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (leader_id, npc_id)
+);
+
+-- What a hero carries. `item_key` maps to ITEMS in game/items.js; ritual
+-- components (the shepherd's key) are consumed, trophies are kept.
+CREATE TABLE IF NOT EXISTS character_items (
+  character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  item_key     TEXT NOT NULL,
+  qty          INTEGER NOT NULL DEFAULT 1,
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (character_id, item_key)
 );

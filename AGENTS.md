@@ -79,6 +79,14 @@ dialogue uses the built-in engine, so no model, key, or network is required.
   entry just renders no icon.
 - Icons are CC BY 3.0 from game-icons.net (see `client/public/art/CREDITS.txt`
   for the per-file source manifest).
+- **Every level 6-15 ability has its own unique icon** (240 total). The map is
+  generated into `client/src/epicAbilityIcons.js` by `tools/gen_epic.mjs`, which
+  reads `tools/epic_icons.json` (id -> game-icons path) written by
+  `tools/fetch_epic_icons.mjs`. Ids stay latin; the icon file is named after the
+  ability id. Regenerate both with `node tools/gen_epic.mjs` after changing slots.
+- In combat (`pages/Battle.jsx`) each ability button shows its icon, name, a
+  short description and its cost; the selected ability is also expanded in an
+  `ability-detail` panel with hit % / damage from the preview.
 
 ## Party (отряд)
 
@@ -109,23 +117,53 @@ dialogue uses the built-in engine, so no model, key, or network is required.
 - 3E living AI dialogue with the party — self-contained, no external key,
   never breaks the game.
 
-## Resurrection (Wave 3F)
+## Resurrection (Wave 3F, hardened in Wave 15)
 
 - There is **no sacrifice** and no fee. A fallen companion is dead for good
   (`party_members.status='dead'`) until the leader walks the **death realm**.
 - `services/resurrections.js` exposes `getRitual(leaderId)` (fallen roster, the
-  realm, the boss) and `startResurrection(leaderId, memberId)` (opens the gate).
+  realm, the boss, and the met/unmet requirements) and
+  `startResurrection(leaderId, memberId)` (opens the gate).
 - The realm's boss, **Костяной Пастырь** (level 15), lives in `seed.js` but is
   off-map: `listMonsters()` filters it out, so a ritual is the only way to reach
   it. `startBattle({ kind:'death_realm', reviveMember, opponent })` seeds the
   fight; `battles.kind`/`revive_member` record the binding.
+- **The ritual needs three things** (Wave 15): a **place** — the hero must stand
+  in **Затонувшая часовня** (`RITUAL_SITE` in `game/revival.js`); an **item** —
+  the **Ключ Пастыря** (`shepherd_key`), spent when the gate opens and dropped
+  again by the boss; and a **surviving party** — at least one active companion
+  to guard the back. `getRitual().requirements` reports each one.
+- The key is granted the **first time** the hero stands in the chapel:
+  `POST /api/world/locations/:id/visit` returns `found` when
+  `recordVisit().firstVisit` and the location is the chapel. Items live in
+  `game/items.js` / `services/items.js` (`character_items` table).
 - On a win, settlement (`services/battles.js`) calls `reviveMember()`: the
   companion returns at full strength and rejoins the active roster. `rewards.revived`
   reports it to the client.
-- Endpoints: `GET /api/resurrections/:leaderId`, `POST /api/resurrections/:leaderId/start`.
+- **Relations change by trait** (`game/revival.js`): `revivalDelta(traits)` sums
+  `REVIVAL_TRAIT_DELTA` (loyal/kind/pious warm; stubborn/gloomy/paranoid/heretic/
+  cruel/vain/liar cool; unlisted traits fall back to their own `loyalty` effect).
+  The living who watched the leader walk into death gain `WITNESS_DELTA`
+  (`applyRevivalRelations` in `services/party.js`). `rewards.revival` reports both.
+- Endpoints: `GET /api/resurrections/:leaderId`, `POST /api/resurrections/:leaderId/start`,
+  `GET /api/world/characters/:id/items`.
   UI: `pages/Resurrection.jsx` (linked from `pages/Party.jsx`).
 - One gate may stand open at a time. `reviveMember`/`fallenMembers` live in
   `services/party.js`.
+
+## Hardcore death (Wave 15)
+
+- Defeat stays survivable **only while an ally still stands**: if the leader
+  falls but any companion is alive, they stagger away with 1 HP and lose a
+  quarter of the gold (`DEFEAT_GOLD_PENALTY`).
+- **If the whole party is wiped, the hero dies too** — the explicit exception to
+  the survivable-defeat rule. Settlement sets `characters.fate='dead'`
+  (`fate_ref` = the killing battle) and returns `rewards.leaderDead=true`.
+- A dead hero is permanent: `startBattle()` refuses them («Герой пал»), the
+  roster and sheet mark them 🪦, and the battle screen offers to pick another
+  hero. There is no resurrection for the leader — only companions come back.
+- `deriveCharacter()` exposes `fate`/`fateRef`; the columns are added by the
+  additive migration in `db/index.js`.
 
 ## Conventions
 

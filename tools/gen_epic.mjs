@@ -1,10 +1,21 @@
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 
 // One-off generator for the level 6-15 abilities. Emits a data module that
 // classes.js merges in. Kept out of the server bundle: run manually, commit the
 // generated file.
 //
 //   node tools/gen_epic.mjs > server/src/game/abilities_epic.js
+//
+// Unique per-ability icons live in tools/epic_icons.json (written by
+// tools/fetch_epic_icons.mjs); when present, each ability maps to its own SVG.
+
+// Map of ability id -> game-icons path, if the icons have been fetched.
+function loadIconManifest() {
+  const url = new URL('./epic_icons.json', import.meta.url);
+  if (!existsSync(url)) return {};
+  return JSON.parse(readFileSync(url, 'utf8'));
+}
+const ICON_MANIFEST = loadIconManifest();
 
 // Archetypes for indices 0..19 (levels 6..15, two per level).
 const SLOTS = [
@@ -171,7 +182,8 @@ serverLines.push('// regenerating; ids stay latin, text is Russian.');
 serverLines.push('');
 serverLines.push('export const EPIC_ABILITIES = {');
 const iconLines = [];
-iconLines.push('// Auto-generated map of level 6-15 ability ids to their (reused) SVG file.');
+iconLines.push('// Auto-generated map of level 6-15 ability ids to their own SVG file.');
+iconLines.push('// Icons come from tools/epic_icons.json (see tools/fetch_epic_icons.mjs).');
 iconLines.push('// Regenerate with: node tools/gen_epic.mjs');
 iconLines.push('');
 iconLines.push('export const EPIC_ABILITY_ICONS = {');
@@ -181,7 +193,7 @@ for (const [key, cls] of Object.entries(CLASSES)) {
   cls.names.forEach((name, index) => {
     const a = build(key, cls, index, name);
     serverLines.push(`    ${JSON.stringify(a)},`);
-    iconLines.push(`  ${a.id}: '${a.art}',`);
+    iconLines.push(`  ${a.id}: '${ICON_MANIFEST[a.id] ? a.id : a.art}',`);
   });
   serverLines.push('  ],');
 }

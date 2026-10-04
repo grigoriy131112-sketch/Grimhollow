@@ -9,11 +9,13 @@ export default function CharacterSheetPage() {
   const navigate = useNavigate();
   const [character, setCharacter] = useState(null);
   const [monsters, setMonsters] = useState([]);
+  const [items, setItems] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
     api.getCharacter(id).then(setCharacter).catch((e) => setError(e.message));
     api.listMonsters().then(setMonsters).catch(() => {});
+    api.getItems(id).then(setItems).catch(() => {});
   }, [id]);
 
   const startFight = async (monsterId) => {
@@ -44,6 +46,12 @@ export default function CharacterSheetPage() {
       </div>
 
       {error && <div className="error">{error}</div>}
+
+      {character.fate === 'dead' && (
+        <div className="card">
+          <p className="dead-tag">🪦 Герой пал. Отряд полёг целиком, и вытащить его было некому. Этот герой больше не сражается — создайте нового.</p>
+        </div>
+      )}
 
       <div className="grid2">
         <div className="card">
@@ -98,6 +106,24 @@ export default function CharacterSheetPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="card">
+        <h2>Снаряжение</h2>
+        {items.length === 0 ? (
+          <p className="muted small">Сумка пуста. Ключи и трофеи царства мёртвых появятся здесь.</p>
+        ) : (
+          <ul className="stats">
+            {items.map((it) => (
+              <li key={it.key}>
+                <span>{it.name} ×{it.qty}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {items.some((it) => it.ritual) && (
+          <p className="muted small">Ключ Пастыря отпирает врата в царство мёртвых — но только из Затонувшей часовни и с живым отрядом за спиной.</p>
+        )}
       </div>
 
       <div className="card">

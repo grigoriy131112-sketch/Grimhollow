@@ -14,6 +14,7 @@ export default function LocationPage() {
   const [npcs, setNpcs] = useState([]);
   const [talking, setTalking] = useState(null);
   const [error, setError] = useState('');
+  const [found, setFound] = useState(null);
 
   useEffect(() => {
     api.getLocation(id).then(setLocation).catch((e) => setError(e.message));
@@ -23,6 +24,15 @@ export default function LocationPage() {
       if (list.length) setHeroId(String(list[0].id));
     }).catch(() => {});
   }, [id]);
+
+  // Standing here marks the place on the map; the drowned chapel yields the
+  // key the resurrection ritual needs on the first visit.
+  useEffect(() => {
+    if (!heroId) return;
+    api.visitLocation(Number(id), Number(heroId))
+      .then((res) => { if (res?.found) setFound(res.found); })
+      .catch(() => {});
+  }, [id, heroId]);
 
   const startFight = async (monsterId) => {
     if (!heroId) return setError('Сначала создайте героя.');
@@ -68,6 +78,13 @@ export default function LocationPage() {
       </div>
 
       {error && <div className="error">{error}</div>}
+
+      {found && (
+        <div className="card">
+          <p className="good-tag">🔑 Найдено: «{found.name}»</p>
+          <p className="muted small">{found.description}</p>
+        </div>
+      )}
 
       {npcs.length > 0 && (
         <div className="card">

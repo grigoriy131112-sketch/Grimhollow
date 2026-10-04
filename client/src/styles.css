@@ -155,7 +155,12 @@ ul.stats span { color: var(--muted); }
 .abilities-bar { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; margin-bottom: 1rem; }
 .ability-btn { text-align: left; padding: 0.5rem 0.65rem; }
 .ability-btn .cost { display: block; font-size: 0.72rem; color: var(--muted); }
+.ability-btn .ability-desc { display: block; font-size: 0.72rem; color: var(--muted); margin: 0.15rem 0; }
 .ability-btn.selected { border-color: var(--gold); }
+.ability-detail { border: 1px solid var(--line, #333); border-radius: 8px; padding: 0.6rem 0.75rem; margin-bottom: 1rem; background: rgba(255,255,255,0.02); }
+.ability-detail-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
+.ability-detail-head .small { margin-left: auto; }
+.hero-card.hero-dead { opacity: 0.6; filter: grayscale(0.6); }
 
 .log { max-height: 240px; overflow-y: auto; font-size: 0.92rem; }
 .logline { padding: 0.2rem 0; border-bottom: 1px dashed rgba(58,49,66,0.5); }

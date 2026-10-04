@@ -93,6 +93,8 @@ export function deriveCharacter(row) {
     stamina: clampResource(row.stamina, maxStamina),
     gold: Number(row.gold) || 0,
     locationId: row.location_id ?? null,
+    fate: row.fate || 'alive',
+    fateRef: row.fate_ref ?? null,
     abilities: abilities.map((a) => ({ ...a })),
     portrait: row.portrait || null,
   };
