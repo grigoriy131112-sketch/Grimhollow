@@ -1,7 +1,7 @@
 import { getDb, transaction } from '../db/index.js';
 import {
   NODES, BRANCHES, MAX_RANK, TOTAL_POINTS,
-  bonusesFrom, canSpend, spendPoint, nodeInfo,
+  bonusesFrom, canSpend, spendPoint, nodeInfo, costForRank, spentOnNode,
 } from '../game/party_upgrades.js';
 
 // A leader's unspent Очки отряда live on `characters.party_points`; the ranks
@@ -48,26 +48,27 @@ export function getTree(leaderId) {
   const nodes = Object.entries(NODES).map(([key, node]) => {
     const rank = spent[key] || 0;
     const check = canSpend(spent, key);
-    const affordable = (leader.party_points || 0) >= node.cost;
+    // Price of the next rank (rank+1); 0 once maxed.
+    const nextCost = rank >= MAX_RANK ? 0 : costForRank(node.cost, rank + 1);
+    const affordable = (leader.party_points || 0) >= nextCost;
     return {
       key,
       branch: node.branch,
       name: node.name,
       blurb: node.blurb,
-      icon: node.icon,
       parent: node.parent,
       cost: node.cost,
-      maxRank: MAX_RANK,
+      nextCost,
       rank,
+      maxRank: MAX_RANK,
       maxed: rank >= MAX_RANK,
       canTake: check.ok && affordable,
-      locked: !check.ok && !node.parent,
       reason: check.ok ? (affordable ? null : 'Не хватает Очков отряда.') : check.reason,
     };
   });
 
   const spentPoints = Object.entries(spent)
-    .reduce((sum, [key, rank]) => sum + (NODES[key]?.cost || 0) * rank, 0);
+    .reduce((sum, [key, rank]) => sum + spentOnNode(NODES[key]?.cost || 0, rank), 0);
 
   return {
     leader: { id: leader.id, points: leader.party_points || 0 },

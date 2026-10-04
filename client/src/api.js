@@ -44,4 +44,6 @@ export const api = {
   startTravel: (payload) => request('POST', '/travel', payload),
   getTravel: (id) => request('GET', `/travel/${id}`),
   chooseTravel: (id, choice) => request('POST', `/travel/${id}/choose`, { choice }),
+  getRitual: (leaderId) => request('GET', `/resurrections/${leaderId}`),
+  startResurrection: (leaderId, memberId) => request('POST', `/resurrections/${leaderId}/start`, { memberId }),
 };

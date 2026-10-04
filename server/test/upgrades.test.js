@@ -3,7 +3,7 @@ import '../test-support/env.js';
 import assert from 'node:assert/strict';
 import { getDb, closeDb } from '../src/db/index.js';
 import { seedWorld } from '../src/db/seed.js';
-import { createCharacter } from '../src/services/characters.js';
+import { createCharacter, getCharacterSheet } from '../src/services/characters.js';
 import { recruit, getParty } from '../src/services/party.js';
 import { startBattle, takeTurn } from '../src/services/battles.js';
 import {
@@ -43,12 +43,12 @@ test('a fresh leader has no points and cannot take a child node first', () => {
 
 test('spending a point forges a rank and deducts the cost', () => {
   const leader = freshLeader();
-  awardPartyPoints(leader.id, 5);
-  assert.equal(getPoints(leader.id), 5);
+  awardPartyPoints(leader.id, 20);
+  assert.equal(getPoints(leader.id), 20);
 
   const tree = spendUpgrade(leader.id, 'command_hp');
-  assert.equal(tree.points, 4, 'cost 1 spent');
-  assert.equal(tree.spentPoints, 1);
+  assert.equal(tree.points, 20 - NODES.command_hp.cost, 'rank 1 costs the base');
+  assert.equal(tree.spentPoints, NODES.command_hp.cost);
   const node = tree.nodes.find((n) => n.key === 'command_hp');
   assert.equal(node.rank, 1);
   assert.equal(node.maxed, false);
@@ -63,6 +63,30 @@ test('spending a point forges a rank and deducts the cost', () => {
   assert.equal(maxed.rank, MAX_RANK);
   assert.equal(maxed.maxed, true);
   assert.equal(getTree(leader.id).nodes.find((n) => n.key === 'command_attack').canTake, true);
+});
+
+test('each further rank of a node costs more than the last', () => {
+  const leader = freshLeader();
+  awardPartyPoints(leader.id, 100);
+  const base = NODES.command_hp.cost;
+
+  const after1 = getTree(leader.id).nodes.find((n) => n.key === 'command_hp');
+  assert.equal(after1.nextCost, base, 'rank 1 costs base');
+  const spent1 = spendUpgrade(leader.id, 'command_hp').spentPoints;
+
+  const after2 = getTree(leader.id).nodes.find((n) => n.key === 'command_hp');
+  assert.equal(after2.nextCost, base * 2, 'rank 2 costs twice base');
+  const spent2 = spendUpgrade(leader.id, 'command_hp').spentPoints;
+
+  const after3 = getTree(leader.id).nodes.find((n) => n.key === 'command_hp');
+  assert.equal(after3.nextCost, base * 3, 'rank 3 costs three times base');
+  const spent3 = spendUpgrade(leader.id, 'command_hp').spentPoints;
+
+  assert.ok(after2.nextCost > after1.nextCost && after3.nextCost > after2.nextCost);
+  assert.equal(spent1, base);
+  assert.equal(spent2, base * 3);
+  assert.equal(spent3, base * 6, 'a maxed node costs 6x base');
+  assert.equal(getTree(leader.id).nodes.find((n) => n.key === 'command_hp').nextCost, 0, 'no price once maxed');
 });
 
 test('a node cannot be over-forged, and points cannot go negative', () => {
@@ -89,8 +113,9 @@ test('the muster branch raises the roster cap and blocks over-recruiting', () =>
     /Отряд уже полон/,
   );
 
-  // Forge Мuster twice: the cap becomes BASE_ROSTER + 2, and the sixth joins.
-  awardPartyPoints(leader.id, 10);
+  // Forge Мuster twice: rank 1 costs 4, rank 2 costs 8. The cap becomes
+  // BASE_ROSTER + 2, and the sixth companion joins.
+  awardPartyPoints(leader.id, 20);
   spendUpgrade(leader.id, 'muster_roster');
   assert.equal(getBonuses(leader.id).roster, BASE_ROSTER + 1);
   spendUpgrade(leader.id, 'muster_roster');
@@ -147,6 +172,33 @@ test('bonusesFrom folds a spent map, and applyBonusesToSource refills a grown po
   const boosted = applyBonusesToSource(source, bonuses);
   assert.ok(boosted.stats.maxHp > 100);
   assert.equal(boosted.hp, 10 + (boosted.stats.maxHp - 100), 'a grown max tops the pool up by the same amount');
+});
+
+test('the character sheet and party show base plus tree, and battle boosts exactly once', () => {
+  const leader = freshLeader();
+  const baseMaxHp = getCharacterSheet(leader.id).stats.maxHp; // no tree yet
+  awardPartyPoints(leader.id, 12);
+  for (let i = 0; i < MAX_RANK; i += 1) spendUpgrade(leader.id, 'command_hp');
+
+  const sheet = getCharacterSheet(leader.id);
+  assert.ok(sheet.stats.maxHp > baseMaxHp, 'the sheet folds the tree in');
+  assert.ok(sheet.bonuses.percents.maxHp > 0, 'the sheet reports the bonus');
+  assert.equal(sheet.stats.maxHp, Math.round(baseMaxHp * 1.18), '+18% at max rank');
+
+  // The party view shows the same boosted stats for leader and companions.
+  getDb().prepare('UPDATE characters SET gold = 9999 WHERE id = ?').run(leader.id);
+  recruit(leader.id, 'marta_veil', { source: 'road', goldOffered: 9999 }, () => 0);
+  const party = getParty(leader.id);
+  assert.equal(party.leader.stats.maxHp, sheet.stats.maxHp, 'leader strip matches the sheet');
+  const ally = party.members[0];
+  assert.ok(party.bonuses.percents.maxHp > 0);
+  assert.ok(ally.stats.maxHp > 0);
+
+  // A battle boosts from the raw sheet, so the combatant must equal the sheet
+  // value — not the sheet value boosted a second time.
+  const battle = startBattle({ characterId: leader.id, monsterId: firstMonster() });
+  const p1 = battle.combatants.find((c) => c.key === 'p1');
+  assert.equal(p1.maxHp, sheet.stats.maxHp, 'bonuses applied exactly once');
 });
 
 test('canSpend enforces the parent chain and the rank cap', () => {

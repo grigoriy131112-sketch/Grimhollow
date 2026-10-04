@@ -45,17 +45,41 @@ const MONSTERS = [
   { name: 'Вестник чумы', description: 'Фигура в балахоне, чьё дыхание обращает плоть в гниль.', level: 4, max_hp: 64, attack: 18, defense: 7, accuracy: 34, evasion: 12, speed: 9, mana: 70, stamina: 0, class_key: 'cleric', xp_reward: 150, gold_reward: 40 },
   { name: 'Хранитель шпиля', description: 'То, что держит дверь Чёрного шпиля запертой.', level: 5, max_hp: 120, attack: 24, defense: 13, accuracy: 34, evasion: 10, speed: 9, mana: 60, stamina: 60, class_key: 'cleric', xp_reward: 260, gold_reward: 90 },
   { name: 'Полый король', description: 'Коронован, восседает и совершенно пуст — если не считать мух.', level: 5, max_hp: 140, attack: 26, defense: 12, accuracy: 36, evasion: 12, speed: 11, mana: 40, stamina: 80, class_key: 'fighter', xp_reward: 320, gold_reward: 150 },
+  { name: 'Мясник из Вдовьей рощи', description: 'То, что осталось от лесоруба, когда лес решил ответить.', level: 6, max_hp: 175, attack: 31, defense: 14, accuracy: 37, evasion: 12, speed: 12, mana: 0, stamina: 100, class_key: 'barbarian', xp_reward: 400, gold_reward: 190 },
+  { name: 'Плакальщица на костях', description: 'Вдова, что оплакивает всех сразу и никого в отдельности.', level: 6, max_hp: 150, attack: 30, defense: 12, accuracy: 40, evasion: 16, speed: 13, mana: 90, stamina: 0, class_key: 'warlock', xp_reward: 400, gold_reward: 200 },
+  { name: 'Ржавый колосс', description: 'Доспех без рыцаря, что научился ходить сам.', level: 7, max_hp: 215, attack: 35, defense: 19, accuracy: 38, evasion: 10, speed: 10, mana: 0, stamina: 120, class_key: 'fighter', xp_reward: 520, gold_reward: 250 },
+  { name: 'Триединый утопленник', description: 'Трое, что утонули вместе и с тех пор не расстаются.', level: 7, max_hp: 190, attack: 34, defense: 15, accuracy: 41, evasion: 17, speed: 14, mana: 80, stamina: 0, class_key: 'rogue', xp_reward: 520, gold_reward: 240 },
+  { name: 'Пожиратель имён', description: 'Отнимает имя — и ты забываешь, кем был.', level: 8, max_hp: 240, attack: 39, defense: 18, accuracy: 42, evasion: 15, speed: 13, mana: 100, stamina: 0, class_key: 'sorcerer', xp_reward: 700, gold_reward: 320 },
+  { name: 'Костяная вдова', description: 'Плетёт гнездо из рёбер в покинутых храмах.', level: 8, max_hp: 210, attack: 38, defense: 16, accuracy: 44, evasion: 20, speed: 15, mana: 0, stamina: 130, class_key: 'ranger', xp_reward: 700, gold_reward: 330 },
+  { name: 'Хор безгласых', description: 'Поют без ртов и всё же слышно каждое слово.', level: 9, max_hp: 265, attack: 43, defense: 20, accuracy: 45, evasion: 17, speed: 14, mana: 120, stamina: 0, class_key: 'bard', xp_reward: 900, gold_reward: 400 },
+  { name: 'Тлеющий прелат', description: 'Служил богу, которого сожгли вместе с ним.', level: 9, max_hp: 285, attack: 42, defense: 23, accuracy: 43, evasion: 13, speed: 12, mana: 110, stamina: 0, class_key: 'cleric', xp_reward: 900, gold_reward: 420 },
+  { name: 'Курганный титан', description: 'Холм, что встал и пошёл, неся на плечах чью-то деревню.', level: 10, max_hp: 360, attack: 48, defense: 26, accuracy: 44, evasion: 11, speed: 11, mana: 0, stamina: 150, class_key: 'barbarian', xp_reward: 1200, gold_reward: 520 },
+  { name: 'Пряха судеб', description: 'Пророчит твой конец и терпеливо ждёт, пока он сбудется.', level: 10, max_hp: 320, attack: 47, defense: 22, accuracy: 48, evasion: 19, speed: 15, mana: 140, stamina: 0, class_key: 'warlock', xp_reward: 1200, gold_reward: 540 },
+  { name: 'Архивариус костей', description: 'Записывает смерть каждого. Твою — тоже, заранее.', level: 11, max_hp: 400, attack: 53, defense: 26, accuracy: 49, evasion: 18, speed: 14, mana: 150, stamina: 0, class_key: 'wizard', xp_reward: 1500, gold_reward: 650 },
+  { name: 'Раздутый святой', description: 'Святость переполнила его и продолжает расти.', level: 11, max_hp: 440, attack: 52, defense: 30, accuracy: 46, evasion: 13, speed: 12, mana: 130, stamina: 0, class_key: 'paladin', xp_reward: 1500, gold_reward: 670 },
+  { name: 'Оскал пустоты', description: 'Дыра в мире, у которой выросли зубы.', level: 12, max_hp: 470, attack: 58, defense: 27, accuracy: 52, evasion: 22, speed: 16, mana: 0, stamina: 170, class_key: 'monk', xp_reward: 1900, gold_reward: 800 },
+  { name: 'Госпожа увядания', description: 'Всё, к чему она прикоснётся, вспоминает, что когда-то было живым.', level: 12, max_hp: 430, attack: 57, defense: 25, accuracy: 53, evasion: 21, speed: 16, mana: 160, stamina: 0, class_key: 'druid', xp_reward: 1900, gold_reward: 820 },
+  { name: 'Гробоглазый', description: 'Глаза — как крышки гробов, и он никогда их не закрывает.', level: 13, max_hp: 540, attack: 64, defense: 31, accuracy: 54, evasion: 20, speed: 15, mana: 170, stamina: 0, class_key: 'sorcerer', xp_reward: 2400, gold_reward: 1000 },
+  { name: 'Венец из праха', description: 'Корона, что пережила всех своих носителей.', level: 13, max_hp: 580, attack: 63, defense: 34, accuracy: 51, evasion: 15, speed: 13, mana: 150, stamina: 0, class_key: 'paladin', xp_reward: 2400, gold_reward: 1050 },
+  { name: 'Длань забвения', description: 'Касается — и ты уже не помнишь, зачем пришёл сюда.', level: 14, max_hp: 660, attack: 70, defense: 35, accuracy: 57, evasion: 24, speed: 17, mana: 180, stamina: 0, class_key: 'warlock', xp_reward: 3000, gold_reward: 1300 },
+  { name: 'Тень мёртвого бога', description: 'То, что осталось от божества, когда его перестали помнить.', level: 14, max_hp: 620, attack: 69, defense: 33, accuracy: 58, evasion: 23, speed: 17, mana: 170, stamina: 0, class_key: 'cleric', xp_reward: 3000, gold_reward: 1350 },
+  { name: 'Костяной Пастырь', description: 'Собирает павших в стада и гонит их по царству мёртвых. Он держит ключ от каждого возвращения.', level: 15, max_hp: 900, attack: 78, defense: 40, accuracy: 60, evasion: 26, speed: 18, mana: 200, stamina: 180, class_key: 'warlock', xp_reward: 5000, gold_reward: 2000 },
 ];
 
 const SPAWNS = {
   'Плачущая низина': ['Могильная крыса', 'Пустой крестьянин', 'Терновый охотник'],
   'Утонувшая дорога': ['Пустой крестьянин', 'Могильная крыса', 'Фонарный упырь'],
-  'Пепельный лес': ['Терновый охотник', 'Пустой крестьянин', 'Призрак хора'],
-  'Пещеры, изгрызенные приливом': ['Фонарный упырь', 'Костяной рыцарь', 'Могильная крыса'],
-  'Затонувшая часовня': ['Фонарный упырь', 'Призрак хора', 'Вестник чумы'],
-  'Костяные поля': ['Костяной рыцарь', 'Колосс костяных полей', 'Призрак хора'],
-  'Чёрный шпиль': ['Хранитель шпиля', 'Полый король', 'Колосс костяных полей'],
+  'Пепельный лес': ['Терновый охотник', 'Пустой крестьянин', 'Призрак хора', 'Мясник из Вдовьей рощи'],
+  'Пещеры, изгрызенные приливом': ['Фонарный упырь', 'Костяной рыцарь', 'Могильная крыса', 'Триединый утопленник', 'Костяная вдова'],
+  'Затонувшая часовня': ['Фонарный упырь', 'Призрак хора', 'Вестник чумы', 'Плакальщица на костях', 'Хор безгласых', 'Тлеющий прелат'],
+  'Костяные поля': ['Костяной рыцарь', 'Колосс костяных полей', 'Призрак хора', 'Ржавый колосс', 'Костяная вдова', 'Курганный титан', 'Архивариус костей'],
+  'Чёрный шпиль': ['Хранитель шпиля', 'Полый король', 'Колосс костяных полей', 'Пожиратель имён', 'Раздутый святой', 'Оскал пустоты', 'Госпожа увядания', 'Гробоглазый', 'Венец из праха', 'Длань забвения', 'Тень мёртвого бога'],
 };
+
+// The death-realm boss is never spawned on the map: it is reachable only
+// through a resurrection ritual (see services/resurrections.js).
+const DEATH_REALM_BOSS = 'Костяной Пастырь';
+
 
 // Existing databases predate the map columns; fill them in from the source
 // world definition without touching anything the player has changed.
@@ -90,12 +114,38 @@ function backfillTravel() {
   });
 }
 
+// New waves add monsters and spawn links. Existing databases predate them, so
+// insert anything missing by name without disturbing existing rows.
+function backfillMonsters() {
+  const d = getDb();
+  const have = new Set(d.prepare('SELECT name FROM monsters').all().map((r) => r.name));
+  const locId = (name) => d.prepare('SELECT id FROM locations WHERE name = ?').get(name)?.id;
+  const insMonster = d.prepare(
+    `INSERT INTO monsters (name, description, level, max_hp, attack, defense, accuracy, evasion, speed, mana, stamina, class_key, xp_reward, gold_reward)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  );
+  const insSpawn = d.prepare('INSERT OR IGNORE INTO location_monsters (location_id, monster_id, weight) VALUES (?, ?, ?)');
+  transaction(() => {
+    for (const m of MONSTERS) {
+      if (have.has(m.name)) continue;
+      insMonster.run(m.name, m.description, m.level, m.max_hp, m.attack, m.defense, m.accuracy, m.evasion, m.speed, m.mana, m.stamina, m.class_key, m.xp_reward, m.gold_reward);
+    }
+    const ids = new Map(d.prepare('SELECT id, name FROM monsters').all().map((r) => [r.name, r.id]));
+    for (const [locName, names] of Object.entries(SPAWNS)) {
+      const lid = locId(locName);
+      if (!lid) continue;
+      names.forEach((n, i) => { const mid = ids.get(n); if (mid) insSpawn.run(lid, mid, Math.max(1, 5 - i)); });
+    }
+  });
+}
+
 export function seedWorld() {
   const db = getDb();
   const existing = db.prepare('SELECT COUNT(*) AS n FROM continents').get().n;
   if (existing > 0) {
     backfillMap();
     backfillTravel();
+    backfillMonsters();
     return { skipped: true };
   }
 

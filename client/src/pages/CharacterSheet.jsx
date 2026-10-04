@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { abilityIcon, monsterIcon, Icon } from '../icons.jsx';
+import { statLabel } from '../statLabels.js';
 
 export default function CharacterSheetPage() {
   const { id } = useParams();
@@ -28,6 +29,7 @@ export default function CharacterSheetPage() {
 
   const s = character.stats;
   const pct = (v, m) => Math.max(0, Math.round((v / m) * 100));
+  const treePercents = Object.entries(character.bonuses?.percents || {});
   const byLevel = character.abilities.reduce((acc, a) => {
     (acc[a.unlockLevel] ||= []).push(a); return acc;
   }, {});
@@ -46,6 +48,9 @@ export default function CharacterSheetPage() {
       <div className="grid2">
         <div className="card">
           <h2>Состояние</h2>
+          {treePercents.length > 0 && (
+            <p className="muted small">Учтено дерево отряда: {treePercents.map(([k, v]) => `${statLabel(k)} +${v}%`).join(', ')}</p>
+          )}
           <div className="res">
             <div className="small">Здоровье {character.hp}/{s.maxHp}</div>
             <div className="bar"><div className="fill hp" style={{ width: `${pct(character.hp, s.maxHp)}%` }} /></div>
@@ -97,7 +102,7 @@ export default function CharacterSheetPage() {
 
       <div className="card">
         <h2>Охота</h2>
-        <p className="muted small">Уровни 1–5 открываются по мере накопления опыта. Сражайтесь с кем угодно — победа даёт опыт и золото.</p>
+        <p className="muted small">Уровни 1–15 открываются по мере накопления опыта. Сражайтесь с кем угодно — победа даёт опыт и золото.</p>
         <div className="monster-list">
           {monsters.map((m) => (
             <div className="monster-row" key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px dashed var(--line)' }}>

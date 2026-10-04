@@ -1,4 +1,6 @@
 // Maps game content to the SVG icons in client/public/art.
+import { EPIC_ABILITY_ICONS } from './epicAbilityIcons.js';
+
 const ABILITY_ICONS = {
   basic: 'basic', cleave: 'cleave', shield_wall: 'shield_wall', power_strike: 'power_strike',
   battle_cry: 'battle_cry', rend: 'rend', second_wind: 'second_wind', whirlwind: 'whirlwind',
@@ -38,6 +40,7 @@ const ABILITY_ICONS = {
   eldritch_blast: 'eldritch_blast', dark_pact: 'dark_pact', hex: 'hex', siphon_life: 'siphon_life',
   curse_of_weakness: 'curse_of_weakness', shadow_heal: 'shadow_heal', soul_rend: 'soul_rend',
   infernal_shield: 'infernal_shield', doom_bolt: 'doom_bolt', dark_blessing: 'dark_blessing',
+  ...EPIC_ABILITY_ICONS,
 };
 
 const MONSTER_ICONS = {

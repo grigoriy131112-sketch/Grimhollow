@@ -39,6 +39,9 @@ function migrate(d) {
   if (!columns('characters').includes('party_points')) {
     d.exec('ALTER TABLE characters ADD COLUMN party_points INTEGER NOT NULL DEFAULT 0');
   }
+  const battleCols = columns('battles');
+  if (!battleCols.includes('kind')) d.exec("ALTER TABLE battles ADD COLUMN kind TEXT NOT NULL DEFAULT 'normal'");
+  if (!battleCols.includes('revive_member')) d.exec('ALTER TABLE battles ADD COLUMN revive_member INTEGER');
 }
 
 export function transaction(fn) {

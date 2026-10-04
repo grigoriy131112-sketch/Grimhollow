@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
+import { statLabel } from '../statLabels.js';
 
 // One node in the tree: its rank, cost and a button to forge the next rank.
 function Node({ node, points, onSpend, busy }) {
-  const affordable = points >= node.cost;
+  const affordable = points >= node.nextCost;
   const ready = node.canTake;
   const state = node.maxed ? 'maxed' : ready ? 'ready' : 'locked';
   return (
@@ -15,8 +16,8 @@ function Node({ node, points, onSpend, busy }) {
       </div>
       <p className="muted small">{node.blurb}</p>
       <div className="upg-node-foot">
-        <span className="upg-cost" title="Стоимость следующего ранга">
-          {node.maxed ? 'выковано' : `✦ ${node.cost}`}
+        <span className="upg-cost" title={`Стоимость ранга ${node.rank + 1} (дороже с каждым рангом)`}>
+          {node.maxed ? 'выковано' : `✦ ${node.nextCost}`}
         </span>
         {!node.maxed && (
           <button
@@ -95,7 +96,7 @@ export default function UpgradesPage() {
         </div>
         <div className="stat-row small">
           {Object.entries(tree.bonuses.percents).map(([stat, pct]) => (
-            <span key={stat}>{stat}: +{pct}%</span>
+            <span key={stat}>{statLabel(stat)}: +{pct}%</span>
           ))}
         </div>
       </div>

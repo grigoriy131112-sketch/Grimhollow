@@ -17,6 +17,8 @@
 // Ability ids stay latin (stable keys for icons/persistence); all player-facing
 // text (names, descriptions) is Russian.
 
+import { EPIC_ABILITIES } from './abilities_epic.js';
+
 export const BASIC_ATTACK = {
   id: 'basic', name: 'Атака', icon: '⚔️', unlockLevel: 1,
   resource: null, cost: 0, cooldown: 0, kind: 'attack', power: 1.0,
@@ -278,6 +280,11 @@ export const CLASSES = {
 };
 
 export const CLASS_KEYS = Object.keys(CLASSES);
+
+// Fold the generated level 6-15 abilities into each class once, at load.
+for (const key of CLASS_KEYS) {
+  if (EPIC_ABILITIES[key]) CLASSES[key].abilities = [...CLASSES[key].abilities, ...EPIC_ABILITIES[key]];
+}
 
 export function abilitiesForClass(classKey, level) {
   const klass = CLASSES[classKey];

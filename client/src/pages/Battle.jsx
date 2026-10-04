@@ -172,10 +172,13 @@ export default function BattlePage() {
     <div>
       <Link to={backTo} className="muted">{backLabel}</Link>
       <div className="page-head">
-        <h1>Бой отрядом</h1>
+        <h1>{battle.kind === 'death_realm' ? '🕯 Царство мёртвых' : 'Бой отрядом'}</h1>
         <span className="badge">Раунд {battle.round}</span>
         <span className="badge">{allies.filter((c) => c.hp > 0).length} из {allies.length} в строю</span>
       </div>
+      {battle.kind === 'death_realm' && (
+        <p className="muted small">Победите пастуха — и он отпустит павшего спутника обратно к свету.</p>
+      )}
       {error && <div className="error">{error}</div>}
 
       {!over && actor && (
@@ -216,6 +219,9 @@ export default function BattlePage() {
             {fled && 'Вы покинули поле боя.'}
           </p>
           {results?.leveledUp && <p className="good-tag">Лидер поднял уровень!</p>}
+          {results?.pointsGained > 0 && (
+            <p className="good-tag">Получено ✦ {results.pointsGained} Очко(в) отряда.</p>
+          )}
           {results?.members?.length > 0 && (
             <div className="results-block">
               <div className="small muted">Спутники</div>
@@ -228,6 +234,9 @@ export default function BattlePage() {
                 ))}
               </ul>
             </div>
+          )}
+          {results?.revived && (
+            <p className="good-tag">✨ {results.revived.name} вырван(а) из царства мёртвых и снова в строю!</p>
           )}
           {results?.fallen?.length > 0 && (
             <p className="dead-tag">Павшие навсегда: {results.fallen.map((f) => f.name).join(', ')}. Их можно вернуть лишь ритуалом воскрешения.</p>

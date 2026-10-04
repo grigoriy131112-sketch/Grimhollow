@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { CLASSES } from '../game/classes.js';
-import { listCharacters, getCharacter, createCharacter, deleteCharacter } from '../services/characters.js';
+import { MAX_LEVEL } from '../game/rules.js';
+import { listCharacters, getCharacter, getCharacterSheet, createCharacter, deleteCharacter } from '../services/characters.js';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ router.get('/options', (req, res) => {
         passive: !!a.passive, description: a.description,
       })),
     })),
-    maxLevel: 5,
+    maxLevel: MAX_LEVEL,
   });
 });
 
@@ -27,7 +28,7 @@ router.post('/', (req, res) => {
 });
 
 router.get('/:id', (req, res) => {
-  const c = getCharacter(Number(req.params.id));
+  const c = getCharacterSheet(Number(req.params.id));
   if (!c) return res.status(404).json({ error: 'Персонаж не найден' });
   return res.json(c);
 });

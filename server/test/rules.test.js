@@ -29,14 +29,17 @@ test('passive ability boosts the derived stat (fighter Unbreakable = +20% HP)', 
   assert.equal(c5.stats.maxHp, Math.round(expectedBase * 1.2));
 });
 
-test('xp thresholds map to levels, capped at 5', () => {
+test('xp thresholds map to levels, capped at 15', () => {
   assert.equal(levelFromXp(0), 1);
   assert.equal(levelFromXp(119), 1);
   assert.equal(levelFromXp(120), 2);
   assert.equal(levelFromXp(1100), 5);
-  assert.equal(levelFromXp(999999), 5);
+  assert.equal(levelFromXp(1800), 6);
+  assert.equal(levelFromXp(31000), 15);
+  assert.equal(levelFromXp(999999), 15);
   assert.equal(xpToNext(0), 120);
-  assert.equal(xpToNext(1100), null);
+  assert.equal(xpToNext(1100), 700);
+  assert.equal(xpToNext(31000), null);
 });
 
 test('validateCharacterInput enforces sensible input', () => {
@@ -60,16 +63,16 @@ test('the game ships the 12 D&D classes', () => {
   assert.deepEqual(Object.keys(CLASSES).sort(), [...ALL_CLASSES].sort());
 });
 
-test('every class has 5 levels, 2 abilities per level, and one passive', () => {
+test('every class has 15 levels, 2 abilities per level, and two passives', () => {
   const seen = new Set();
   for (const key of ALL_CLASSES) {
     const klass = CLASSES[key];
-    for (let lvl = 1; lvl <= 5; lvl += 1) {
+    for (let lvl = 1; lvl <= 15; lvl += 1) {
       const atLevel = klass.abilities.filter((a) => a.unlockLevel === lvl);
       assert.equal(atLevel.length, 2, `${key} should unlock 2 abilities at level ${lvl}`);
     }
-    assert.equal(klass.abilities.length, 10, `${key} should have 10 abilities`);
-    assert.equal(klass.abilities.filter((a) => a.passive).length, 1, `${key} should have 1 passive`);
+    assert.equal(klass.abilities.length, 30, `${key} should have 30 abilities`);
+    assert.equal(klass.abilities.filter((a) => a.passive).length, 2, `${key} should have 2 passives`);
     for (const a of klass.abilities) {
       assert.ok(!seen.has(a.id), `duplicate ability id ${a.id}`);
       seen.add(a.id);
@@ -81,13 +84,17 @@ test('every class has 5 levels, 2 abilities per level, and one passive', () => {
   }
 });
 
-test('every class derives valid level-5 stats and 10 abilities', () => {
+test('every class derives valid level-15 stats and 30 abilities', () => {
   for (const key of ALL_CLASSES) {
     const c5 = deriveCharacter(row({ class: key, level: 5 }));
     assert.equal(c5.abilities.length, 10, `${key} level 5 should have 10 abilities`);
-    assert.ok(c5.stats.maxHp > 0, `${key} maxHp > 0`);
-    assert.ok(c5.stats.attack > 0, `${key} attack > 0`);
-    assert.ok(c5.stats.speed > 0, `${key} speed > 0`);
-    assert.equal(c5.hp, c5.stats.maxHp);
+    const c15 = deriveCharacter(row({ class: key, level: 15 }));
+    assert.equal(c15.abilities.length, 30, `${key} level 15 should have 30 abilities`);
+    assert.ok(c15.stats.maxHp > c5.stats.maxHp, `${key} grows in HP`);
+    assert.ok(c15.stats.attack > c5.stats.attack, `${key} grows in attack`);
+    assert.ok(c15.stats.maxHp > 0, `${key} maxHp > 0`);
+    assert.ok(c15.stats.attack > 0, `${key} attack > 0`);
+    assert.ok(c15.stats.speed > 0, `${key} speed > 0`);
+    assert.equal(c15.hp, c15.stats.maxHp);
   }
 });

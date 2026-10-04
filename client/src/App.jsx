@@ -8,6 +8,7 @@ import PartyPage from './pages/Party.jsx';
 import RecruitPage from './pages/Recruit.jsx';
 import TravelPage from './pages/Travel.jsx';
 import UpgradesPage from './pages/Upgrades.jsx';
+import ResurrectionPage from './pages/Resurrection.jsx';
 
 function Nav() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/world/locations/:id" element={<LocationPage />} />
           <Route path="/travel/:id" element={<TravelPage />} />
           <Route path="/upgrades/:leaderId" element={<UpgradesPage />} />
+          <Route path="/resurrection/:leaderId" element={<ResurrectionPage />} />
           <Route path="/battles/:id" element={<BattlePage />} />
           <Route path="*" element={<Navigate to="/characters" replace />} />
         </Routes>

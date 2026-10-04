@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { portraitIcon, classColor, Icon } from '../icons.jsx';
+import { statLabel } from '../statLabels.js';
 import Talk from '../Talk.jsx';
 
 const REL = (v) => Math.max(0, Math.min(100, v));
@@ -88,9 +89,17 @@ function MemberCard({ member, party }) {
 export default function PartyPage() {
   const { leaderId } = useParams();
   const [party, setParty] = useState(null);
+  const [points, setPoints] = useState(null);
+  const [fallen, setFallen] = useState(0);
   const [error, setError] = useState('');
 
-  const load = () => api.getParty(leaderId).then(setParty).catch((e) => setError(e.message));
+  const load = () => Promise.all([
+    api.getParty(leaderId),
+    api.getPartyPoints(leaderId).catch(() => null),
+    api.getRitual(leaderId).catch(() => null),
+  ])
+    .then(([p, pts, rit]) => { setParty(p); if (pts) setPoints(pts.points); setFallen(rit?.fallen?.length || 0); })
+    .catch((e) => setError(e.message));
   useEffect(() => { load(); }, [leaderId]);
 
   if (error && !party) return <div className="error">{error}</div>;
@@ -112,8 +121,17 @@ export default function PartyPage() {
           <div className="muted small">Предводитель · {party.leader.className} {party.leader.level} ур. · 💰 {party.leader.gold}</div>
         </div>
         <Link className="btn" to={`/party/${leaderId}/recruit`}>Набрать отряд</Link>
-        <Link className="btn ghost" to={`/upgrades/${leaderId}`} title="Очки отряда: дерево усилений">✦ Очки отряда</Link>
+        <Link className="btn ghost" to={`/upgrades/${leaderId}`} title="Очки отряда: дерево усилений">✦ Очки отряда{points != null ? `: ${points}` : ''}</Link>
+        <Link className="btn ghost" to={`/resurrection/${leaderId}`} title="Ритуал воскрешения: вернуть павшего из царства мёртвых">🕯 Ритуал{fallen > 0 ? ` · павших ${fallen}` : ''}</Link>
       </div>
+
+      {Object.keys(party.bonuses?.percents || {}).length > 0 && (
+        <p className="muted small">
+          ✦ Дерево отряда учтено в статах: {Object.entries(party.bonuses.percents).map(([k, v]) => `${statLabel(k)} +${v}%`).join(', ')}
+          {party.bonuses.regenMana ? ` · возврат маны +${party.bonuses.regenMana}` : ''}
+          {party.bonuses.regenStamina ? ` · возврат выносливости +${party.bonuses.regenStamina}` : ''}
+        </p>
+      )}
 
       {party.members.length === 0 ? (
         <div className="card">

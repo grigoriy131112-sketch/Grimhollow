@@ -1,9 +1,13 @@
 import { CLASSES, BASIC_ATTACK, abilitiesForClass, findAbility } from './classes.js';
 
-export const MAX_LEVEL = 5;
+export const MAX_LEVEL = 15;
 
 // XP needed to reach the next level (index = current level).
-export const XP_THRESHOLDS = [0, 0, 120, 320, 640, 1100];
+export const XP_THRESHOLDS = [
+  0, 0, 120, 320, 640, 1100,
+  1800, 2800, 4200, 6000, 8300,
+  11200, 14800, 19200, 24500, 31000,
+];
 
 export function levelFromXp(xp) {
   let level = 1;

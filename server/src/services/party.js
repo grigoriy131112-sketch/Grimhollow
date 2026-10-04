@@ -16,6 +16,7 @@ import {
   LEAVE_THRESHOLD,
 } from '../game/companions.js';
 import { getBonuses } from './upgrades.js';
+import { applyBonusesToSource } from '../game/party_upgrades.js';
 
 const parseJson = (v, fallback) => {
   try { return v ? JSON.parse(v) : fallback; } catch { return fallback; }
@@ -223,15 +224,32 @@ export function getParty(leaderId) {
     leaving: shouldLeave({ relationToPlayer: relationToLeader[m.id], bonds: bonds[m.id] }),
   }));
 
+  // Fold the party tree in for display: leader and every companion show base
+  // plus bonus, matching what they fight with. Battles boost from raw sheets,
+  // so these enriched views must never be fed back into startBattle().
+  const bonuses = getBonuses(leader.id);
+  const enriched = withRelations.map((m) => {
+    const b = applyBonusesToSource(m, bonuses);
+    return { ...m, stats: b.stats, hp: b.hp, mana: b.mana, stamina: b.stamina };
+  });
+
   return {
-    leader: {
-      id: leader.id, name: leader.name, class: leader.class, className: leader.className,
-      level: leader.level, hp: leader.hp, mana: leader.mana, stamina: leader.stamina,
-      stats: leader.stats, gold: leader.gold, portrait: leader.portrait,
-    },
-    members: withRelations,
-    size: withRelations.length,
+    leader: (() => {
+      const b = applyBonusesToSource(leader, bonuses);
+      return {
+        id: leader.id, name: leader.name, class: leader.class, className: leader.className,
+        level: leader.level, hp: b.hp, mana: b.mana, stamina: b.stamina,
+        stats: b.stats, gold: leader.gold, portrait: leader.portrait,
+      };
+    })(),
+    members: enriched,
+    size: enriched.length,
     leaveThreshold: LEAVE_THRESHOLD,
+    bonuses: {
+      roster: bonuses.roster, regenMana: bonuses.regenMana,
+      regenStamina: bonuses.regenStamina, startFull: bonuses.startFull,
+      percents: Object.fromEntries(Object.entries(bonuses.mult).map(([k, v]) => [k, Math.round(v * 100)])),
+    },
   };
 }
 
@@ -296,6 +314,27 @@ export function markDead(memberId) {
   db.prepare("UPDATE party_members SET status = 'dead', hp = 0, recruit_log = ?, updated_at = datetime('now') WHERE id = ?")
     .run(JSON.stringify(log), memberId);
   return true;
+}
+
+// Bring a fallen companion back: alive again at full strength, rejoining the
+// active roster. Called only after the death-realm boss is beaten.
+export function reviveMember(memberId) {
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM party_members WHERE id = ?').get(memberId);
+  if (!row) throw new Error('Спутник не найден');
+  const sheet = deriveCharacter({ ...row, hp: null, mana: null, stamina: null });
+  const log = parseJson(row.recruit_log, []);
+  log.push({ text: `${row.name} возвращается из царства мёртвых.` });
+  db.prepare(
+    "UPDATE party_members SET status = 'active', hp = ?, mana = ?, stamina = ?, recruit_log = ?, updated_at = datetime('now') WHERE id = ?",
+  ).run(sheet.stats.maxHp, sheet.stats.maxMana, sheet.stats.maxStamina, JSON.stringify(log), memberId);
+  return getMember(memberId);
+}
+
+// Everyone who fell and can still be called back, for the ritual screen.
+export function fallenMembers(leaderId) {
+  return getDb().prepare("SELECT * FROM party_members WHERE leader_id = ? AND status = 'dead' ORDER BY id")
+    .all(leaderId).map(deriveMember);
 }
 
 // Persist a companion's resources after a fight, applying level-ups from XP.

@@ -5,7 +5,7 @@ import {
 } from '../game/combat.js';
 import { getCharacter, applyBattleRewards } from './characters.js';
 import { getMonster, getLocation } from './world.js';
-import { activeMembers, getMember, markDead, grantMemberXp } from './party.js';
+import { activeMembers, getMember, markDead, grantMemberXp, reviveMember } from './party.js';
 import { getBonuses, awardPartyPoints } from './upgrades.js';
 import { applyBonusesToSource, POINTS_PER_WIN, POINTS_PER_LEVEL } from '../game/party_upgrades.js';
 
@@ -35,11 +35,11 @@ function monsterSource(monster) {
   };
 }
 
-export function startBattle({ characterId, monsterId, locationId }) {
+export function startBattle({ characterId, monsterId, locationId, kind = 'normal', reviveMember = null, opponent = null }) {
   const character = getCharacter(characterId);
   if (!character) throw new Error('Персонаж не найден');
 
-  let monster = monsterId ? getMonster(monsterId) : null;
+  let monster = opponent || (monsterId ? getMonster(monsterId) : null);
   let location = locationId ? getLocation(locationId) : null;
   if (!monster && location && location.monsters?.length) {
     monster = location.monsters[Math.floor(Math.random() * location.monsters.length)];
@@ -64,9 +64,9 @@ export function startBattle({ characterId, monsterId, locationId }) {
   });
   const db = getDb();
   const info = db.prepare(
-    `INSERT INTO battles (status, character_id, monster_id, location_id, state, log)
-     VALUES ('active', ?, ?, ?, ?, ?)`,
-  ).run(character.id, monster.id, location?.id ?? null, serialize(state), JSON.stringify(events));
+    `INSERT INTO battles (status, character_id, monster_id, location_id, state, log, kind, revive_member)
+     VALUES ('active', ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(character.id, monster.id, location?.id ?? null, serialize(state), JSON.stringify(events), kind, reviveMember ?? null);
   return getBattleView(info.lastInsertRowid);
 }
 
@@ -85,6 +85,8 @@ export function getBattleView(id) {
     id: battle.id,
     status: battle.status,
     active: battle.active,
+    kind: battle.kind || 'normal',
+    reviveMember: battle.revive_member ?? null,
     characterId: battle.character_id,
     locationId: battle.location_id,
     location: location ? { id: location.id, name: location.name, scene: location.scene, biome: location.biome, danger: location.danger } : null,
@@ -174,6 +176,16 @@ function settle(battle, state, status) {
   if (leaderResult.leveledUp) pointsGained += POINTS_PER_LEVEL;
   if (pointsGained) awardPartyPoints(battle.character_id, pointsGained);
 
+  // Death realm: beating the boss calls the bound companion back from the dead.
+  let revived = null;
+  if (won && battle.kind === 'death_realm' && battle.revive_member) {
+    const member = getMember(battle.revive_member);
+    if (member && member.status === 'dead') {
+      const back = reviveMember(battle.revive_member);
+      revived = { id: back.id, name: back.name, level: back.level, hp: back.hp };
+    }
+  }
+
   return {
     xpGained, goldGained, status,
     leveledUp: leaderResult.leveledUp,
@@ -181,6 +193,7 @@ function settle(battle, state, status) {
     pointsGained,
     members: memberResults,
     fallen,
+    revived,
   };
 }
 

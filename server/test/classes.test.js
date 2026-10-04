@@ -3,11 +3,11 @@ import "../test-support/env.js";
 import assert from 'node:assert/strict';
 import { CLASSES, CLASS_KEYS, abilitiesForClass, findAbility, BASIC_ATTACK } from '../src/game/classes.js';
 
-test('every class has 5 levels and 2 abilities unlocked per level', () => {
+test('every class has 15 levels and 2 abilities unlocked per level', () => {
   for (const key of CLASS_KEYS) {
     const abilities = CLASSES[key].abilities;
-    assert.equal(abilities.length, 10, `${key} should have 10 abilities`);
-    for (let level = 1; level <= 5; level += 1) {
+    assert.equal(abilities.length, 30, `${key} should have 30 abilities`);
+    for (let level = 1; level <= 15; level += 1) {
       const atLevel = abilitiesForClass(key, level);
       const justThisLevel = abilities.filter((a) => a.unlockLevel === level);
       assert.equal(justThisLevel.length, 2, `${key} level ${level} should unlock exactly 2 abilities`);

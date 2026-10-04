@@ -116,6 +116,8 @@ CREATE TABLE IF NOT EXISTS battles (
   reward_xp     INTEGER NOT NULL DEFAULT 0,
   reward_gold   INTEGER NOT NULL DEFAULT 0,
   result        TEXT,
+  kind          TEXT NOT NULL DEFAULT 'normal',
+  revive_member INTEGER,
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );

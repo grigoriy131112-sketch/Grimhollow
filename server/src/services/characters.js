@@ -1,5 +1,7 @@
 import { getDb } from '../db/index.js';
 import { deriveCharacter, validateCharacterInput, levelFromXp } from '../game/rules.js';
+import { getBonuses } from './upgrades.js';
+import { applyBonusesToSource } from '../game/party_upgrades.js';
 
 export function listCharacters() {
   return getDb().prepare('SELECT * FROM characters ORDER BY created_at DESC').all().map(deriveCharacter);
@@ -8,6 +10,38 @@ export function listCharacters() {
 export function getCharacter(id) {
   const row = getDb().prepare('SELECT * FROM characters WHERE id = ?').get(id);
   return row ? deriveCharacter(row) : null;
+}
+
+// Readable summary of what the party tree currently grants, for the UI.
+export function bonusSummary(bonuses) {
+  return {
+    roster: bonuses.roster,
+    regenMana: bonuses.regenMana,
+    regenStamina: bonuses.regenStamina,
+    startFull: bonuses.startFull,
+    percents: Object.fromEntries(
+      Object.entries(bonuses.mult || {}).map(([k, v]) => [k, Math.round(v * 100)]),
+    ),
+  };
+}
+
+// A character's sheet with the party tree folded in: base stats plus the
+// leader's bonuses, so what the player reads matches what they fight with.
+// Battles call getCharacter() and apply the bonuses themselves, so they must
+// keep using the raw sheet to avoid applying them twice.
+export function getCharacterSheet(id) {
+  const character = getCharacter(id);
+  if (!character) return null;
+  const bonuses = getBonuses(character.id);
+  const boosted = applyBonusesToSource(character, bonuses);
+  return {
+    ...character,
+    stats: boosted.stats,
+    hp: boosted.hp,
+    mana: boosted.mana,
+    stamina: boosted.stamina,
+    bonuses: bonusSummary(bonuses),
+  };
 }
 
 export function createCharacter(input) {

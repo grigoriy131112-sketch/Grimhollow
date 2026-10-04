@@ -107,9 +107,20 @@ export function getLocation(id) {
   return { ...location, is_safe: !!location.is_safe, region, continent, connections, monsters };
 }
 
+// A monster that belongs to no location: reachable only through a special
+// encounter (the death-realm boss), so it must not appear in normal hunts.
+const OFF_MAP_BOSS = 'Костяной Пастырь';
+
 export function listMonsters() {
-  return getDb().prepare('SELECT * FROM monsters ORDER BY level, name').all();
+  const rows = getDb().prepare('SELECT * FROM monsters ORDER BY level, name').all();
+  return rows.filter((m) => m.name !== OFF_MAP_BOSS);
 }
+
+export function getMonsterByName(name) {
+  return getDb().prepare('SELECT * FROM monsters WHERE name = ?').get(name);
+}
+
+export { OFF_MAP_BOSS };
 
 export function getMonster(id) {
   return getDb().prepare('SELECT * FROM monsters WHERE id = ?').get(id);
