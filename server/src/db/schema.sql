@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS characters (
   gold        INTEGER NOT NULL DEFAULT 0,
   portrait    TEXT,
   location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+  party_points INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );

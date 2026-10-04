@@ -280,22 +280,24 @@ ul.stats span { color: var(--muted); }
 /* map */
 .atlas { display: grid; grid-template-columns: minmax(0, 3fr) minmax(240px, 1fr); gap: 1rem; align-items: start; }
 @media (max-width: 860px) { .atlas { grid-template-columns: 1fr; } }
-.map-wrap { position: relative; border: 1px solid #b9a06a; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+.map-col { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.map-wrap { position: relative; border: 1px solid #1c1a17; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
 .world-map { display: block; width: 100%; height: auto; }
-.road { stroke: #6b5335; stroke-width: 1.6; stroke-dasharray: 5 5; opacity: 0.6; }
-.road.hot { stroke: #a8862a; stroke-width: 2.4; opacity: 1; }
+.road { stroke: #1c1a17; stroke-width: 1.6; stroke-dasharray: 5 5; opacity: 0.6; }
+.road.hot { stroke: #000000; stroke-width: 2.4; opacity: 1; }
 .map-node { cursor: pointer; }
-.map-node .node-ring { fill: none; stroke: #a8862a; stroke-width: 2; opacity: 0.75; animation: ringPulse 1.6s ease-out infinite; }
-.node-label { fill: #3a2c1a; font-size: 12px; font-family: 'Cinzel', serif; text-anchor: middle; paint-order: stroke; stroke: #f2e7cd; stroke-width: 3px; }
-.map-legend { position: absolute; right: 10px; bottom: 10px; background: rgba(242,231,205,0.9); border: 1px solid #b9a06a; border-radius: 8px; padding: 0.5rem 0.7rem; font-size: 0.75rem; box-shadow: 0 2px 8px rgba(74,56,38,0.25); }
-.legend-row { display: flex; align-items: center; gap: 0.4rem; margin: 0.2rem 0; color: #4a3826; }
-.legend-title { color: #4a3826; }
+.map-node .node-ring { fill: none; stroke: #1c1a17; stroke-width: 2; opacity: 0.75; animation: ringPulse 1.6s ease-out infinite; }
+.node-label { fill: #1c1a17; font-size: 12px; font-family: 'Cinzel', serif; text-anchor: middle; paint-order: stroke; stroke: #f2e7cd; stroke-width: 3px; }
+.map-legend { background: rgba(242,231,205,0.9); border: 1px solid #1c1a17; border-radius: 8px; padding: 0.5rem 0.7rem; font-size: 0.75rem; box-shadow: 0 2px 8px rgba(74,56,38,0.25); display: flex; flex-wrap: wrap; gap: 0.15rem 1rem; align-items: center; }
+.legend-row { display: flex; align-items: center; gap: 0.4rem; margin: 0.2rem 0; color: #1c1a17; }
+.legend-title { color: #1c1a17; }
 .legend-row .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
-.legend-sep { height: 1px; background: #c3ab7e; margin: 0.45rem 0; }
-.road-time { fill: #6b5335; font-size: 10px; font-family: 'Cinzel', serif; text-anchor: middle; paint-order: stroke; stroke: #f2e7cd; stroke-width: 3px; }
+.legend-sep { height: 1px; background: #a89a80; margin: 0.45rem 0; }
+.road-time { fill: #1c1a17; font-size: 10px; font-family: 'Cinzel', serif; text-anchor: middle; paint-order: stroke; stroke: #f2e7cd; stroke-width: 3px; }
 .map-node .landmark { pointer-events: none; }
+.legend-credit { font-size: 0.68rem; opacity: 0.75; max-width: 190px; line-height: 1.25; display: block; }
 .map-node.fogged { cursor: default; }
-.node-unknown { fill: #8a7a5a; font-size: 14px; font-family: 'Cinzel', serif; text-anchor: middle; pointer-events: none; }
+.node-unknown { fill: #6a6252; font-size: 14px; font-family: 'Cinzel', serif; text-anchor: middle; pointer-events: none; }
 .party-marker { pointer-events: none; }
 .party-pulse { fill: none; stroke: #8a2020; stroke-width: 2; animation: partyPulse 2s ease-out infinite; }
 .party-pulse.paused { stroke: #b5672f; animation-duration: 0.8s; }
@@ -306,26 +308,33 @@ ul.stats span { color: var(--muted); }
 .loc-card.fogged { opacity: 0.5; filter: grayscale(0.7); }
 .loc-card.rumoured { opacity: 0.78; }
 .road.rumour { stroke-dasharray: 2 6; opacity: 0.6; }
-.map-node.rumoured .node-label { fill: #6b5335; font-style: italic; }
-.legend-row .dot.rumour { background: transparent; border: 1px dashed #8a7f6a; }
+.map-node.rumoured .node-label { fill: #4a4436; font-style: italic; }
+.legend-row .dot.rumour { background: transparent; border: 1px dashed #6a6252; }
 
 /* Wave 8: ink-and-parchment atlas — relief, seals, chart furniture */
-.seal { fill: #f6eed6; stroke: #4a3826; stroke-width: 1.8; }
+.seal { fill: #f6eed6; stroke: #1c1a17; stroke-width: 1.8; }
 .seal.rumour { fill: #efe4c6; stroke-dasharray: 3 3; }
-.seal.fogged { fill: #e6dcc2; stroke: #b3a582; stroke-width: 1.4; }
+.seal.fogged { fill: #e6dcc2; stroke: #9a917c; stroke-width: 1.4; }
 .map-node:hover .seal { fill: #fbf5e2; }
-.map-node.active .seal { stroke: #a8862a; stroke-width: 2.4; }
-.map-frame { fill: none; stroke: #4a3826; stroke-width: 2; opacity: 0.55; }
-.compass-ring { fill: rgba(242,231,205,0.55); stroke: #4a3826; stroke-width: 1.4; opacity: 0.8; }
+.map-node.active .seal { stroke: #1c1a17; stroke-width: 2.4; }
+.map-frame { fill: none; stroke: #1c1a17; stroke-width: 2; opacity: 0.55; }
+.compass-ring { fill: rgba(242,231,205,0.55); stroke: #1c1a17; stroke-width: 1.4; opacity: 0.8; }
 .compass-ring.thin { fill: none; stroke-dasharray: 2 4; opacity: 0.55; }
-.compass-needle { fill: #6b5335; opacity: 0.75; }
-.compass-north { fill: #8a2020; }
-.compass-label { fill: #4a3826; font-size: 12px; font-family: 'Cinzel', serif; text-anchor: middle; }
+.compass-needle { fill: #1c1a17; opacity: 0.75; }
+.compass-north { fill: #1c1a17; }
+.compass-label { fill: #1c1a17; font-size: 12px; font-family: 'Cinzel', serif; text-anchor: middle; }
+.node-pict { opacity: 0.85; pointer-events: none; }
+.node-pict path, .node-pict ellipse { stroke-linejoin: round; stroke-linecap: round; }
+.map-node:hover .node-pict { opacity: 1; }
+.cartouche-frame { fill: rgba(242,231,205,0.92); stroke: #1c1a17; stroke-width: 2; }
+.cartouche-inner { fill: none; stroke: #1c1a17; stroke-width: 1; opacity: 0.7; }
+.cartouche-title { fill: #1c1a17; font-family: 'Cinzel', serif; font-size: 20px; letter-spacing: 4px; text-anchor: middle; }
+.cartouche-sub { fill: #1c1a17; font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 3px; text-anchor: middle; }
 
 @keyframes partyPulse { 0% { r: 8; opacity: 0.9; } 100% { r: 22; opacity: 0; } }
-.map-scale { position: absolute; left: 10px; bottom: 10px; display: flex; align-items: center; gap: 0.5rem; background: rgba(242,231,205,0.9); border: 1px solid #b9a06a; border-radius: 8px; padding: 0.35rem 0.6rem; box-shadow: 0 2px 8px rgba(74,56,38,0.25); }
-.map-scale .muted { color: #6b5335 !important; }
-.map-scale .scale-bar { display: inline-block; width: 54px; height: 8px; border: 1px solid #4a3826; border-top: none; background: linear-gradient(to right, #4a3826 0 50%, transparent 50% 100%); opacity: 0.85; }
+.map-scale { position: absolute; left: 10px; bottom: 10px; display: flex; align-items: center; gap: 0.5rem; background: rgba(242,231,205,0.9); border: 1px solid #1c1a17; border-radius: 8px; padding: 0.35rem 0.6rem; box-shadow: 0 2px 8px rgba(74,56,38,0.25); }
+.map-scale .muted { color: #1c1a17 !important; }
+.map-scale .scale-bar { display: inline-block; width: 54px; height: 8px; border: 1px solid #1c1a17; border-top: none; background: linear-gradient(to right, #1c1a17 0 50%, transparent 50% 100%); opacity: 0.85; }
 .map-detail { margin-bottom: 0; }
 .map-detail-meta { display: flex; gap: 1rem; align-items: center; margin: 0.5rem 0; }
 
@@ -448,3 +457,19 @@ ul.stats span { color: var(--muted); }
 .talk-input input { flex: 1; }
 .llm-badge { margin-top: 0.4rem; opacity: 0.7; }
 @media (max-width: 640px) { .npc-list li { flex-direction: column; align-items: stretch; } .bubble { max-width: 92%; } }
+
+/* --- Очки отряда: the upgrade tree (Wave 12) --- */
+.btn.small { padding: 0.3rem 0.7rem; font-size: 0.82rem; }
+.btn.ghost { background: transparent; border-color: var(--line); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.upg-branch-name { margin: 0 0 0.15rem; font-size: 1.05rem; color: var(--gold-soft); }
+.upg-nodes { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.6rem; }
+.upg-node { border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 0.7rem; background: var(--panel-2); }
+.upg-node.ready { border-color: var(--gold); }
+.upg-node.maxed { border-color: #2f6b3a; background: #16241a; }
+.upg-node.locked { opacity: 0.72; }
+.upg-node-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.upg-rank { font-size: 0.78rem; color: var(--muted); }
+.upg-node-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem; }
+.upg-cost { font-size: 0.82rem; color: var(--gold-soft); }
+.upg-reason { color: var(--muted); margin: 0.35rem 0 0; }

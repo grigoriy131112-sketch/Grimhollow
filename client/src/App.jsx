@@ -7,6 +7,7 @@ import BattlePage from './pages/Battle.jsx';
 import PartyPage from './pages/Party.jsx';
 import RecruitPage from './pages/Recruit.jsx';
 import TravelPage from './pages/Travel.jsx';
+import UpgradesPage from './pages/Upgrades.jsx';
 
 function Nav() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/world" element={<WorldPage />} />
           <Route path="/world/locations/:id" element={<LocationPage />} />
           <Route path="/travel/:id" element={<TravelPage />} />
+          <Route path="/upgrades/:leaderId" element={<UpgradesPage />} />
           <Route path="/battles/:id" element={<BattlePage />} />
           <Route path="*" element={<Navigate to="/characters" replace />} />
         </Routes>

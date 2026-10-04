@@ -112,6 +112,7 @@ export default function PartyPage() {
           <div className="muted small">Предводитель · {party.leader.className} {party.leader.level} ур. · 💰 {party.leader.gold}</div>
         </div>
         <Link className="btn" to={`/party/${leaderId}/recruit`}>Набрать отряд</Link>
+        <Link className="btn ghost" to={`/upgrades/${leaderId}`} title="Очки отряда: дерево усилений">✦ Очки отряда</Link>
       </div>
 
       {party.members.length === 0 ? (

@@ -6,6 +6,8 @@ import {
 import { getCharacter, applyBattleRewards } from './characters.js';
 import { getMonster, getLocation } from './world.js';
 import { activeMembers, getMember, markDead, grantMemberXp } from './party.js';
+import { getBonuses, awardPartyPoints } from './upgrades.js';
+import { applyBonusesToSource, POINTS_PER_WIN, POINTS_PER_LEVEL } from '../game/party_upgrades.js';
 
 // Share of gold dropped when a hero is defeated (they survive with 1 HP).
 const DEFEAT_GOLD_PENALTY = 0.25;
@@ -44,10 +46,19 @@ export function startBattle({ characterId, monsterId, locationId }) {
   }
   if (!monster) throw new Error('Для этой встречи нет доступного монстра');
 
-  // The whole active party joins the fight; the leader is 'p1'.
-  const allies = activeMembers(character.id).map((m) => getMember(m.id));
+  // The whole active party joins the fight; the leader is 'p1'. The party tree
+  // strengthens everyone: stats scale and regeneration deepens.
+  const bonuses = getBonuses(character.id);
+  const boost = (src) => {
+    const b = applyBonusesToSource(src, bonuses);
+    b.regenMana = bonuses.regenMana;
+    b.regenStamina = bonuses.regenStamina;
+    if (bonuses.startFull) { b.hp = b.stats.maxHp; b.mana = b.stats.maxMana; b.stamina = b.stats.maxStamina; }
+    return b;
+  };
+  const allies = activeMembers(character.id).map((m) => boost(getMember(m.id)));
   const { state, events } = createBattle({
-    player: character,
+    player: boost(character),
     allies,
     opponents: [monsterSource(monster)],
   });
@@ -157,10 +168,17 @@ function settle(battle, state, status) {
   getDb().prepare('UPDATE battles SET reward_xp=?, reward_gold=?, result=? WHERE id=?')
     .run(xpGained, goldGained, JSON.stringify({ members: memberResults, fallen, goldLost: leaderResult.goldLost ?? 0 }), battle.id);
 
+  // Очки отряда: a won fight pays, and every leader level-up pays.
+  let pointsGained = 0;
+  if (won) pointsGained += POINTS_PER_WIN;
+  if (leaderResult.leveledUp) pointsGained += POINTS_PER_LEVEL;
+  if (pointsGained) awardPartyPoints(battle.character_id, pointsGained);
+
   return {
     xpGained, goldGained, status,
     leveledUp: leaderResult.leveledUp,
     goldLost: leaderResult.goldLost ?? 0,
+    pointsGained,
     members: memberResults,
     fallen,
   };
