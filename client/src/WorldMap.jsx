@@ -134,6 +134,10 @@ export default function WorldMap({ data }) {
             const hot = active || hoverId === l.id;
             const color = l.isSafe ? '#5f7a3f' : dangerColor(l.danger);
             const icon = landmarkIcon(l);
+            // Keep labels inside the chart: near an edge they lean inward.
+            const labelDx = l.x > 860 ? -20 : l.x < 90 ? 20 : 0;
+            const labelDy = l.y < 70 ? 30 : l.y > 580 ? -20 : 33;
+            const labelAnchor = l.x > 860 ? 'end' : l.x < 90 ? 'start' : 'middle';
             return (
               <g
                 key={l.id}
@@ -156,7 +160,7 @@ export default function WorldMap({ data }) {
                   />
                 )}
                 <circle cx={13} cy={-13} r={l.isSafe ? 4 : 2.5 + l.danger} fill={color} stroke={PARCH} strokeWidth={1.2} />
-                <text y={33} className="node-label">{l.name}</text>
+                <text x={labelDx} y={labelDy} className="node-label" textAnchor={labelAnchor}>{l.name}</text>
               </g>
             );
           })}

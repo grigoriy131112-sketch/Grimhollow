@@ -70,6 +70,8 @@ function makeCombatant(source, side, key) {
     stamina: source.stamina ?? source.stats?.maxStamina ?? 0,
     abilities: (source.abilities || []).map((a) => a.id),
     ai: source.ai || null,
+    regenMana: source.regenMana || 0,
+    regenStamina: source.regenStamina || 0,
     cooldowns: {},
     buffs: [],
     dots: [],
@@ -149,8 +151,9 @@ function tickDots(state, c, events) {
 }
 
 function regenResources(c) {
-  c.mana = Math.min(c.maxMana, c.mana + MANA_REGEN);
-  c.stamina = Math.min(c.maxStamina, c.stamina + STAMINA_REGEN);
+  // The party tree can deepen regeneration; combatants carry their own bonus.
+  c.mana = Math.min(c.maxMana, c.mana + MANA_REGEN + (c.regenMana || 0));
+  c.stamina = Math.min(c.maxStamina, c.stamina + STAMINA_REGEN + (c.regenStamina || 0));
 }
 
 // --- performing an action ---------------------------------------------------

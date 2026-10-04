@@ -22,8 +22,26 @@ npm install                 # installs server + client workspaces
 npm run dev                 # server (3001) + vite (5173) together
 npm test                    # server test suite (node --test)
 npm run build               # build the client into client/dist
-npm start                   # run the API, serving client/dist if built
+npm start                   # build, then run the API serving client/dist
 ```
+
+Requires **Node 24+** — the server uses the built-in `node:sqlite` module.
+
+## Running outside the sandbox (self-contained)
+
+The app is host-agnostic: the client calls the API over a relative `/api` path,
+and the same server serves both the built UI and the API, so there is nothing to
+point at a sandbox URL. Two supported ways to run it anywhere:
+
+- **Docker:** `docker compose up --build`, open <http://localhost:3001>. The
+  SQLite file lives on the `grimhollow-data` volume, so restarts keep the world.
+  The image is `node:24-bookworm-slim` (Node 24 is mandatory for `node:sqlite`).
+- **Node:** `npm install && npm start`. `prestart` builds the client first, so
+  one command yields the production app. `PORT` and `DB_PATH` override the
+  defaults; see `.env.example`.
+
+The LLM layer is optional (`LLM_PROVIDER=off` by default). With it off, NPC
+dialogue uses the built-in engine, so no model, key, or network is required.
 
 ## Game design rules (locked)
 
@@ -289,13 +307,20 @@ marker and, since Wave 11, shows every place openly.
   public domain, served from `client/public/art/maps/isle-antique.jpg` and tiled via an SVG
   `<pattern id="antiqueMap">`. On top we keep only the game layer: hand-wobbled
   **roads** (`wobbleLine`) with a pale `HALO` underlay so ink reads over the dark
-  engraving, **inked seals** with the licensed landmark icon, labels, the compass
-  and the party cross. Do not reintroduce our own relief, washes or `seaHatch` —
+  engraving, **inked seals** with the licensed landmark icon, labels and the
+  party cross. Do not reintroduce our own relief, washes or `seaHatch` —
   they competed with the engraving and muddied it.
-- **The island clip is a hand-drawn coastline.** `coastline()` builds the closed
-  ring that `landClip` uses to keep the fog-of-war wash on the land, and the
-  locations are placed to sit inside it. If you ever swap the base map, re-check
-  that all `map_x`/`map_y` still land on the new landmass.
+- **Locations stand on land, and by theme.** Every `map_x`/`map_y` is chosen to
+  sit on the drawn landmass with a few pixels of margin, so no seal floats out
+  over the sea. Place by biome: a `coast` port or tide-caves belongs in a bay
+  near the water, a `forest` in the wooded interior, a `marsh` in the low wet
+  ground, `bonefield`/`waste` inland. `server/test/world_map.test.js` guards this
+  against the sampled land mask (`server/test-support/land-mask.js`, derived from
+  the Boero engraving): if you move a location onto water or swap the base map,
+  that test fails and the mask must be regenerated.
+- **Edge labels lean inward.** Near the chart border (`x > 860`, `x < 90`,
+  `y < 70`, `y > 580`) `WorldMap.jsx` shifts the label toward the middle and
+  anchors it start/end so it never spills past the map edge.
 - **Places are inked seals with a drawn pictogram** — actually now the licensed
   icon inside the seal (re-skinned through `SCENE_LANDMARKS` in `icons.jsx`:
   `hollow` → `quicksand`, `bone_field` → `dinosaur_bones`, `sunken_chapel` →
@@ -396,3 +421,33 @@ marker and, since Wave 11, shows every place openly.
 - On the free path the engine draft is a **fallback only** and is not put into
   the prompt, so the model cannot echo it. `answerQuestion` returns null on any
   failure and the caller keeps the engine line.
+
+## Очки отряда: the party upgrade tree (Wave 12)
+
+- A leader earns **Очки отряда** (party points) from play, then spends them on a
+  small tree that strengthens the *whole* party, not one hero.
+- Points come from two places only: `POINTS_PER_WIN` on a won battle and
+  `POINTS_PER_LEVEL` on every leader level-up (`game/party_upgrades.js`). The
+  award is applied in `services/battles.js` `settle()`, which returns
+  `rewards.pointsGained` so the battle UI can show it.
+- The tree lives in `game/party_upgrades.js` (pure) and is stored by
+  `services/upgrades.js`. Unspent points are `characters.party_points`; spent
+  ranks are rows in `party_upgrades (leader_id, node, points)`.
+- Four branches, each a chain of three nodes (`MAX_RANK = 3`): command,
+  swiftness, sorcery, muster. A child node unlocks only once its parent is
+  **maxed** — `canSpend()` enforces this, and the service spends inside a
+  transaction so a race cannot double-spend.
+- `bonusesFrom()` folds the spent map into flat bonuses; `applyBonusesToSource()`
+  applies them to a combatant source. Multiplicative stats are fractions
+  (`0.06 = +6%`); regen and roster are flat adds. When a maximum grows, the pool
+  is topped up by the same amount (`refill()`), so a stronger hero is not a
+  wounded one.
+- The muster branch raises the recruit cap above `BASE_ROSTER` (4). `recruit()`
+  in `services/party.js` refuses once `activeMembers >= roster` and tells the
+  player to strengthen «Сбор».
+- API: `GET /api/upgrades/:leaderId` (the whole tree), `GET .../points` (balance),
+  `POST .../spend {node}` (forge one rank, returns the fresh tree). Client page is
+  `/upgrades/:leaderId`, linked from the party strip.
+- Tests: `server/test/upgrades.test.js` covers the parent chain, the rank cap,
+  spending, the roster cap, the win payout and that the bonuses reach a real
+  battle's combatants.

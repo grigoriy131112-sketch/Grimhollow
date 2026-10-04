@@ -15,6 +15,7 @@ import {
   acceptanceChance, clampRelation, traitInfo,
   LEAVE_THRESHOLD,
 } from '../game/companions.js';
+import { getBonuses } from './upgrades.js';
 
 const parseJson = (v, fallback) => {
   try { return v ? JSON.parse(v) : fallback; } catch { return fallback; }
@@ -85,6 +86,12 @@ export function recruit(leaderId, templateKey, { source, goldOffered = 0 } = {},
   const t = companionTemplate(templateKey);
   if (!t) throw new Error('Такого спутника не существует');
   if (isRecruited(leaderId, t.key)) throw new Error('Этот спутник уже в отряде');
+
+  // The roster is capped; the Мuster branch raises it one rank at a time.
+  const roster = getBonuses(leaderId).roster;
+  if (activeMembers(leaderId).length >= roster) {
+    throw new Error(`Отряд уже полон (${roster}). Укрепите ветвь «Сбор».`);
+  }
 
   const srcKey = source || t.sources[0];
   if (!RECRUIT_SOURCES[srcKey]) throw new Error('Неизвестный способ набора');

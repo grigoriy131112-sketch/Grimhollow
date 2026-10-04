@@ -5,6 +5,7 @@ import { getDb, closeDb } from '../src/db/index.js';
 import { seedWorld } from '../src/db/seed.js';
 import { getMap, getLocation, characterExploration, recordVisit } from '../src/services/world.js';
 import { createCharacter } from '../src/services/characters.js';
+import { LAND_MASK, LAND_MASK_COLS, LAND_MASK_ROWS } from '../test-support/land-mask.js';
 
 test.after(() => closeDb());
 
@@ -24,6 +25,20 @@ test('the map exposes coordinates, scenes and roads for every location', () => {
   for (const c of map.connections) {
     assert.ok(ids.has(c.from) && ids.has(c.to), 'roads connect known locations');
     assert.ok(c.from < c.to, 'each road is listed once');
+  }
+});
+
+// The map art is a real drawn isle: a fixed coastline with open sea around it.
+// Every marker must stand on dry land, or it visually floats out on the water.
+test('every location stands on land, not out at sea', () => {
+  seedWorld();
+  const cell = (x, y) => {
+    const col = Math.min(LAND_MASK_COLS - 1, Math.floor((x / 1000) * LAND_MASK_COLS));
+    const row = Math.min(LAND_MASK_ROWS - 1, Math.floor((y / 640) * LAND_MASK_ROWS));
+    return LAND_MASK[row][col];
+  };
+  for (const l of getMap().locations) {
+    assert.equal(cell(l.x, l.y), '1', `${l.name} (${l.x},${l.y}) sits on land`);
   }
 });
 

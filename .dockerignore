@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+client/dist
+server/src/data/*.sqlite
+server/src/data/*.json
+models
+.git
+.gitignore
+.agent_tmp
+coverage
+*.log
+.env
+.env.*
+!.env.example
+Dockerfile
+docker-compose.yml
+.dockerignore

@@ -457,3 +457,19 @@ ul.stats span { color: var(--muted); }
 .talk-input input { flex: 1; }
 .llm-badge { margin-top: 0.4rem; opacity: 0.7; }
 @media (max-width: 640px) { .npc-list li { flex-direction: column; align-items: stretch; } .bubble { max-width: 92%; } }
+
+/* --- Очки отряда: the upgrade tree (Wave 12) --- */
+.btn.small { padding: 0.3rem 0.7rem; font-size: 0.82rem; }
+.btn.ghost { background: transparent; border-color: var(--line); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.upg-branch-name { margin: 0 0 0.15rem; font-size: 1.05rem; color: var(--gold-soft); }
+.upg-nodes { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.6rem; }
+.upg-node { border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 0.7rem; background: var(--panel-2); }
+.upg-node.ready { border-color: var(--gold); }
+.upg-node.maxed { border-color: #2f6b3a; background: #16241a; }
+.upg-node.locked { opacity: 0.72; }
+.upg-node-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.upg-rank { font-size: 0.78rem; color: var(--muted); }
+.upg-node-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem; }
+.upg-cost { font-size: 0.82rem; color: var(--gold-soft); }
+.upg-reason { color: var(--muted); margin: 0.35rem 0 0; }

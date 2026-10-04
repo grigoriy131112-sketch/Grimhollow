@@ -36,6 +36,9 @@ function migrate(d) {
   if (!columns('characters').includes('location_id')) {
     d.exec('ALTER TABLE characters ADD COLUMN location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL');
   }
+  if (!columns('characters').includes('party_points')) {
+    d.exec('ALTER TABLE characters ADD COLUMN party_points INTEGER NOT NULL DEFAULT 0');
+  }
 }
 
 export function transaction(fn) {
