@@ -153,7 +153,7 @@ each character's attitude toward the leader moves with what is said.
 
 `server/src/services/llm.js` produces the spoken reply, in order:
 
-1. **local** — llama.cpp `llama-server` with Qwen2.5-3B-Instruct Q4_K_M.
+1. **local** — llama.cpp `llama-server` with Qwen2.5-7B-Instruct Q4_K_M.
 2. **cloud** — any OpenAI-compatible endpoint, only if `LLM_CLOUD_KEY` is set.
 3. **template** — the deterministic engine line, always available.
 
@@ -172,8 +172,13 @@ The briefing (`llmBriefing`) always carries the character's **backstory**
 (`description` for NPCs, `history` for companions) and `className`, so the model
 knows why, say, Марта became a warrior. The static instruction block
 (`SYSTEM_RULES`) is a module-level constant and comes first in the system prompt,
-with all per-turn data after it — llama.cpp reuses the cached prefix, which is
-the difference between a ~3 s and a ~12 s reply.
+with all per-turn data after it — llama.cpp reuses the cached prefix, so prompt
+evaluation stays cheap instead of re-reading the whole brief every turn.
+
+The local model is Qwen2.5-**7B**-Instruct Q4_K_M (two GGUF shards; point
+llama.cpp at the `-00001-of-00002` file and it loads the rest). The 3B was tried
+and answered correctly but flatter; the 7B is markedly more in character, so
+reply latency (seconds) is deliberately not optimised for.
 
 If nothing is running, dialogue still works. Config via env: `LLM_PROVIDER`
 (`auto|local|cloud|off`), `LLM_LOCAL_URL` (default `http://127.0.0.1:8080`),

@@ -14,7 +14,7 @@ const repoRoot = path.resolve(__dirname, '../../..');
 export const config = {
   provider: (process.env.LLM_PROVIDER || 'auto').toLowerCase(), // auto | local | cloud | off
   localUrl: process.env.LLM_LOCAL_URL || 'http://127.0.0.1:8080',
-  localModelPath: process.env.LLM_MODEL_PATH || path.join(repoRoot, 'models', 'qwen2.5-3b-instruct-q4_k_m.gguf'),
+  localModelPath: process.env.LLM_MODEL_PATH || path.join(repoRoot, 'models', 'qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf'),
   llamaBin: process.env.LLM_LLAMA_BIN || path.join(repoRoot, 'models', 'llama', 'llama-server'),
   cloudKey: process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || '',
   cloudBase: process.env.LLM_BASE_URL || 'https://api.openai.com/v1',

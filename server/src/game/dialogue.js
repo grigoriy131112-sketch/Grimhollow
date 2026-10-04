@@ -7,6 +7,7 @@
 // reply, but the decision-making, memory and relationships always live here.
 
 import { traitInfo } from './companions.js';
+import { CLASSES } from './classes.js';
 
 // ---------------------------------------------------------------------------
 // Topics: what the player is trying to do, and how the world reacts by default.
@@ -364,6 +365,7 @@ const SYSTEM_RULES = [
   'Правила: отвечай на «ты», по-русски, в характере и в нужном настроении; можешь говорить о чём угодно — о себе, о своём прошлом, о мире, о собеседнике.',
   'Если чего-то не знаешь — уклоняйся в характере, но не выдумывай фактов о собеседнике.',
   'Отвечай утверждением о себе, а не встречным вопросом и не пересказом вопроса.',
+  'Собеседник — предводитель отряда, другой человек: не приписывай ему свою судьбу и не говори от его имени.',
   'Не называй собеседника своим именем и не повторяй его слова — отвечай от себя.',
   'Не пересказывай воспоминания списком. Только русский язык, без других языков и иероглифов.',
 ].join('\n');
@@ -372,13 +374,20 @@ const SYSTEM_RULES = [
 export function llmBriefing(persona, { topic, relation, memory = [], playerText = '' }) {
   const mood = moodFor(relation);
   const moodRu = { hostile: 'враждебное', cold: 'холодное', neutral: 'ровное', warm: 'тёплое', devoted: 'преданное' }[mood];
+  // `role` is a descriptive role for NPCs but a class key for companions, so
+  // translate it when it names a class and only add a separate class label when
+  // it does not merely repeat the role.
+  const roleLabel = CLASSES[persona.role]?.label || persona.role || 'житель';
+  const classLabel = persona.className && persona.className !== persona.role
+    ? (CLASSES[persona.className]?.label || persona.className)
+    : '';
   return {
     name: persona.name,
     topic: topicInfo(topic).label,
     playerText,
     system: [
       SYSTEM_RULES,
-      `Персонаж: ${persona.name}, ${persona.role || 'житель'}${persona.className ? `, ${persona.className}` : ''}.`,
+      `Персонаж: ${persona.name}, ${roleLabel}${classLabel ? ` (${classLabel})` : ''}.`,
       persona.backstory ? `Предыстория: ${persona.backstory}` : '',
       `Черты характера: ${(persona.traits || []).map((t) => traitInfo(t).name).join(', ') || 'нет'}.`,
       `Отношение к собеседнику: ${moodRu} (${relation}/100).`,
