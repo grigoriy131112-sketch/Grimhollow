@@ -88,27 +88,19 @@ export default function WorldPage() {
                 <h3>{region.name}</h3>
                 <p className="muted small">{region.description}</p>
                 <div className="cards">
-                  {map.locations.filter((l) => l.regionId === region.id).map((loc) => {
-                    const known = !map.character || map.character.visited.includes(loc.id);
-                    const rumoured = !known && map.character && map.connections.some((c) =>
-                      (c.from === loc.id && map.character.visited.includes(c.to))
-                      || (c.to === loc.id && map.character.visited.includes(c.from)));
-                    return (
-                      <Link key={loc.id} className={`card loc-card${known ? '' : rumoured ? ' rumoured' : ' fogged'}`} to={`/world/locations/${loc.id}`}>
-                        <div className="loc-thumb">
-                          <SceneBackdrop scene={loc.scene} biome={loc.biome} danger={loc.danger} name={loc.name} />
-                        </div>
-                        <div className="hero-top">
-                          <b>{known ? loc.name : rumoured ? `${loc.name}?` : 'Неизвестное место'}</b>
-                          {known && loc.isSafe && <span className="badge safe">Безопасно</span>}
-                        </div>
-                        <p className="muted small">
-                          {known ? loc.description : rumoured ? 'Место известно по слухам, но отряд там не был.' : 'Здесь ещё не ступала нога отряда.'}
-                        </p>
-                        {known && <span className="danger-tag">Опасность {'★'.repeat(Math.min(loc.danger, 5))}</span>}
-                      </Link>
-                    );
-                  })}
+                  {map.locations.filter((l) => l.regionId === region.id).map((loc) => (
+                    <Link key={loc.id} className="card loc-card" to={`/world/locations/${loc.id}`}>
+                      <div className="loc-thumb">
+                        <SceneBackdrop scene={loc.scene} biome={loc.biome} danger={loc.danger} name={loc.name} />
+                      </div>
+                      <div className="hero-top">
+                        <b>{loc.name}</b>
+                        {loc.isSafe && <span className="badge safe">Безопасно</span>}
+                      </div>
+                      <p className="muted small">{loc.description}</p>
+                      <span className="danger-tag">Опасность {'★'.repeat(Math.min(loc.danger, 5))}</span>
+                    </Link>
+                  ))}
                 </div>
               </div>
             ))}

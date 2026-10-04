@@ -193,8 +193,27 @@ accents, road stamps and the re-skinned named places).
   rock.svg              <-  delapouite/stone-pile
   reeds.svg             <-  lorc/water-splash
 
-Textures (one licensed raster, deliberate exception)
-====================================================
+Base map (second licensed raster, deliberate exception)
+=======================================================
+The world map is drawn on a genuine antique engraving, not on our own art:
+
+  maps/isle-antique.jpg
+    Source: Wikimedia Commons, "AMH-7996-KB Map of the island of Boero.jpg"
+    https://commons.wikimedia.org/wiki/File:AMH-7996-KB_Map_of_the_island_of_Boero.jpg
+    Author: Jakob van der Schley / Pieter de Hondt
+    Source collection: Atlas of Mutual Heritage, Koninklijke Bibliotheek
+    (Dutch National Library); after 'Oud en Nieuw Oost-Indien' by François Valentyn
+    Date: circa 1753
+    License: Public domain (published before 1931; faithful reproduction of a
+    2-D public-domain work)
+    Derived work: downscaled and cropped to a 25:16 window for the web; the
+    paper tone is untouched.
+
+  The interactive layer on top of it (roads, seals, labels, party marker) is our
+  own vector work. Only the engraving and the parchment texture below are rasters.
+
+Textures (licensed rasters, deliberate exceptions)
+==================================================
 The world map is otherwise pure vector, but the parchment paper itself is a
 single raster texture. It is public domain, so no attribution is legally
 required; the credit is kept anyway.

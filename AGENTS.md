@@ -252,10 +252,10 @@ Roads are journeys, not teleports. `GET /api/world/map` and
   Always pass coordinates through `services/travel.js#roadPoint` — feeding raw
   rows made every trip exactly `MIN_TRAVEL` (15 min).
 
-## The map: a live screen with fog of war (Wave 7B)
+## The map: a live in-game screen (Wave 7B, opened up in Wave 11)
 
 The atlas is a real in-game screen, not a static picture. It carries a hero
-marker and reveals the world only as far as the party has actually been.
+marker and, since Wave 11, shows every place openly.
 
 - **Position lives on the character.** `characters.location_id` (added by the
   `ensureColumns()` migration) and a `character_visits` table track where a hero
@@ -267,40 +267,51 @@ marker and reveals the world only as far as the party has actually been.
   `{ locationId, visited, travel }`, where `travel` carries live `minute`,
   `progress` and `paused` while a road is under foot. Without `characterId` the
   map returns the full atlas (used by tests and any pre-hero view).
-- **Fog of war has three tiers, computed client-side** in `WorldMap.jsx`:
-  visited (full name, landmark icon, danger pip, solid roads) → rumoured (a
-  direct neighbour of a visited place: dashed ring, `name?`, no travel time) →
-  unknown (`?` and `· · ·`). Only reachable places are clickable. Do not collapse
-  this to a single "known" set: the graph is dense enough that one hop from a
-  visited node lights up almost the whole map.
+- **The atlas is fully open (Wave 11).** `WorldMap.jsx` no longer hides places:
+  every location is drawn with its name, landmark icon and danger pip, and every
+  node is clickable. The old three-tier fog (visited / rumoured / unknown) was
+  removed from both the map and the list — do not reintroduce it. The server
+  still tracks `visited` and `travel`, and the party marker still walks the roads.
+- **No decorative drawing of our own.** The map is the engraving plus the game
+  layer only: inked roads, node seals, labels, the party cross. The compass,
+  frame, vignette, sea hatching and hand-drawn relief are gone — the antique
+  chart supplies all of that. Do not add them back.
+- **The legend sits below the map, not on it.** `.map-legend` is in normal flow
+  under `.map-wrap` (inside `.map-col`) so it never covers the south of the
+  island or its labels. Only the distance note rides on the map, bottom-left.
 - **The marker is interpolated, never stored.** `services/world.js` reports
   `progress` from the travel clock; the client places the dot on the same
   quadratic Bézier the roads use (`(a.x+b.x)/2, (a.y+b.y)/2 - 30`). It must match
   the drawn curve or the dot drifts off the road.
-- **The atlas is an ink-and-parchment chart (Wave 8).** `WorldMap.jsx` draws an
-  aged-paper landmass (`landGrad`) on a cool sea, with hachured relief — short
-  parallel ink ticks (`hachure`, `hill`, `drawHills`, `drawTrees`, `drawMarsh`,
-  `drawWaves`, `drawBones`) scattered per biome and clipped to `landClip`. Keep
-  the palette muted: one sepia ink family (`INK`), colour reserved for danger.
-  Chart furniture is a compass rose, a grid, a vignette and a frame.
-- **Places are inked seals, not glowing dots.** `.seal` is a cream disc with a
-  sepia ring (`.rumour` dashed, `.fogged` greyed); the landmark sits inside it
-  and is tinted sepia via a CSS `filter`. Named places re-skin through
-  `SCENE_LANDMARKS` in `icons.jsx` (`hollow` → `quicksand`, `bone_field` →
-  `dinosaur_bones`, `sunken_chapel` → `church`, `tide_caves` → `cave_entrance`,
-  `ash_forest` → `dead_wood`, `black_spire` → `guarded_tower`).
-- **The party is an inked cross** (`.party-x`), pulsing while it walks. Do not
-  add scattered icons or "stamps" to the map: an earlier attempt was rejected as
-  visual noise — the chart must stay calm and readable.
-- **All of it stays vector — with one deliberate exception.** The map and icons
-  are vector; the paper itself is a single **CC0 public-domain** raster,
-  `client/public/art/textures/parchment.jpg` (Membeth, Wikimedia Commons), tiled
-  via an SVG `<pattern id="parch">`. Sea and land reuse that same paper, tinted
-  cool (`seaTint`) and warm (`landTint`). If you add art, keep it CC BY 3.0 SVG
-  from game-icons.net and credit the `<author>/<icon>` pair in `CREDITS.txt`;
-  do not add further rasters.
-- **The list view mirrors the map.** `pages/World.jsx` applies the same three
-  tiers (`.fogged` / `.rumoured`) so the two tabs never disagree.
+- **The atlas is a genuine antique chart with a vector overlay (Wave 10).**
+  `WorldMap.jsx` no longer draws terrain. The base is a plain 18th-century
+  survey of the island of Boero (Jakob van der Schley / Pieter de Hondt, c. 1753),
+  public domain, served from `client/public/art/maps/isle-antique.jpg` and tiled via an SVG
+  `<pattern id="antiqueMap">`. On top we keep only the game layer: hand-wobbled
+  **roads** (`wobbleLine`) with a pale `HALO` underlay so ink reads over the dark
+  engraving, **inked seals** with the licensed landmark icon, labels, the compass
+  and the party cross. Do not reintroduce our own relief, washes or `seaHatch` —
+  they competed with the engraving and muddied it.
+- **The island clip is a hand-drawn coastline.** `coastline()` builds the closed
+  ring that `landClip` uses to keep the fog-of-war wash on the land, and the
+  locations are placed to sit inside it. If you ever swap the base map, re-check
+  that all `map_x`/`map_y` still land on the new landmass.
+- **Places are inked seals with a drawn pictogram** — actually now the licensed
+  icon inside the seal (re-skinned through `SCENE_LANDMARKS` in `icons.jsx`:
+  `hollow` → `quicksand`, `bone_field` → `dinosaur_bones`, `sunken_chapel` →
+  `church`, `tide_caves` → `cave_entrance`, `ash_forest` → `dead_wood`,
+  `black_spire` → `guarded_tower`).
+- **The party is an inked cross** (`.party-x`), pulsing while it walks. Keep the
+  chart calm: no scattered icons or "stamps" — an earlier attempt read as visual
+  noise.
+- **All of it stays vector — with two deliberate raster exceptions.** The map and
+  icons are vector; the paper is a **CC0** texture (`textures/parchment.jpg`) and
+  the base map is the **public-domain** Boero engraving above. Both are
+  credited in `client/public/art/CREDITS.txt`. If you add art, keep it CC BY 3.0
+  SVG from game-icons.net and credit the `<author>/<icon>` pair; do not add
+  further rasters.
+- **The list view mirrors the map.** `pages/World.jsx` also lists every place
+  openly, so the two tabs never disagree.
 
 ## Testing rules (important)
 
