@@ -20,7 +20,8 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
   игра" **creates a new character and adds it to the saves**.
 - **Maps:** reuse the *same kind of images as the current map* (antique engraving
   style) but **with other shapes**; assemble the **global map ourselves** from
-  those images.
+  those images. **Generate the art in the current style** (procedural SVG
+  engraving, no rasters).
 - **Ship:** bought in **ports for gold**. **Level 1 only** for now. Separate
   **upgrade points** for the ship. **Classes exist for both heroes and guns.**
   The ship **stays in the port after arrival and waits for the hero there**.
@@ -28,9 +29,15 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 - **Crossing time:** keep as-is (1 in-game hour; `MINUTE_MS = 10_000` ⇒ ~10 min
   real time).
 - **On the ship:** while sailing, the player can **talk with the party** and
-  **write on papers** (a logbook / notes feature) — **only on the ship**.
+  **write on papers** — **only on the ship**. The papers are **free-form notes**
+  combined with an **event log** and **lore notes that appear automatically once
+  a detail is learned**.
 - **Islands:** a **huge number**, **non-repeating**, chosen by **Fortune**
   (randomness, seeded).
+- **"New game"** simply **routes to the existing hero-creation page** — no new
+  wizard.
+- **Upgrade points (ship):** the agent decides — see W-SHIP below.
+- **Classes:** classes exist for **both weapons and heroes**.
 
 ## Waves
 
@@ -47,18 +54,63 @@ Order: `W-MENU → W-AUDIO → W-MAP-GLOBAL → W-MAP-CONT → W-SHIP → W-SEA`
 (`W-MENU` and `W-MAP-GLOBAL` are independent; shared files — `App.jsx`,
 `index.js`, `schema.sql` — are owned by the orchestrator.)
 
+## Audio contexts (W-AUDIO) — one file per context
+
+The user wants **every context to have its own audio file**. The contexts that
+already exist in the game:
+
+| Key | Context |
+|-----|---------|
+| `menu` | main menu |
+| `world` | world / atlas / continent map |
+| `location` | exploring a location |
+| `settlement` | city / village |
+| `battle` | combat |
+| `sea` | crossing the sea (voyage) |
+| `port` | a port / harbour |
+| `tavern` | inside a tavern |
+| `temple` | temple / chapel |
+| `forest` | forest biome |
+| `marsh` | marsh biome |
+| `waste` | ash waste biome |
+| `coast` | coast biome |
+| `bonefield` | bone field biome |
+| `snow` | frozen north |
+| `campaign` | story / campaign screen |
+
+SFX (short): `ui_click`, `ui_back`, `hit`, `miss`, `crit`, `loot`, `level_up`,
+`death`, `coin`, `open`, `cannon`, `splash`.
+
+All tracks sourced **CC0 / public domain only**, credited in `CREDITS.txt`.
+
+## Ship upgrade points (W-SHIP) — decided
+
+Upgrade points are earned by:
+
+- **+1 per hero level** (ship grows with its captain);
+- **+1 per cleared sea encounter** (pirates / sea monsters) — a capped trickle;
+- **+2 for discovering a new island** (exploration reward);
+- **+1 for each completed harbour quest** tied to a shipwright.
+
+Spent on: hull HP, cannon damage, extra cannon slots, reload speed, cargo/crew.
+
+## Classes (W-SHIP / W-SEA) — both kinds
+
+- **Weapon classes** (guns): `culverin`, `carronade`, `mortar`, `harpoon` —
+  each with its own damage/arc/reload profile.
+- **Hero classes**: reuse the existing hero classes; each class mans guns with a
+  small bonus (e.g. a warrior reloads slower but hits harder).
+
 ## Open questions
 
-1. **Audio files** — which contexts (menu / world / battle / sea), how many
-   tracks, and confirm CC0-only sourcing. *(blocks W-AUDIO)*
-2. **Map art** — do the continent/global engravings already exist as images, or
-   do we generate SVG from the current style? *(blocks W-MAP-GLOBAL)*
-3. **"New game"** — reuse the existing character-creation screen, or a new
-   wizard? *(W-MENU)*
-4. **Ship upgrade points** — earned how (level, gold, quests)? "Classes of guns"
-   = which taxonomy (by weapon type, by hero class)? *(W-SHIP)*
-5. **Papers on the ship** — free-form notes stored per character, or
-   logbook entries auto-written from events? *(W-SEA)*
+1. **Audio files** — sourcing confirmed CC0-only. Any preference on track length
+   (loops vs. one-shots)? *(W-AUDIO)*
+2. **Map art** — confirmed: generate procedural SVG in the current engraving
+   style. *(W-MAP-GLOBAL)*
+3. **"New game"** — confirmed: routes to the existing hero-creation page. *(W-MENU)*
+4. **Ship upgrade points** — decided above; confirm the numbers. *(W-SHIP)*
+5. **Papers on the ship** — confirmed: free-form notes + event log + auto lore
+   notes. Need the lore "learned" hook (which discoveries set a flag). *(W-SEA)*
 
 ## Wave G12 (online)
 
