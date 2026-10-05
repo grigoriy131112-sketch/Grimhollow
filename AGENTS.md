@@ -21,13 +21,15 @@ Status:
 6. **G6 settlements** — DONE (merged). City Гримхольд + village Соляной Брод.
 7. **G7 trade** — DONE (merged). Buy/sell on the settlement stock shape.
 8. **G8 quests & rewards** — DONE (merged). 14 quests with progress/rewards.
-9. **G9 clan/guild** — RUNNING. Spec in `docs/lore/clan.md`.
+9. **G9 clan/guild** — DONE (merged). Founding, doctrine, holdings.
 10. **G10 monsters & randomizer** — DONE (merged). Bestiary + encounters/loot.
-11. **G11 campaign** — RUNNING. Spec in `docs/lore/campaign_progress.md`.
-12. **G12 online** — LAST, per directive. Scope in `docs/lore/online.md`.
+11. **G11 campaign** — DONE (merged). Chapter flags + three endings.
+12. **G12 online** — LAST, per directive, and needs a **new explicit
+    approval** (re-architects accounts + a shared world). Scope in
+    `docs/lore/online.md`. Not started.
 
-Parallel-safe batches: G1+G2+G4+G6, then G3+G5, then G7, then G8+G10, then
-**G9+G11**, then G12 last.
+Parallel-safe batches were G1+G2+G4+G6, then G3+G5, then G7, then G8+G10,
+then G9+G11. Everything except G12 is merged; no batch is running.
 
 ## Layout
 

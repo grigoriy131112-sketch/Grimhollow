@@ -18,8 +18,9 @@ chat = one branch = one PR. Parallel chats are allowed only when they touch
 | trade | G7 | **DONE (merged)** — buy/sell on the G6 stock shape | — |
 | quests | G8 | **DONE (merged)** — 14 quests, progress + rewards | — |
 | monsters | G10 | **DONE (merged)** — bestiary + encounters + loot | — |
-| clan | G9 | `server/src/db/seed_clan.js`*, `server/src/services/clan.js`*, `server/src/routes/clan.js`*, `client/src/pages/Clan.jsx`* | `wave/g9-clan` |
-| campaign | G11 | `server/src/game/campaign.js`*, `server/src/services/campaign.js`*, `server/src/routes/campaign.js`*, `client/src/pages/Campaign.jsx`* | `wave/g11-campaign` |
+| clan | G9 | **DONE (merged)** — founding, doctrine, holdings, mercenaries | — |
+| campaign | G11 | **DONE (merged)** — chapter flags + three endings | — |
+| online | G12 | **NOT STARTED** — needs a NEW explicit approval (re-architecting) | — |
 
 `*` = new file, created by that chat. New files never collide.
 
@@ -41,14 +42,14 @@ shared file that another chat is also editing.
 
 ```
 DONE: G1 lore, G2 items, G3 survival, G4 save/settings, G5 continents,
-      G6 settlements, G7 trade, G8 quests, G10 monsters
+      G6 settlements, G7 trade, G8 quests, G9 clan, G10 monsters, G11 campaign
 
-G9 clan (uses G7 trade + G2 items)  ─┐
-G11 campaign (uses G8 flags + G1)   ─┴─> G12 online (last)
+Everything except G12 is merged. The offline game is complete.
 ```
 
-Current batch (parallel-safe, disjoint new files): **G9, G11**.
-Then **G12** (online) last, per directive.
+**No batch is running.** The next wave is **G12 (online)**, which per the
+directive is last and requires a **new explicit approval** before it starts
+(it re-architects accounts and a shared world).
 
 Each of G3/G5/G7 also needs a small append-only edit to the shared files
 (`server/src/index.js`, `client/src/App.jsx`, `server/src/db/schema.sql`); the
