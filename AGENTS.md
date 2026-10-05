@@ -115,8 +115,9 @@ persistence matters — Render's free plan has an ephemeral disk.
   sermon, deed, favor, orphan. Methods: free | gold | trial | quest | tame |
   raise | persuade | favor.
 - `COMPANIONS` holds ready-made people with a history, two pluses, two minuses,
-  a starting opinion, a portrait slug and the sources they can appear from.
-  Traits live in `TRAITS` (each with `effects` and `likes`/`dislikes`).
+  a starting opinion, a portrait slug, a grammatical **`gender`** (`m`/`f`) and
+  the sources they can appear from. Traits live in `TRAITS` (each with `effects`
+  and `likes`/`dislikes`).
 - **Relationships** are directed and clamped 0..100: each member feels something
   toward the leader (`to_member_id IS NULL`) and toward every other member.
   `LEAVE_THRESHOLD = 25` — below it with *anyone*, the companion leaves
@@ -130,10 +131,32 @@ persistence matters — Render's free plan has an ephemeral disk.
 - Companion portraits are game-icons faces under `client/public/art/portraits/`
   (map `PORTRAITS` in `game/companions.js`, credited in CREDITS.txt).
 
-### Still to come (approved waves, not yet built)
+## Full conversations with the party (Wave 3E)
 
-- 3E living AI dialogue with the party — self-contained, no external key,
-  never breaks the game.
+Companions are talked to through the **same engine, memory and relationship
+system as NPCs** — `Talk.jsx` is wired into `pages/Party.jsx` with
+`kind="companion"`, and `services/dialogue.js#resolvePersona` resolves a
+companion into the same persona shape as an NPC. What makes these conversations
+"full" rather than one-off beats:
+
+- **Continuity.** `say()` reads the last few turns of the exchange and passes
+  them to the model as real `user`/`assistant` chat turns (`historyTurns` in
+  `services/llm.js`), so the character follows the thread instead of answering
+  each line cold. The template engine is unaffected — it stays deterministic.
+- **Voice.** Every companion and NPC carries a grammatical **`gender`** (`m`/`f`)
+  in its design data; `llmBriefing` states it in the system prompt so a small
+  model keeps the right forms ("стала воином…", not "стал… пережил"). NPC gender
+  is read back by key in `services/npcs.js` (not stored in the `npcs` table).
+- **Party topics.** Beyond the shared beats, companions have four topics of their
+  own — `bond` (доверие), `home` (дом и близкие), `plan` (что дальше), `need`
+  (что тебе нужно). Each has trait reactions, memory facts and mood lines in all
+  five moods, and a quick-prompt in `Talk.jsx`.
+- **No repetition.** A remembered aside is skipped if it already appeared in any
+  of the last four replies, so it cannot echo twice in a row.
+
+Open questions ("почему ты стала воином?") still take the free-answer path
+(the model authors the line); the new topics take the reword path. The engine is
+always the floor: with no model reachable, the template beat answers.
 
 ## Resurrection (Wave 3F, hardened in Wave 15)
 

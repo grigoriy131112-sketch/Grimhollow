@@ -2,7 +2,7 @@
 // them back. Design data lives in game/npcs.js.
 
 import { getDb, transaction } from '../db/index.js';
-import { NPCS } from '../game/npcs.js';
+import { NPCS, npcByKey } from '../game/npcs.js';
 import { traitInfo } from '../game/companions.js';
 
 const parseJson = (v, fallback) => {
@@ -42,6 +42,8 @@ function deriveNpc(row) {
     portrait: row.portrait ? `/art/portraits/${row.portrait}.svg` : null,
     description: row.description,
     locationId: row.location_id,
+    // Gender is design data, not stored in the npcs table, so read it back by key.
+    gender: npcByKey(row.key)?.gender || null,
     traits: [...parseJson(row.pluses, []), ...parseJson(row.minuses, [])],
     plus: parseJson(row.pluses, []).map(traitInfo),
     minus: parseJson(row.minuses, []).map(traitInfo),

@@ -93,6 +93,7 @@ export const sourceInfo = (key) => RECRUIT_SOURCES[key] || null;
 export const COMPANIONS = [
   {
     key: 'marta_veil', name: 'Марта Вейл', class: 'fighter', level: 3,
+    gender: 'f',
     portrait: 'marta_veil',
     history: 'Двенадцать лет держала северные ворота, пока гарнизон не сожгли вместе с городом. С тех пор ищет, за что умереть не зря.',
     plus: ['brave', 'loyal'], minus: ['stubborn', 'gloomy'],
@@ -100,6 +101,7 @@ export const COMPANIONS = [
   },
   {
     key: 'rayven', name: 'Рэйвен', class: 'rogue', level: 2,
+    gender: 'f',
     portrait: 'rayven',
     history: 'Выросла в Сумеречной гавани среди воров и тумана. Улыбается редко, зато всегда знает, где выход.',
     plus: ['clever', 'swift'], minus: ['paranoid', 'greedy'],
@@ -107,6 +109,7 @@ export const COMPANIONS = [
   },
   {
     key: 'dorin_stone', name: 'Дорин Камень', class: 'cleric', level: 4,
+    gender: 'm',
     portrait: 'dorin_stone',
     history: 'Последний жрец утонувшей часовни. Ходит по миру, отпевая всех, кого не успел спасти.',
     plus: ['pious', 'kind'], minus: ['gloomy', 'stubborn'],
@@ -114,6 +117,7 @@ export const COMPANIONS = [
   },
   {
     key: 'kael_vane', name: 'Каэль Вейн', class: 'wizard', level: 3,
+    gender: 'm',
     portrait: 'kael_vane',
     history: 'Учёный из сгоревшей библиотеки. Полжизни собирает по обрывкам то, что сгорело, и не заметил, как стал мёртвым.',
     plus: ['studious', 'clever'], minus: ['coward', 'greedy'],
@@ -121,6 +125,7 @@ export const COMPANIONS = [
   },
   {
     key: 'gorr', name: 'Горр', class: 'barbarian', level: 2,
+    gender: 'm',
     portrait: 'gorr',
     history: 'Был вожаком клана, пока не перебил его в приступе бешенства. Теперь бьётся за других, чтобы забыть.',
     plus: ['fierce', 'hardy'], minus: ['hotheaded', 'drunkard'],
@@ -128,6 +133,7 @@ export const COMPANIONS = [
   },
   {
     key: 'lute', name: 'Лютня', class: 'bard', level: 2,
+    gender: 'f',
     portrait: 'lute',
     history: 'Никто не помнит её настоящего имени — только песни, что она поёт в тавернах. В каждой песне спрятана правда.',
     plus: ['cheerful', 'clever'], minus: ['liar', 'vain'],
@@ -135,6 +141,7 @@ export const COMPANIONS = [
   },
   {
     key: 'yara_thorn', name: 'Яра Тернь', class: 'druid', level: 4,
+    gender: 'f',
     portrait: 'yara_thorn',
     history: 'Живёт на границе Пепельного леса. Деревья говорят с ней, и она им отвечает — это тревожит и её саму.',
     plus: ['kind', 'calm'], minus: ['heretic', 'paranoid'],
@@ -142,6 +149,7 @@ export const COMPANIONS = [
   },
   {
     key: 'bo', name: 'Бо', class: 'monk', level: 3,
+    gender: 'm',
     portrait: 'bo',
     history: 'Молчаливый послушник разрушенного монастыря. Своё имя отдал настоятелю и с тех пор носит чужое.',
     plus: ['calm', 'hardy'], minus: ['gloomy', 'stubborn'],
@@ -149,6 +157,7 @@ export const COMPANIONS = [
   },
   {
     key: 'sera_dawn', name: 'Сера Рассвет', class: 'paladin', level: 5,
+    gender: 'f',
     portrait: 'sera_dawn',
     history: 'Рыцарь павшего ордена. Клятву не нарушила ни разу, даже когда это стоило ей всего.',
     plus: ['pious', 'brave'], minus: ['stubborn', 'vain'],
@@ -156,6 +165,7 @@ export const COMPANIONS = [
   },
   {
     key: 'fin', name: 'Финн', class: 'ranger', level: 2,
+    gender: 'm',
     portrait: 'fin',
     history: 'Охотник с Костяного берега. Говорит, что звери честнее людей — и, похоже, не шутит.',
     plus: ['swift', 'hardy'], minus: ['paranoid', 'lazy'],
@@ -163,6 +173,7 @@ export const COMPANIONS = [
   },
   {
     key: 'ember', name: 'Эмбер', class: 'sorcerer', level: 3,
+    gender: 'f',
     portrait: 'ember',
     history: 'В её крови спит дракон. Она не помнит, откуда пришла, зато помнит каждый пожар, что устроила.',
     plus: ['fierce', 'cheerful'], minus: ['hotheaded', 'vain'],
@@ -170,6 +181,7 @@ export const COMPANIONS = [
   },
   {
     key: 'vashek', name: 'Вашек', class: 'warlock', level: 4,
+    gender: 'm',
     portrait: 'vashek',
     history: 'Продал тень за знание и с тех пор не видит солнца. Шутит, что оно всё равно его не любит.',
     plus: ['clever', 'calm'], minus: ['heretic', 'liar'],
@@ -177,6 +189,7 @@ export const COMPANIONS = [
   },
   {
     key: 'old_pell', name: 'Старый Пелл', class: 'fighter', level: 1,
+    gender: 'm',
     portrait: 'old_pell',
     history: 'Отставной солдат, который больше не может держать строй, но всё ещё может держать слово.',
     plus: ['loyal', 'honest'], minus: ['drunkard', 'lazy'],
@@ -184,6 +197,7 @@ export const COMPANIONS = [
   },
   {
     key: 'nyla', name: 'Нила', class: 'rogue', level: 1,
+    gender: 'f',
     portrait: 'nyla',
     history: 'Сирота из гавани. Ворует с семи лет, но ни разу не обокрала того, кто беднее её.',
     plus: ['swift', 'kind'], minus: ['liar', 'coward'],
@@ -191,6 +205,7 @@ export const COMPANIONS = [
   },
   {
     key: 'brann', name: 'Бранн', class: 'cleric', level: 2,
+    gender: 'm',
     portrait: 'brann',
     history: 'Проповедник, что ходит по пепелищам и хоронит всех, кого находит. Веру свою несёт, как щит.',
     plus: ['pious', 'honest'], minus: ['stubborn', 'gloomy'],
@@ -198,6 +213,7 @@ export const COMPANIONS = [
   },
   {
     key: 'ash', name: 'Эш', class: 'ranger', level: 3,
+    gender: 'm',
     portrait: 'ash',
     history: 'Следопыт, что выжил там, где погиб его отряд. Идёт вперёд, потому что не умеет иначе.',
     plus: ['hardy', 'brave'], minus: ['gloomy', 'paranoid'],
@@ -205,6 +221,7 @@ export const COMPANIONS = [
   },
   {
     key: 'morrigan', name: 'Морриган', class: 'warlock', level: 5,
+    gender: 'f',
     portrait: 'morrigan',
     history: 'Повелительница долгов, что стрижёт души по контрактам. Улыбается так, что хочется проверить кошелёк.',
     plus: ['clever', 'calm'], minus: ['cruel', 'greedy'],
@@ -212,6 +229,7 @@ export const COMPANIONS = [
   },
   {
     key: 'tob', name: 'Тоб', class: 'monk', level: 1,
+    gender: 'm',
     portrait: 'tob',
     history: 'Беглый послушник, что сбежал из монастыря, не выучив ни единой молитвы, зато выучив всё остальное.',
     plus: ['cheerful', 'swift'], minus: ['lazy', 'liar'],
@@ -219,6 +237,7 @@ export const COMPANIONS = [
   },
   {
     key: 'iris', name: 'Ирис', class: 'druid', level: 3,
+    gender: 'f',
     portrait: 'iris',
     history: 'Травница, что лечит и людей, и зверей, не спрашивая, кто перед ней. Одинаково не доверяет и тем, и другим.',
     plus: ['kind', 'studious'], minus: ['paranoid', 'heretic'],
@@ -226,6 +245,7 @@ export const COMPANIONS = [
   },
   {
     key: 'cass', name: 'Касс', class: 'barbarian', level: 4,
+    gender: 'f',
     portrait: 'cass',
     history: 'Наёмница с арены, что не проиграла ни одного боя и устала от этого до тошноты.',
     plus: ['fierce', 'brave'], minus: ['cruel', 'hotheaded'],
@@ -233,6 +253,7 @@ export const COMPANIONS = [
   },
   {
     key: 'hale', name: 'Хейл', class: 'wizard', level: 2,
+    gender: 'm',
     portrait: 'hale',
     history: 'Ученик, чей наставник исчез в Чёрном шпиле. Ищет его и боится найти.',
     plus: ['studious', 'honest'], minus: ['coward', 'gloomy'],
@@ -240,6 +261,7 @@ export const COMPANIONS = [
   },
   {
     key: 'sable', name: 'Сэйбл', class: 'rogue', level: 4,
+    gender: 'f',
     portrait: 'sable',
     history: 'Тень гильдии воров, что ушла на покой — и покой её не принял.',
     plus: ['clever', 'calm'], minus: ['greedy', 'cruel'],
@@ -247,6 +269,7 @@ export const COMPANIONS = [
   },
   {
     key: 'pious_odo', name: 'Одо', class: 'paladin', level: 2,
+    gender: 'm',
     portrait: 'pious_odo',
     history: 'Молодой паладин, что верит громче всех, потому что боится тишины внутри.',
     plus: ['pious', 'brave'], minus: ['vain', 'stubborn'],
@@ -254,6 +277,7 @@ export const COMPANIONS = [
   },
   {
     key: 'wolf', name: 'Клык', class: 'ranger', level: 2,
+    gender: 'm',
     portrait: 'wolf',
     history: 'Волк, что принял человека в свою стаю. Или человек, что принял волчью. Уже и не разобрать.',
     plus: ['fierce', 'loyal'], minus: ['paranoid', 'lazy'],

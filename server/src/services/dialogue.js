@@ -9,6 +9,7 @@ import {
 } from '../game/dialogue.js';
 import { getNpc } from './npcs.js';
 import { getMember } from './party.js';
+import { companionTemplate } from '../game/companions.js';
 import { getCharacter } from './characters.js';
 import { rewordReply, answerQuestion } from './llm.js';
 
@@ -77,6 +78,7 @@ function rememberFact(leaderId, kind, refId, { key, text }) {
 const LLM_TOPICS = new Set([
   'greeting', 'wellbeing', 'mood', 'battle', 'farewell', 'smalltalk', 'lore', 'history',
   'faith', 'party', 'help', 'gold', 'compliment', 'joke',
+  'bond', 'home', 'plan', 'need',
 ]);
 
 // Resolve who is being spoken to, as a uniform persona. `traits` holds raw
@@ -87,7 +89,7 @@ function resolvePersona(leaderId, kind, refId) {
     if (!npc) throw new Error('Собеседник не найден');
     return {
       kind, refId, name: npc.name, role: npc.role, className: npc.class,
-      backstory: npc.description, traits: npc.traits,
+      backstory: npc.description, traits: npc.traits, gender: npc.gender || null,
       portrait: npc.portrait, description: npc.description,
       relation: npcRelation(leaderId, refId),
     };
@@ -99,6 +101,7 @@ function resolvePersona(leaderId, kind, refId) {
   return {
     kind, refId, name: member.name, role: member.className, className: member.className,
     backstory: member.history, traits,
+    gender: companionTemplate(member.templateKey)?.gender || null,
     portrait: member.portrait, description: member.history,
     relation: companionRelation(leaderId, refId),
   };
@@ -134,6 +137,12 @@ export async function say(leaderId, kind, refId, text) {
   const delta = relationDelta(topic, traitKeys, before);
   const after = clamp(before + delta);
 
+  // The recent exchange (oldest first) is fed to the model so it follows the
+  // thread of the conversation. Read it before this turn is written.
+  const history = getDb().prepare(
+    'SELECT speaker, text FROM dialogue_messages WHERE leader_id = ? AND kind = ? AND ref_id = ? ORDER BY id DESC LIMIT 8',
+  ).all(leaderId, kind, refId).reverse().filter((m) => m.text);
+
   // Write both lines, move the relationship, plant the memory.
   const memory = recallMemory(leaderId, kind, refId);
   transaction((db) => {
@@ -159,7 +168,7 @@ export async function say(leaderId, kind, refId, text) {
   const lastReply = getDb().prepare(
     "SELECT text FROM dialogue_messages WHERE leader_id=? AND kind=? AND ref_id=? AND speaker='other' ORDER BY id DESC LIMIT 1",
   ).get(leaderId, kind, refId)?.text || '';
-  const briefing = llmBriefing({ ...persona, traits: traitKeys }, { topic, relation: after, memory, playerText: clean });
+  const briefing = llmBriefing({ ...persona, traits: traitKeys }, { topic, relation: after, memory, playerText: clean, history });
   // An open question ("почему ты стала воином?") is answered by the model itself,
   // so it can talk about anything instead of rephrasing a canned beat about the
   // wrong thing. If no model answers, we fall back to the beat below.
@@ -173,10 +182,14 @@ export async function say(leaderId, kind, refId, text) {
   }
 
   // A remembered aside is appended after rewording, occasionally, so the living
-  // answer always comes first — and never the same aside twice in a row.
+  // answer always comes first — and never the same aside twice in a row. We look
+  // back over several turns, not just the last one, so it cannot echo either.
+  const recentReplies = getDb().prepare(
+    "SELECT text FROM dialogue_messages WHERE leader_id=? AND kind=? AND ref_id=? AND speaker='other' ORDER BY id DESC LIMIT 4",
+  ).all(leaderId, kind, refId).map((r) => r.text).join(' ');
   const aside = memoryAside(memory, after, clean.length);
   let finalText = llm.text;
-  if (aside && !lastReply.includes(aside) && Math.random() < 0.3) finalText = `${finalText} ${aside}`;
+  if (aside && !recentReplies.includes(aside) && Math.random() < 0.3) finalText = `${finalText} ${aside}`;
 
   // Store the final reply text (overwrite the placeholder row).
   getDb().prepare(

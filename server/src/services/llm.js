@@ -126,6 +126,17 @@ export function acceptReply(text, briefing, draft = '') {
   return true;
 }
 
+// Build the chat turns for a request. Prior exchanges are fed back as real
+// user/assistant turns (trimmed to the last few), so the model keeps the thread
+// of the conversation instead of answering every line as if it were the first.
+export function historyTurns(briefing, limit = 8) {
+  const turns = (briefing?.history || []).filter((h) => h && h.text).slice(-limit);
+  return turns.map((h) => ({
+    role: h.speaker === 'player' ? 'user' : 'assistant',
+    content: h.text,
+  }));
+}
+
 // Answer an open question from the player in the character's own words. This is
 // the "living dialogue" path: the model is the author, not a reworder, so it can
 // speak about anything — the character's past, the world, the player. The engine
@@ -139,6 +150,7 @@ export async function answerQuestion(briefing, fallbackText = '', avoid = '') {
 
   const messages = [
     { role: 'system', content: briefing.system },
+    ...historyTurns(briefing),
     {
       role: 'user',
       content: `Собеседник говорит: «${briefing.playerText}».\nОтветь ему одной живой репликой от лица ${briefing.name}.`,
@@ -188,6 +200,7 @@ export async function rewordReply(briefing, fallbackText, avoid = '') {
       role: 'system',
       content: `${briefing.system}\n\nНиже дана черновая реплика — она верна по смыслу и настроению. Перепиши её своими словами, живой разговорной речью, сохранив смысл и настроение. Ответь ТОЛЬКО одной короткой фразой на русском, без кавычек и пояснений.`,
     },
+    ...historyTurns(briefing),
     {
       role: 'user',
       content: `${briefing.playerText ? `Собеседник сказал: «${briefing.playerText}».\n` : ''}Черновик ответа: «${fallbackText}»\nТема разговора: ${briefing.topic}.`,

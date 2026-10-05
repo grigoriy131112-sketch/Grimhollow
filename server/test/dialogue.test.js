@@ -291,3 +291,80 @@ test('praise still beats the mood patterns', () => {
   assert.equal(classifyTopic('спасибо тебе'), 'compliment');
 });
 
+// --- Wave 3E: full conversations with the party -----------------------------
+
+test('companion topics are recognised from free text', () => {
+  assert.equal(classifyTopic('Скажи честно, ты мне доверяешь?'), 'bond');
+  assert.equal(classifyTopic('Расскажи о своём доме и близких'), 'home');
+  assert.equal(classifyTopic('Что нас ждёт дальше?'), 'plan');
+  assert.equal(classifyTopic('Что тебе нужно? Чем я могу помочь?'), 'need');
+  // And they are not stolen by the broader party/history/lore patterns.
+  assert.equal(classifyTopic('Как тебе наш отряд?'), 'party');
+  assert.equal(classifyTopic('Расскажи о себе, откуда ты?'), 'history');
+});
+
+test('companion topics move the relationship in the right direction', () => {
+  // A loyal, kind companion warms to a caring question, a paranoid one resents it.
+  assert.ok(relationDelta('need', ['kind', 'loyal'], 50) > 0);
+  assert.ok(relationDelta('need', ['paranoid'], 50) < 0);
+  assert.ok(relationDelta('bond', ['loyal'], 50) > 0);
+  assert.ok(relationDelta('bond', ['paranoid', 'liar'], 50) < 0);
+});
+
+test('every persona carries a gender so the model keeps the right voice', async () => {
+  const h = hero();
+  const npc = npcIn('Сумеречная гавань');
+  const npcConvo = getConversation(h.id, 'npc', npc.id);
+  assert.ok(['m', 'f'].includes(npcConvo.persona.gender), 'the NPC has a gender');
+
+  const t = companionTemplate('marta_veil');
+  const marta = recruit(h.id, 'marta_veil', { source: t.sources[0], goldOffered: 9999 }, () => 0).member;
+  const convo = getConversation(h.id, 'companion', marta.id);
+  assert.equal(convo.persona.gender, 'f', 'Марта speaks in the feminine');
+});
+
+test('the LLM briefing states the gender and carries the conversation history', async () => {
+  const { llmBriefing } = await import('../src/game/dialogue.js');
+  const b = llmBriefing(
+    { name: 'Марта Вейл', role: 'Воин', className: 'fighter', traits: ['brave'], gender: 'f' },
+    { topic: 'question', relation: 55, history: [{ speaker: 'player', text: 'Привет.' }, { speaker: 'other', text: 'Рада видеть.' }] },
+  );
+  assert.match(b.system, /женский/i);
+  assert.equal(b.history.length, 2);
+});
+
+test('prior turns are fed back to the model as real chat turns', async () => {
+  const { historyTurns } = await import('../src/services/llm.js');
+  const turns = historyTurns({ history: [
+    { speaker: 'player', text: 'Привет.' },
+    { speaker: 'other', text: 'Рада видеть.' },
+    { speaker: 'player', text: 'Почему ты здесь?' },
+  ] });
+  assert.deepEqual(turns, [
+    { role: 'user', content: 'Привет.' },
+    { role: 'assistant', content: 'Рада видеть.' },
+    { role: 'user', content: 'Почему ты здесь?' },
+  ]);
+  // A long conversation is trimmed to the most recent turns.
+  const many = historyTurns({ history: Array.from({ length: 20 }, (_, i) => ({ speaker: 'player', text: `line ${i}` })) });
+  assert.equal(many.length, 8);
+  assert.equal(many[many.length - 1].content, 'line 19');
+});
+
+test('a remembered aside is not repeated across consecutive turns', async () => {
+  const h = hero();
+  const npc = npcIn('Перекрёсток висельников');
+  // Build up a strong memory of the greeting, then talk enough for the aside to
+  // be eligible. The aside must never appear in two replies in a row.
+  for (let i = 0; i < 3; i++) await say(h.id, 'npc', npc.id, 'Привет.');
+  for (let i = 0; i < 8; i++) await say(h.id, 'npc', npc.id, 'Как дела?');
+  const replies = getConversation(h.id, 'npc', npc.id).messages
+    .filter((m) => m.speaker === 'other').map((m) => m.text);
+  for (let i = 1; i < replies.length; i++) {
+    const asideOf = (t) => (t.match(/Я помню[^.]*\./) || [''])[0];
+    const a = asideOf(replies[i - 1]);
+    const b = asideOf(replies[i]);
+    if (a && b) assert.notEqual(a, b, 'the same aside is not repeated twice in a row');
+  }
+});
+
