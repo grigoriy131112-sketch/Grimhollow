@@ -364,3 +364,16 @@ CREATE TABLE IF NOT EXISTS character_unlocks (
   created_at   TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (character_id, flag)
 );
+
+-- Wave G11: campaign chapter flags. One row per flag a hero has reached. Kept
+-- separate from character_unlocks (G8) because a flag may be set by a branch
+-- (the north, Kor-Ashan) or by the clan (G9), not only by a quest reward. The
+-- rules and the three endings live in game/campaign.js; services/campaign.js
+-- is the I/O layer.
+CREATE TABLE IF NOT EXISTS campaign_progress (
+  character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  flag         TEXT NOT NULL,
+  source       TEXT NOT NULL DEFAULT 'manual',
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (character_id, flag)
+);
