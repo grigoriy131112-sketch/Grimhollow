@@ -478,3 +478,15 @@ ul.stats span { color: var(--muted); }
 .upg-node-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem; }
 .upg-cost { font-size: 0.82rem; color: var(--gold-soft); }
 .upg-reason { color: var(--muted); margin: 0.35rem 0 0; }
+
+/* --- Поселения: cities and villages (Wave G6) --- */
+.settlement-building-head { display: flex; align-items: center; gap: 0.6rem; }
+.settlement-building-head > span:nth-child(2) { flex: 1; }
+.settlement-building-head .btn { margin-left: auto; }
+.settlement-building-icon { display: inline-flex; }
+.settlement-building-icon .icon { opacity: 0.85; }
+.settlement-building-body { margin-top: 0.7rem; border-top: 1px dashed var(--line); padding-top: 0.6rem; }
+.settlement-building-body h3 { margin: 0.5rem 0 0.35rem; font-size: 0.95rem; color: var(--gold-soft); }
+.settlement-actions { list-style: none; padding: 0; margin: 0; }
+.settlement-actions li { padding: 0.25rem 0; border-bottom: 1px dashed var(--line); }
+.settlement-actions li:last-child { border-bottom: none; }
