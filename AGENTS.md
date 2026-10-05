@@ -3,6 +3,30 @@
 A dark-fantasy, classic D&D-flavoured browser RPG. Node/Express + SQLite API
 with a React (Vite) client.
 
+## Global plan (waves)
+
+Grimhollow is built one **wave** at a time. One wave = one approval (`погнали`)
+= one chat = one branch = one PR. The wave map, the chat roles and the
+file-ownership rules live in `docs/CHATPLAN.md`. Order:
+
+1. **G1 lore** — world bible, 5 continents, main story arc (`docs/lore/**`).
+2. **G2 items** — items, equipment, artifacts, buffs/debuffs (modifier engine).
+3. **G3 survival** — hunger/thirst/fatigue as debuffs (needs G2).
+4. **G4 save & settings** — save slots/export + a settings page.
+5. **G5 continents** — the 5 continents + inter-continent travel.
+6. **G6 settlements** — cities/villages with taverns, temples, libraries,
+   guilds, smiths, shops, markets.
+7. **G7 trade** — buying/selling, prices, stock.
+8. **G8 quests & rewards** — quests from guilds/taverns/NPCs + rewards.
+9. **G9 clan/guild** — the player's own clan or guild.
+10. **G10 monsters & randomizer** — more creatures + encounter/loot generation.
+11. **G11 campaign** — the story chains from G1, final goal.
+12. **G12 online** — last, per directive; needs re-architecting (accounts,
+    shared world). Not started without a new explicit approval.
+
+Parallel-safe batches: **G1 + G2 + G4 + G6** first, then G3 + G5, then G7, then
+G8, then G9, then G10 + G11, then G12.
+
 ## Layout
 
 - `server/` — Express API, game engine, SQLite storage.
