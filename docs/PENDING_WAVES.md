@@ -82,6 +82,9 @@ SFX (short): `ui_click`, `ui_back`, `hit`, `miss`, `crit`, `loot`, `level_up`,
 `death`, `coin`, `open`, `cannon`, `splash`.
 
 All tracks sourced **CC0 / public domain only**, credited in `CREDITS.txt`.
+Music tracks are **seamlessly looped** (the engine crossfades and restarts them);
+SFX are short one-shots. Audio credits go in the same `client/public/art/CREDITS.txt`
+(a new "Audio credits" section), not a separate file.
 
 ## Ship upgrade points (W-SHIP) — decided
 
