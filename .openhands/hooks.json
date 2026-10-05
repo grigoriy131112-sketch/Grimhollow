@@ -1,11 +1,10 @@
 {
   "session_start": [
     {
-      "matcher": "*",
+      "matcher": "",
       "hooks": [
         {
           "type": "command",
-          "name": "ensure-grimhollow-server",
           "command": "timeout 60 bash /workspace/project/scripts/serve.sh >/tmp/grimhollow-hook.log 2>&1 </dev/null",
           "timeout": 90,
           "async": true
@@ -15,11 +14,10 @@
   ],
   "user_prompt_submit": [
     {
-      "matcher": "*",
+      "matcher": "",
       "hooks": [
         {
           "type": "command",
-          "name": "ensure-grimhollow-server",
           "command": "timeout 60 bash /workspace/project/scripts/serve.sh >/tmp/grimhollow-hook.log 2>&1 </dev/null",
           "timeout": 90,
           "async": true
