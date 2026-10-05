@@ -13,6 +13,7 @@ import dialogueRoutes from './routes/dialogue.js';
 import travelRoutes from './routes/travel.js';
 import upgradeRoutes from './routes/upgrades.js';
 import resurrectionRoutes from './routes/resurrections.js';
+import saveRoutes from './routes/saves.js';
 
 export function createApp() {
   const app = express();
@@ -27,6 +28,7 @@ export function createApp() {
   app.use('/api/travel', travelRoutes);
   app.use('/api/upgrades', upgradeRoutes);
   app.use('/api/resurrections', resurrectionRoutes);
+  app.use('/api/saves', saveRoutes);
 
   // Serve the built SPA when present (production / work-host preview).
   const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');

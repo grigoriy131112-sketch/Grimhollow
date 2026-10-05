@@ -9,6 +9,7 @@ import RecruitPage from './pages/Recruit.jsx';
 import TravelPage from './pages/Travel.jsx';
 import UpgradesPage from './pages/Upgrades.jsx';
 import ResurrectionPage from './pages/Resurrection.jsx';
+import SettingsPage from './pages/Settings.jsx';
 
 function Nav() {
   return (
@@ -17,6 +18,7 @@ function Nav() {
       <div className="links">
         <NavLink to="/characters">Герои</NavLink>
         <NavLink to="/world">Мир</NavLink>
+        <NavLink to="/settings">Настройки</NavLink>
         <span className="muted small" style={{ marginLeft: 'auto', opacity: 0.6 }} title="версия сборки">
           сборка {typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev'}
         </span>
@@ -40,6 +42,7 @@ export default function App() {
           <Route path="/travel/:id" element={<TravelPage />} />
           <Route path="/upgrades/:leaderId" element={<UpgradesPage />} />
           <Route path="/resurrection/:leaderId" element={<ResurrectionPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/battles/:id" element={<BattlePage />} />
           <Route path="*" element={<Navigate to="/characters" replace />} />
         </Routes>
