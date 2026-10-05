@@ -6,6 +6,7 @@ import { getDb } from './db/index.js';
 import { seedWorld } from './db/seed.js';
 import { seedSettlements } from './db/seed_settlements.js';
 import { seedContinents } from './db/seed_continents.js';
+import { seedQuests } from './db/seed_quests.js';
 import { seedNpcs } from './services/npcs.js';
 import characterRoutes from './routes/characters.js';
 import worldRoutes from './routes/world.js';
@@ -21,6 +22,7 @@ import settlementRoutes from './routes/settlements.js';
 import survivalRoutes from './routes/survival.js';
 import tradeRoutes from './routes/trade.js';
 import continentRoutes from './routes/continents.js';
+import questRoutes from './routes/quests.js';
 
 export function createApp() {
   const app = express();
@@ -41,6 +43,7 @@ export function createApp() {
   app.use('/api/survival', survivalRoutes);
   app.use('/api/trade', tradeRoutes);
   app.use('/api/continents', continentRoutes);
+  app.use('/api/quests', questRoutes);
 
   // Serve the built SPA when present (production / work-host preview).
   const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
@@ -64,6 +67,7 @@ if (isMain) {
   seedNpcs();
   seedSettlements();
   seedContinents();
+  seedQuests();
   const port = Number(process.env.PORT || 3001);
   createApp().listen(port, () => console.log(`Grimhollow server listening on http://localhost:${port}`));
 }

@@ -323,3 +323,44 @@ CREATE TABLE IF NOT EXISTS character_survival (
   fatigue      INTEGER NOT NULL DEFAULT 0,
   updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Wave G8: the quest catalogue. `objective` and `reward` are JSON blobs whose
+-- shape is documented in db/seed_quests.js; `requires` is a JSON array of quest
+-- keys. `story` marks a key quest that can never be permanently failed.
+CREATE TABLE IF NOT EXISTS quests (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  key        TEXT NOT NULL UNIQUE,
+  source     TEXT NOT NULL,                -- guild | tavern | temple | library | npc | story
+  giver      TEXT,                         -- NPC key, building key, or 'settlement:building'
+  chapter    INTEGER NOT NULL DEFAULT 0,
+  title      TEXT NOT NULL,
+  text       TEXT NOT NULL DEFAULT '',
+  objective  TEXT NOT NULL DEFAULT '{}',   -- { type, target, count, item? }
+  reward     TEXT NOT NULL DEFAULT '{}',   -- { gold?, xp?, item?, opinion?, unlock? }
+  requires   TEXT NOT NULL DEFAULT '[]',   -- quest keys completed first
+  story      INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+-- A hero's relationship to a quest: accepted -> active, then completed or
+-- failed. Progress is the number of objective units already done.
+CREATE TABLE IF NOT EXISTS character_quests (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  quest_key    TEXT NOT NULL REFERENCES quests(key) ON DELETE CASCADE,
+  status       TEXT NOT NULL DEFAULT 'active',  -- active | completed | failed
+  progress     INTEGER NOT NULL DEFAULT 0,
+  accepted_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (character_id, quest_key)
+);
+
+-- Wave G8: progress flags a quest reward grants (a location or chapter gate).
+-- Wave G11 (campaign) reads these to advance the story.
+CREATE TABLE IF NOT EXISTS character_unlocks (
+  character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  flag         TEXT NOT NULL,
+  quest_key    TEXT,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (character_id, flag)
+);
