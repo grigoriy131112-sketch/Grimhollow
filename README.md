@@ -4,6 +4,37 @@ A dark-fantasy, classic D&D-flavoured browser RPG. Node/Express + SQLite API
 with a React (Vite) client. No dice, no external services required — the whole
 game runs on your own machine.
 
+## Give it a permanent home (no sandbox)
+
+The app builds into **one image** that serves both the API and the built SPA, so
+the same image runs anywhere Docker runs. `main` is automatically tested, then
+built and published to GitHub Container Registry by
+`.github/workflows/publish.yml` — so you can run the game straight from GHCR:
+
+```bash
+docker run -d --name grimhollow -p 3001:3001 \
+  -v grimhollow-data:/data \
+  ghcr.io/grigoriy131112-sketch/grimhollow:latest
+```
+
+Open <http://localhost:3001>. The `grimhollow-data` volume keeps the SQLite world
+across restarts and upgrades.
+
+To put it on the public internet (a real URL that lives independently of any
+sandbox), two ready-to-use configs are included:
+
+- **Render** — push to GitHub, then *New +* → *Blueprint* → pick this repo
+  (`render.yaml`). The free plan needs no card; note it has an ephemeral disk, so
+  the world resets on redeploy. Uncomment the `disk` block in `render.yaml` and
+  switch to a paid plan to keep progress.
+- **Fly.io** — `fly launch --no-deploy --copy-config --name grimhollow`,
+  `fly volumes create grimhollow_data --size 1`, `fly deploy` (`fly.toml`). Fly
+  gives the app a persistent volume, so heroes survive restarts.
+
+Any other Docker host (Railway, Koyeb, a VPS, `docker compose` on your own
+machine) works the same way: run the image, mount a volume at `/data`, point the
+health check at `/api/health`.
+
 ## Run it anywhere (no sandbox needed)
 
 ### Preview in the sandbox (work-host)

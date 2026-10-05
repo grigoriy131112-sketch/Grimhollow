@@ -47,6 +47,23 @@ point at a sandbox URL. Two supported ways to run it anywhere:
 The LLM layer is optional (`LLM_PROVIDER=off` by default). With it off, NPC
 dialogue uses the built-in engine, so no model, key, or network is required.
 
+### Publishing and permanent hosting
+
+`main` is tested, then built and pushed to GHCR by
+`.github/workflows/publish.yml` (multi-arch; the package is public, so it pulls
+anonymously). The same image runs anywhere Docker runs:
+
+```bash
+docker run -d -p 3001:3001 -v grimhollow-data:/data \
+  ghcr.io/grigoriy131112-sketch/grimhollow:latest
+```
+
+`render.yaml` and `fly.toml` are ready-to-use blueprints for a public URL that
+does not depend on this sandbox. The app listens on `process.env.PORT` and reads
+its database from `DB_PATH`, so no host-specific code is needed; mount a volume
+at `/data` to keep the world. Prefer Fly (or any host with a real volume) when
+persistence matters — Render's free plan has an ephemeral disk.
+
 ## Game design rules (locked)
 
 - Combat is **diceless**: an ability shows an honest hit % (accuracy vs evasion)
