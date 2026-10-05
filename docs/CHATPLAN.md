@@ -13,9 +13,11 @@ chat = one branch = one PR. Parallel chats are allowed only when they touch
 | items | G2 | **DONE (merged)** — item catalogue + modifier engine | — |
 | save-settings | G4 | **DONE (merged)** — save slots/export + settings page | — |
 | settlements | G6 | **DONE (merged)** — city Гримхольд + village Соляной Брод + stock shape | — |
-| survival | G3 | `server/src/game/survival.js`*, `server/src/services/survival.js`* | `wave/g3-survival` |
-| continents | G5 | `server/src/db/seed_continents.js`*, `server/src/services/continents.js`*, `server/src/game/continent_travel.js`* | `wave/g5-continents` |
-| trade | G7 | `server/src/services/trade.js`*, `server/src/routes/trade.js`*, `client/src/pages/Trade.jsx`* | `wave/g7-trade` |
+| survival | G3 | **DONE (merged)** — hunger/thirst/fatigue meters as debuffs | — |
+| continents | G5 | **DONE (merged)** — 4 new continents + crossings | — |
+| trade | G7 | **DONE (merged)** — buy/sell on the G6 stock shape | — |
+| quests | G8 | `server/src/db/seed_quests.js`*, `server/src/services/quests.js`*, `server/src/routes/quests.js`*, `client/src/pages/Quests.jsx`* | `wave/g8-quests` |
+| monsters | G10 | `server/src/db/seed_monsters_extra.js`*, `server/src/game/randomizer.js`*, `server/src/services/encounters.js`* | `wave/g10-monsters` |
 
 `*` = new file, created by that chat. New files never collide.
 
@@ -36,17 +38,16 @@ shared file that another chat is also editing.
 ## Dependencies (what must land before what)
 
 ```
-DONE: G1 lore, G2 items, G4 save/settings, G6 settlements
+DONE: G1 lore, G2 items, G3 survival, G4 save/settings, G5 continents,
+      G6 settlements, G7 trade
 
-G3 survival (uses G2 modifier engine) ─┐
-G5 continents (uses G1 lore)          ─┼─> G8 quests ─> G9 clan ─> G11 campaign
-G7 trade (uses G6 stock shape)        ─┘
-G10 monsters + randomizer
-G12 online (last, per directive)
+G8 quests (uses G1 quests.md + G6 sources) ─┐
+G10 monsters + randomizer                  ─┼─> G9 clan ─> G11 campaign ─> G12 online (last)
+                                            ┘
 ```
 
-Current batch (parallel-safe, disjoint new files): **G3, G5, G7**.
-Then **G8** (quests), then **G9** (clan), then **G10 + G11**, then **G12** last.
+Current batch (parallel-safe, disjoint new files): **G8, G10**.
+Then **G9** (clan), then **G11** (campaign), then **G12** (online) last.
 
 Each of G3/G5/G7 also needs a small append-only edit to the shared files
 (`server/src/index.js`, `client/src/App.jsx`, `server/src/db/schema.sql`); the
