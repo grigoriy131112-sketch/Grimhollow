@@ -377,3 +377,63 @@ CREATE TABLE IF NOT EXISTS campaign_progress (
   created_at   TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (character_id, flag)
 );
+
+-- Wave G9: the player's own clan (docs/lore/clan.md). One clan per leader. The
+-- doctrine is irreversible; the clan's two resources are gold (the leader's own
+-- purse, spent as the clan's treasury) and `names`, the memory currency earned
+-- by rituals and quests. Building tiers are gated by the clan level (1..5).
+-- Mercenaries reuse the party member shape; a fallen one is revived for `names`.
+CREATE TABLE IF NOT EXISTS clans (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  leader_id     INTEGER NOT NULL UNIQUE REFERENCES characters(id) ON DELETE CASCADE,
+  key           TEXT NOT NULL UNIQUE,          -- latin slug generated from the name
+  name          TEXT NOT NULL,
+  doctrine      TEXT,                          -- chroniclers | thaw | silent | shepherds (chosen once)
+  base_id       INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+  level         INTEGER NOT NULL DEFAULT 1,
+  names         INTEGER NOT NULL DEFAULT 0,    -- the memory currency
+  founded_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- One building the clan has raised. `tier` is its level (1..3); `MAX_RANK` in
+-- game/clan.js caps it. The type keys are Latin; `name` is Russian.
+CREATE TABLE IF NOT EXISTS clan_buildings (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  clan_id     INTEGER NOT NULL REFERENCES clans(id) ON DELETE CASCADE,
+  type        TEXT NOT NULL,
+  tier        INTEGER NOT NULL DEFAULT 1,
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (clan_id, type)
+);
+
+-- A clan mercenary. Reuses the party member sheet; `status` is active | dead.
+CREATE TABLE IF NOT EXISTS clan_mercenaries (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  clan_id      INTEGER NOT NULL REFERENCES clans(id) ON DELETE CASCADE,
+  template_key TEXT NOT NULL,
+  name         TEXT NOT NULL,
+  class        TEXT NOT NULL,
+  level        INTEGER NOT NULL DEFAULT 1,
+  portrait     TEXT,
+  history      TEXT NOT NULL DEFAULT '',
+  pluses       TEXT NOT NULL DEFAULT '[]',
+  minuses      TEXT NOT NULL DEFAULT '[]',
+  status       TEXT NOT NULL DEFAULT 'active',   -- active | dead
+  hired_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- The clan content catalogue (Wave G9): the four doctrines and the six building
+-- types, seeded idempotently from db/seed_clan.js. `data` holds the full entry
+-- (costs, bonuses, effects) as JSON; the service reads it through the seed.
+CREATE TABLE IF NOT EXISTS clan_catalog (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind        TEXT NOT NULL,                 -- doctrine | building
+  key         TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  data        TEXT NOT NULL DEFAULT '{}',
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (kind, key)
+);
