@@ -1,0 +1,25 @@
+# One-click deploy on Render: https://render.com/docs/blueprint-spec
+# New + > Blueprint > pick this repo. No card needed for the free plan.
+#
+# The free instance type has an ephemeral filesystem, so the SQLite world
+# resets when the service redeploys or restarts. To keep your heroes between
+# deploys, uncomment the `disk` block and switch `plan` to a paid instance type
+# (Render only attaches disks to paid services).
+
+services:
+  - type: web
+    name: grimhollow
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # Render injects PORT itself; the server reads process.env.PORT.
+      - key: DB_PATH
+        value: /data/grimhollow.sqlite
+      - key: LLM_PROVIDER
+        value: "off"
+    # disk:
+    #   name: grimhollow-data
+    #   mountPath: /data
+    #   sizeGB: 1
