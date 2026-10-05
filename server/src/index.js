@@ -6,6 +6,7 @@ import { getDb } from './db/index.js';
 import { seedWorld } from './db/seed.js';
 import { seedSettlements } from './db/seed_settlements.js';
 import { seedContinents } from './db/seed_continents.js';
+import { seedMonstersExtra } from './db/seed_monsters_extra.js';
 import { seedNpcs } from './services/npcs.js';
 import characterRoutes from './routes/characters.js';
 import worldRoutes from './routes/world.js';
@@ -64,6 +65,7 @@ if (isMain) {
   seedNpcs();
   seedSettlements();
   seedContinents();
+  seedMonstersExtra();
   const port = Number(process.env.PORT || 3001);
   createApp().listen(port, () => console.log(`Grimhollow server listening on http://localhost:${port}`));
 }
