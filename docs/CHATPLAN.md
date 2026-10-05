@@ -51,6 +51,14 @@ Everything except G12 is merged. The offline game is complete.
 directive is last and requires a **new explicit approval** before it starts
 (it re-architects accounts and a shared world).
 
+The post-G12 backlog (start menu, audio, two maps, ship, sea crossing) lives in
+**`docs/PENDING_WAVES.md`** — approved-in-principle, not started, each needing its
+own `погнали`. The wave chats' reports are archived in **`docs/CHAT_ARCHIVE.md`**.
+
+> **Standing rule:** the user adds requirements from his head, often. Every new
+> requirement is written down in `docs/PENDING_WAVES.md` before it is built, and
+> nothing is built without a per-wave `погнали`.
+
 Each of G3/G5/G7 also needs a small append-only edit to the shared files
 (`server/src/index.js`, `client/src/App.jsx`, `server/src/db/schema.sql`); the
 orchestrator resolves those at merge time (as done for G2/G4/G6).
