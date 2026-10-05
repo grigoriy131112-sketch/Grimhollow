@@ -10,10 +10,12 @@ chat = one branch = one PR. Parallel chats are allowed only when they touch
 |------|------|------------------|--------|
 | Orchestrator | — | planning, review, merges, preview, **lore/story** (`docs/lore/**`) | `main` |
 | lore | G1 | **DONE by orchestrator** — canon lives in `docs/lore/**`; no chat re-writes it | — |
-| items | G2 | `server/src/game/items.js`, `server/src/game/modifiers.js`*, `server/src/services/items.js`, `server/src/routes/items.js`*, `client/src/pages/Inventory.jsx`* | `wave/g2-items` |
+| items | G2 | **DONE (merged)** — item catalogue + modifier engine | — |
+| save-settings | G4 | **DONE (merged)** — save slots/export + settings page | — |
+| settlements | G6 | **DONE (merged)** — city Гримхольд + village Соляной Брод + stock shape | — |
 | survival | G3 | `server/src/game/survival.js`*, `server/src/services/survival.js`* | `wave/g3-survival` |
-| save-settings | G4 | `server/src/services/saves.js`*, `server/src/routes/saves.js`*, `client/src/pages/Settings.jsx`* | `wave/g4-save-settings` |
-| settlements | G6 | `server/src/db/seed_settlements.js`*, `server/src/services/settlements.js`*, `server/src/routes/settlements.js`*, `client/src/pages/Settlement.jsx`* | `wave/g6-settlements` |
+| continents | G5 | `server/src/db/seed_continents.js`*, `server/src/services/continents.js`*, `server/src/game/continent_travel.js`* | `wave/g5-continents` |
+| trade | G7 | `server/src/services/trade.js`*, `server/src/routes/trade.js`*, `client/src/pages/Trade.jsx`* | `wave/g7-trade` |
 
 `*` = new file, created by that chat. New files never collide.
 
@@ -34,16 +36,21 @@ shared file that another chat is also editing.
 ## Dependencies (what must land before what)
 
 ```
-G1 lore (DONE, orchestrator) ─┐
-G2 items ─┼─> G3 survival (needs the modifier engine from G2)
-G4 save/settings ─┘
-G6 settlements ─> G7 trade ─> G8 quests ─> G9 clan ─> G11 campaign
-G5 continents ─> G12 online (last, per directive)
+DONE: G1 lore, G2 items, G4 save/settings, G6 settlements
+
+G3 survival (uses G2 modifier engine) ─┐
+G5 continents (uses G1 lore)          ─┼─> G8 quests ─> G9 clan ─> G11 campaign
+G7 trade (uses G6 stock shape)        ─┘
 G10 monsters + randomizer
+G12 online (last, per directive)
 ```
 
-Parallel-safe at the same time: **G2, G4, G6** (G1 lore is done by the orchestrator). Then G3 (after G2), G5.
-Then G7, G8, G9. Then G10, G11. G12 last.
+Current batch (parallel-safe, disjoint new files): **G3, G5, G7**.
+Then **G8** (quests), then **G9** (clan), then **G10 + G11**, then **G12** last.
+
+Each of G3/G5/G7 also needs a small append-only edit to the shared files
+(`server/src/index.js`, `client/src/App.jsx`, `server/src/db/schema.sql`); the
+orchestrator resolves those at merge time (as done for G2/G4/G6).
 
 ## How a chat is created
 
