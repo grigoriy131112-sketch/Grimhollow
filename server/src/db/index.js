@@ -13,6 +13,8 @@ export function getDb() {
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   db = new DatabaseSync(dbPath);
   db.exec('PRAGMA foreign_keys = ON;');
+  // Wait out a concurrent writer instead of throwing SQLITE_BUSY at it.
+  db.exec('PRAGMA busy_timeout = 5000;');
   db.exec(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'));
   migrate(db);
   return db;

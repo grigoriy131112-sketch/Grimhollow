@@ -173,6 +173,12 @@ dialogue uses the built-in engine, so no model, key, or network is required.
   lives in `server/src/data/` and is gitignored.
 - `server/src/index.js` also serves `client/dist` (SPA fallback) so the whole app
   is reachable from one port in preview.
+- **Preview "Bad Gateway" = nothing is listening on the work-host port** (12000).
+  `scripts/serve.sh` is the fix: it builds if needed and starts the server
+  detached (`setsid nohup`, `--grimhollow` argv marker) on `PORT`, is idempotent,
+  and with `--watch` restarts it after a crash. Never leave the server as a child
+  of the shell that started it, and never run two copies (the second fails with
+  `EADDRINUSE` and pollutes the log).
 
 ## Party combat (Wave 3C)
 

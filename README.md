@@ -6,6 +6,22 @@ game runs on your own machine.
 
 ## Run it anywhere (no sandbox needed)
 
+### Preview in the sandbox (work-host)
+
+The work-host preview (ports `12000`/`12001`) shows **Bad Gateway** whenever
+nothing is listening on the port — the app is not running. Start (or restart)
+it with:
+
+```bash
+scripts/serve.sh            # build if needed, then serve detached on :12000
+scripts/serve.sh --watch    # stay resident and auto-restart if it dies
+scripts/serve.sh --stop     # stop it
+```
+
+`scripts/serve.sh` is idempotent (a second call says "already up"), rebuilds the
+client only when `client/dist` is missing, and starts the server detached so it
+outlives the shell that launched it. Set `PORT` to serve elsewhere.
+
 ### Option 1 — Docker (one command)
 
 ```bash
