@@ -271,3 +271,43 @@ CREATE TABLE IF NOT EXISTS character_buffs (
   max_stacks   INTEGER,
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Settlements (Wave G6): a city or village sits on a normal location, so the
+-- map, roads and travel keep working untouched. `kind` is 'city' | 'village'.
+CREATE TABLE IF NOT EXISTS settlements (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  location_id INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+  key         TEXT NOT NULL UNIQUE,
+  name        TEXT NOT NULL,
+  kind        TEXT NOT NULL DEFAULT 'village',
+  description TEXT NOT NULL DEFAULT '',
+  sort_order  INTEGER NOT NULL DEFAULT 0
+);
+
+-- A building inside a settlement. `type` is a stable Latin key (tavern, temple,
+-- library, guild, smithy, shop, market, inn, house); `name` is Russian. The
+-- first building of each functional type carries the settlement's stock.
+CREATE TABLE IF NOT EXISTS settlement_buildings (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  settlement_id INTEGER NOT NULL REFERENCES settlements(id) ON DELETE CASCADE,
+  key           TEXT NOT NULL,
+  name          TEXT NOT NULL,
+  type          TEXT NOT NULL,
+  description   TEXT NOT NULL DEFAULT '',
+  sort_order    INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (settlement_id, key)
+);
+
+-- Shop and market stock (Wave G6 defines the shape; Wave G7 trades on it).
+-- One row per offer: `item_key` maps to ITEMS (game/items.js) once G2 lands,
+-- `price` is gold per unit and `quantity` is how many are on the shelf (-1 for
+-- an endless supply). Buying/selling is NOT implemented here.
+CREATE TABLE IF NOT EXISTS settlement_stock (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  building_id   INTEGER NOT NULL REFERENCES settlement_buildings(id) ON DELETE CASCADE,
+  item_key      TEXT NOT NULL,
+  price         INTEGER NOT NULL,
+  quantity      INTEGER NOT NULL DEFAULT -1,
+  sort_order    INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (building_id, item_key)
+);

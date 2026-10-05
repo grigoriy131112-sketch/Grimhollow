@@ -11,6 +11,7 @@ import UpgradesPage from './pages/Upgrades.jsx';
 import ResurrectionPage from './pages/Resurrection.jsx';
 import SettingsPage from './pages/Settings.jsx';
 import InventoryPage from './pages/Inventory.jsx';
+import SettlementPage from './pages/Settlement.jsx';
 
 function Nav() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/resurrection/:leaderId" element={<ResurrectionPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/inventory/:id" element={<InventoryPage />} />
+          <Route path="/settlements/:id" element={<SettlementPage />} />
           <Route path="/battles/:id" element={<BattlePage />} />
           <Route path="*" element={<Navigate to="/characters" replace />} />
         </Routes>
