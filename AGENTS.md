@@ -254,17 +254,15 @@ always the floor: with no model reachable, the template beat answers.
   command on `session_start` and `user_prompt_submit`, so a fresh conversation
   brings the preview back with no manual step. `scripts/serve.sh --stop` stops
   both the server and the watcher.
-- **The hook `matcher` must be `""` for lifecycle events, never `"*"`.** A
-  `session_start`/`user_prompt_submit` hook whose matcher is `"*"` never fires
-  (the matcher is a tool name/regex, and these events are not tool-specific), so
-  the preview silently never autostarts: after a container restart the port is
-  empty and the runtime proxy answers the user's request with its own
-  `404 page not found`. The schema is `{"matcher": "", "hooks": [{"type":
-  "command", "command": "...", "timeout": N, "async": true}]}` — no `name` field.
-  Verify a cold start by stopping everything and running the exact hook command
-  by hand: `bash scripts/serve.sh --stop` then `timeout 60 bash
-  scripts/serve.sh`; it must print `listening on :12000` and exit 0 in well under
-  a second.
+- **Do not blame the hook matcher.** `"matcher": "*"` on a lifecycle hook *does*
+  fire — verified: a `SessionStart` test hook with matcher `"*"` ran and exited 0
+  (`HookExecutionEvent` with `success: true`). The real failure is the hook
+  **timing out**: `HookExecutionEvent` showed `hook_command: "bash
+  /workspace/project/scripts/serve.sh"`, `exit_code: -1`, `error: "Hook timed out
+  after 120 seconds"`. So `serve.sh` must return in well under the hook's
+  `timeout`; a plain `serve.sh` must finish in under a second (see the next
+  bullet) or the preview never starts. When the port stays empty, the runtime
+  proxy answers with its own `404 page not found`.
 - **Never let the hook hold a pipe or a child.** The hook used to time out
   ("Hook timed out after 120 seconds", exit `-1`) because `serve.sh` inherited the
   agent's stdout pipe and a child kept it open, so the hook never saw EOF. Fixed
