@@ -311,3 +311,15 @@ CREATE TABLE IF NOT EXISTS settlement_stock (
   sort_order    INTEGER NOT NULL DEFAULT 0,
   UNIQUE (building_id, item_key)
 );
+
+-- Wave G3: survival meters (hunger, thirst, fatigue) as 0..100 values that rise
+-- with travel and combat turns and fall when the hero eats, drinks or rests.
+-- The debuffs a crossed threshold applies live in `character_buffs` (Wave G2),
+-- not here; this table is only the meters. The rules are in game/survival.js.
+CREATE TABLE IF NOT EXISTS character_survival (
+  character_id INTEGER PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,
+  hunger       INTEGER NOT NULL DEFAULT 0,
+  thirst       INTEGER NOT NULL DEFAULT 0,
+  fatigue      INTEGER NOT NULL DEFAULT 0,
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
