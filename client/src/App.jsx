@@ -14,6 +14,7 @@ import InventoryPage from './pages/Inventory.jsx';
 import SettlementPage from './pages/Settlement.jsx';
 import TradePage from './pages/Trade.jsx';
 import QuestsPage from './pages/Quests.jsx';
+import ClanPage from './pages/Clan.jsx';
 
 function Nav() {
   return (
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="/settlements/:id" element={<SettlementPage />} />
           <Route path="/trade/:buildingId" element={<TradePage />} />
           <Route path="/quests/:characterId" element={<QuestsPage />} />
+          <Route path="/clan/:leaderId" element={<ClanPage />} />
           <Route path="/battles/:id" element={<BattlePage />} />
           <Route path="*" element={<Navigate to="/characters" replace />} />
         </Routes>
