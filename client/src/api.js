@@ -47,4 +47,10 @@ export const api = {
   chooseTravel: (id, choice) => request('POST', `/travel/${id}/choose`, { choice }),
   getRitual: (leaderId) => request('GET', `/resurrections/${leaderId}`),
   startResurrection: (leaderId, memberId) => request('POST', `/resurrections/${leaderId}/start`, { memberId }),
+  getInventory: (characterId) => request('GET', `/items/${characterId}`),
+  equipItem: (characterId, key) => request('POST', `/items/${characterId}/equip`, { key }),
+  unequipItem: (characterId, slot) => request('POST', `/items/${characterId}/unequip`, { slot }),
+  useItem: (characterId, key) => request('POST', `/items/${characterId}/use`, { key }),
+  removeBuff: (characterId, payload) => request('DELETE', `/items/${characterId}/buffs`, payload),
+  tickBuffs: (characterId, turns = 1) => request('POST', `/items/${characterId}/buffs/tick`, { turns }),
 };

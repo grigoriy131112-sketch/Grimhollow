@@ -230,3 +230,32 @@ CREATE TABLE IF NOT EXISTS character_items (
   updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (character_id, item_key)
 );
+
+-- Wave G2: which carried item fills each equipment slot. `slot` is one of the
+-- EQUIP_SLOTS keys in game/items.js; one item per slot per character.
+CREATE TABLE IF NOT EXISTS character_equipment (
+  character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  slot         TEXT NOT NULL,
+  item_key     TEXT NOT NULL,
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (character_id, slot)
+);
+
+-- Wave G2: active temporary modifiers (buffs and debuffs). Each row is one flat
+-- change to one stat, with a duration (`turns`, NULL = permanent) and a source.
+-- The pure shape is documented in game/modifiers.js; G3 needs reuse this table.
+CREATE TABLE IF NOT EXISTS character_buffs (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  buff_key     TEXT NOT NULL,
+  source       TEXT NOT NULL,
+  source_type  TEXT NOT NULL DEFAULT 'buff',
+  stat         TEXT NOT NULL,
+  amount       INTEGER NOT NULL,
+  turns        INTEGER,
+  kind         TEXT NOT NULL DEFAULT 'buff',
+  stack        TEXT NOT NULL DEFAULT 'refresh',
+  label        TEXT NOT NULL DEFAULT '',
+  max_stacks   INTEGER,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);

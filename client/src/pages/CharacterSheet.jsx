@@ -43,6 +43,7 @@ export default function CharacterSheetPage() {
         <h1>{character.name}</h1>
         <span className="badge">{character.level} уровень · {character.className}</span>
         <Link className="btn" to={`/party/${character.id}`} style={{ marginLeft: '0.6rem' }}>Отряд</Link>
+        <Link className="btn" to={`/inventory/${character.id}`} style={{ marginLeft: '0.6rem' }}>Снаряжение</Link>
       </div>
 
       {error && <div className="error">{error}</div>}
