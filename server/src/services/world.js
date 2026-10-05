@@ -1,5 +1,21 @@
 import { getDb } from '../db/index.js';
 import { MS_PER_MINUTE, elapsedWalkMs, hasArrived } from '../game/travel.js';
+import { CROSSING_GATES } from '../game/continent_travel.js';
+
+// Per-continent tallies, so the atlas shows each land's own numbers instead of
+// one global total. Ports are the places that open a crossing to another land.
+// Reads the camelCase shape of map.locations, not the raw DB rows.
+function statsOf(locs) {
+  const byDanger = [1, 2, 3, 4, 5].map((d) => locs.filter((l) => l.danger === d).length);
+  return {
+    locations: locs.length,
+    regions: new Set(locs.map((l) => l.regionId)).size,
+    safe: locs.filter((l) => l.isSafe).length,
+    ports: locs.filter((l) => l.isPort).length,
+    monsters: locs.reduce((sum, l) => sum + (l.monsterCount || 0), 0),
+    byDanger,
+  };
+}
 
 export function getWorld() {
   const db = getDb();
@@ -34,7 +50,8 @@ export function getMap(characterId) {
       const continent = region ? continents.find((c) => c.id === region.continent_id) : null;
       return {
         id: l.id, name: l.name, description: l.description, danger: l.danger,
-        isSafe: !!l.is_safe, x: l.map_x, y: l.map_y, scene: l.scene, biome: l.biome,
+        isSafe: !!l.is_safe, isPort: CROSSING_GATES.includes(l.name),
+        x: l.map_x, y: l.map_y, scene: l.scene, biome: l.biome,
         regionId: l.region_id, regionName: region?.name, continentName: continent?.name,
         monsterCount: counts.get(l.id) || 0,
       };
@@ -44,6 +61,13 @@ export function getMap(characterId) {
       .filter((c) => c.from_id < c.to_id)
       .map((c) => ({ from: c.from_id, to: c.to_id, label: c.label, minutes: c.minutes })),
   };
+  // Each continent carries its own tallies; the atlas shows one land at a time.
+  map.continents = map.continents.map((c) => {
+    const own = map.locations.filter((l) => l.continentName === c.name);
+    return { ...c, stats: statsOf(own) };
+  });
+  // The global totals use the same shape, so the atlas can swap scopes freely.
+  map.stats = { continents: continents.length, ...statsOf(map.locations) };
   if (characterId) map.character = characterExploration(characterId);
   return map;
 }

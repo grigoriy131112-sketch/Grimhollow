@@ -5,6 +5,8 @@ import { getDb, closeDb } from '../src/db/index.js';
 import { seedWorld } from '../src/db/seed.js';
 import { getMap, getLocation, characterExploration, recordVisit } from '../src/services/world.js';
 import { createCharacter } from '../src/services/characters.js';
+import { seedContinents } from '../src/db/seed_continents.js';
+import { seedSettlements } from '../src/db/seed_settlements.js';
 import { LAND_MASK, LAND_MASK_COLS, LAND_MASK_ROWS } from '../test-support/land-mask.js';
 
 test.after(() => closeDb());
@@ -104,3 +106,60 @@ test('re-seeding backfills map data without duplicating the world', () => {
   const map = getMap();
   assert.ok(map.locations.every((l) => l.x != null && l.scene), 'map data was restored');
 });
+
+// The atlas shows one continent at a time, so every continent must carry its own
+// tallies rather than the whole world's. This seeds the four outer continents,
+// so it runs last: later tests re-seed the world and would no longer be alone.
+test('each continent carries its own statistics', () => {
+  seedWorld();
+  seedSettlements();
+  seedContinents();
+  const map = getMap();
+  assert.ok(map.stats, 'the map has world totals');
+  assert.equal(map.continents.length, 5, 'all five continents are present');
+  assert.ok(map.continents.every((c) => c.stats), 'every continent has its own stats');
+
+  const sum = (key) => map.continents.reduce((n, c) => n + c.stats[key], 0);
+  assert.equal(sum('locations'), map.stats.locations, 'continent locations add up to the world total');
+  assert.equal(sum('regions'), map.stats.regions, 'continent regions add up to the world total');
+  assert.equal(sum('safe'), map.stats.safe, 'continent safe places add up to the world total');
+  assert.equal(sum('ports'), map.stats.ports, 'continent ports add up to the world total');
+  const dangerTotal = (c) => c.stats.byDanger.reduce((a, b) => a + b, 0);
+  assert.equal(
+    map.continents.reduce((n, c) => n + dangerTotal(c), 0),
+    map.stats.byDanger.reduce((a, b) => a + b, 0),
+    'continent danger counts add up to the world histogram',
+  );
+  assert.deepEqual(
+    map.stats.byDanger, [1, 2, 3, 4, 5].map((d) => map.locations.filter((l) => l.danger === d).length),
+    'the world histogram matches the world locations',
+  );
+
+  for (const c of map.continents) {
+    const own = map.locations.filter((l) => l.continentName === c.name);
+    assert.equal(c.stats.locations, own.length, `${c.name} counts its own locations`);
+    assert.equal(c.stats.regions, c.regions.length, `${c.name} counts its own regions`);
+    assert.equal(c.stats.safe, own.filter((l) => l.isSafe).length, `${c.name} counts its own safe places`);
+    assert.equal(
+      c.stats.byDanger.reduce((a, b) => a + b, 0), own.length,
+      `${c.name} danger histogram covers all of its locations`,
+    );
+  }
+
+  // Мордрат holds the nine starting places plus the city and the village; the
+  // four outer continents each hold two regions of two places.
+  const mordrat = map.continents.find((c) => c.name === 'Мордрат');
+  assert.equal(mordrat.stats.locations, 11);
+  assert.equal(mordrat.stats.regions, 2);
+  for (const name of ['Морозная Колыбель', 'Кор-Ашан', 'Вольные Гавани', 'Зелёный Предел']) {
+    const c = map.continents.find((x) => x.name === name);
+    assert.equal(c.stats.locations, 4, `${name} has four places`);
+    assert.equal(c.stats.regions, 2, `${name} has two regions`);
+  }
+
+  // Each of the five continents owns exactly one crossing port, and every port
+  // is a safe harbour.
+  assert.equal(sum('ports'), 5);
+  assert.ok(map.locations.filter((l) => l.isPort).every((l) => l.isSafe), 'ports are safe places');
+});
+

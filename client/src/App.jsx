@@ -44,6 +44,7 @@ export default function App() {
           <Route path="/party/:leaderId" element={<PartyPage />} />
           <Route path="/party/:leaderId/recruit" element={<RecruitPage />} />
           <Route path="/world" element={<WorldPage />} />
+          <Route path="/world/continents/:continentName" element={<WorldPage />} />
           <Route path="/world/locations/:id" element={<LocationPage />} />
           <Route path="/travel/:id" element={<TravelPage />} />
           <Route path="/upgrades/:leaderId" element={<UpgradesPage />} />
