@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
-# Start (or restart) the Grimhollow production server as a detached, self-healing
-# process, so the work-host preview never shows "Bad Gateway".
+# Keep the Grimhollow preview up. Idempotent and safe to run concurrently.
 #
-#   scripts/serve.sh              # start/ensure it is up, then exit
-#   scripts/serve.sh --watch      # stay resident and restart the server if it dies
-#   scripts/serve.sh --stop       # stop a running server
+#   scripts/serve.sh              # ensure server + a single resident watcher, then exit
+#   scripts/serve.sh --watch      # stay resident; restart the server if it dies
+#   scripts/serve.sh --stop       # stop the server and the watcher
 #
-# The port comes from PORT (default 12000, the work-host preview port).
+# Port comes from PORT (default 12000, the work-host preview port).
 set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PORT="${PORT:-12000}"
 LOGFILE="${LOGFILE:-/tmp/grimhollow.log}"
+WATCHLOG="${WATCHLOG:-/tmp/grimhollow-watch.log}"
 HEALTH="http://127.0.0.1:${PORT}/api/health"
-# A distinctive argv marker so we find exactly our server, never another.
 MARKER="server/src/index.js --grimhollow"
+WATCH_MARKER="serve.sh --watch"
 
 pids() { pgrep -f -- "$MARKER" 2>/dev/null || true; }
+up() { curl -fsS --max-time 2 "$HEALTH" >/dev/null 2>&1; }
 
 stop_server() {
   local list; list="$(pids)"
@@ -28,37 +29,40 @@ stop_server() {
 
 start_server() {
   (cd "$ROOT" && PORT="$PORT" setsid nohup node server/src/index.js --grimhollow >>"$LOGFILE" 2>&1 &)
-  for _ in $(seq 1 60); do
-    curl -fsS "$HEALTH" >/dev/null 2>&1 && return 0
-    sleep 0.25
-  done
+  for _ in $(seq 1 80); do up && return 0; sleep 0.25; done
   return 1
 }
 
-if [ "${1:-}" = "--stop" ]; then stop_server; echo "stopped"; exit 0; fi
-
-# Build the client once if it has never been built.
-if [ ! -f "$ROOT/client/dist/index.html" ]; then
-  echo "building client…"
-  (cd "$ROOT" && npm run build) || exit 1
-fi
-
-if curl -fsS "$HEALTH" >/dev/null 2>&1; then
-  echo "already up on :$PORT"
-else
+ensure() {
+  up && return 0
+  [ -f "$ROOT/client/dist/index.html" ] || (cd "$ROOT" && npm run build >/dev/null 2>&1) || true
   stop_server
-  start_server || { echo "failed to start; see $LOGFILE" >&2; exit 1; }
-  echo "listening on :$PORT"
-fi
+  start_server
+}
 
-if [ "${1:-}" = "--watch" ]; then
-  echo "watching; Ctrl-C to stop"
-  while true; do
-    if ! curl -fsS "$HEALTH" >/dev/null 2>&1; then
-      echo "$(date -Is) health check failed, restarting" >>"$LOGFILE"
-      stop_server
-      start_server || true
-    fi
-    sleep 5
-  done
-fi
+# Start a detached watcher. Always spawn it and let flock decide: if a watcher
+# already holds the lock the new one exits immediately, so concurrent hook runs
+# can never end up with duplicates and there is no pgrep race to lose.
+start_watcher() {
+  ( setsid nohup flock -n /tmp/grimhollow-watch.lock "$0" --watch >>"$WATCHLOG" 2>&1 & )
+}
+
+case "${1:-}" in
+  --stop) stop_server; pkill -f -- "$WATCH_MARKER" 2>/dev/null; echo "stopped"; exit 0 ;;
+  --watch)
+    # Locking is done by the flock wrapper in start_watcher, which guarantees a
+    # single resident watcher across concurrent hook invocations.
+    while true; do
+      if ! up; then
+        echo "$(date -Is) down; restarting" >>"$LOGFILE"
+        stop_server; start_server || true
+      fi
+      sleep 5
+    done
+    ;;
+  *)
+    ensure
+    start_watcher
+    if up; then echo "listening on :$PORT"; else echo "failed to start; see $LOGFILE" >&2; exit 1; fi
+    ;;
+esac

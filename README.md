@@ -13,14 +13,21 @@ nothing is listening on the port — the app is not running. Start (or restart)
 it with:
 
 ```bash
-scripts/serve.sh            # build if needed, then serve detached on :12000
+scripts/serve.sh            # ensure it is up + start the self-healing watcher
 scripts/serve.sh --watch    # stay resident and auto-restart if it dies
-scripts/serve.sh --stop     # stop it
+scripts/serve.sh --stop     # stop both the server and the watcher
 ```
 
 `scripts/serve.sh` is idempotent (a second call says "already up"), rebuilds the
 client only when `client/dist` is missing, and starts the server detached so it
 outlives the shell that launched it. Set `PORT` to serve elsewhere.
+
+The preview is **self-healing**: `scripts/serve.sh` also keeps one resident
+watcher that polls `/api/health` and restarts the server within ~5 seconds if it
+crashes, and `.openhands/hooks.json` runs the same command on every new session
+(`session_start`) and every message (`user_prompt_submit`). So after the runtime
+restarts you do not need to ask anyone to bring it back — open a conversation and
+the preview comes up on its own.
 
 ### Option 1 — Docker (one command)
 

@@ -26,6 +26,7 @@ npm run dev                 # server (3001) + vite (5173) together
 npm test                    # server test suite (node --test)
 npm run build               # build the client into client/dist
 npm start                   # build, then run the API serving client/dist
+scripts/serve.sh            # keep the work-host preview up (see below)
 ```
 
 Requires **Node 24+** — the server uses the built-in `node:sqlite` module.
@@ -179,6 +180,13 @@ dialogue uses the built-in engine, so no model, key, or network is required.
   and with `--watch` restarts it after a crash. Never leave the server as a child
   of the shell that started it, and never run two copies (the second fails with
   `EADDRINUSE` and pollutes the log).
+- **The preview self-heals.** `scripts/serve.sh` (no args) ensures the server is
+  up *and* starts one resident watcher (guarded by `flock` on
+  `/tmp/grimhollow-watch.lock` so concurrent runs cannot spawn duplicates); the
+  watcher polls `/api/health` every 5s and restarts the server within ~5s if it
+  dies. `.openhands/hooks.json` runs that command on `session_start` and
+  `user_prompt_submit`, so a fresh conversation brings the preview back with no
+  manual step. `scripts/serve.sh --stop` stops both the server and the watcher.
 
 ## Party combat (Wave 3C)
 

@@ -1,0 +1,30 @@
+{
+  "session_start": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "name": "ensure-grimhollow-server",
+          "command": "bash /workspace/project/scripts/serve.sh",
+          "timeout": 120,
+          "async": true
+        }
+      ]
+    }
+  ],
+  "user_prompt_submit": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "name": "ensure-grimhollow-server",
+          "command": "bash /workspace/project/scripts/serve.sh",
+          "timeout": 120,
+          "async": true
+        }
+      ]
+    }
+  ]
+}
