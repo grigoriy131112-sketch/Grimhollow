@@ -221,12 +221,24 @@ always the floor: with no model reachable, the template beat answers.
   of the shell that started it, and never run two copies (the second fails with
   `EADDRINUSE` and pollutes the log).
 - **The preview self-heals.** `scripts/serve.sh` (no args) ensures the server is
-  up *and* starts one resident watcher (guarded by `flock` on
-  `/tmp/grimhollow-watch.lock` so concurrent runs cannot spawn duplicates); the
-  watcher polls `/api/health` every 5s and restarts the server within ~5s if it
-  dies. `.openhands/hooks.json` runs that command on `session_start` and
-  `user_prompt_submit`, so a fresh conversation brings the preview back with no
-  manual step. `scripts/serve.sh --stop` stops both the server and the watcher.
+  up *and* starts one resident watcher; the watcher polls `/api/health` every 5s
+  and restarts the server within ~5s if it dies. `.openhands/hooks.json` runs that
+  command on `session_start` and `user_prompt_submit`, so a fresh conversation
+  brings the preview back with no manual step. `scripts/serve.sh --stop` stops
+  both the server and the watcher.
+- **Never let the hook hold a pipe or a child.** The hook used to time out
+  ("Hook timed out after 120 seconds", exit `-1`) because `serve.sh` inherited the
+  agent's stdout pipe and a child kept it open, so the hook never saw EOF. Fixed
+  two ways: `serve.sh` starts the server with `exec setsid … </dev/null` (stdin
+  from `/dev/null`, no inherited job) and ends with an explicit `exit 0`; and the
+  hook command redirects everything (`timeout 60 … >/tmp/grimhollow-hook.log
+  2>&1 </dev/null`) with a `timeout` below the hook's own. A plain `serve.sh`
+  must finish in well under a second — if it hangs, that is the bug, not a slow
+  build.
+- **One watcher, no zombies.** PID 1 in this runtime is the agent server, which
+  does not reap children, so a short-lived `flock` that loses the lock would pile
+  up as a zombie. `start_watcher` now skips spawning when a watcher is already
+  resident (`pgrep`), with `flock` as the second guard.
 
 ## Party combat (Wave 3C)
 

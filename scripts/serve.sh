@@ -28,7 +28,11 @@ stop_server() {
 }
 
 start_server() {
-  (cd "$ROOT" && PORT="$PORT" setsid nohup node server/src/index.js --grimhollow >>"$LOGFILE" 2>&1 &)
+  # Fully detach: new session (setsid), stdin from /dev/null, stdout/stderr to
+  # the log. The subshell is backgrounded and replaced via `exec`, so this script
+  # never waits on the server and never inherits it as a job — a caller that
+  # captures stdout (a hook) must not block on the server's file descriptors.
+  ( cd "$ROOT" && PORT="$PORT" exec setsid node server/src/index.js --grimhollow >>"$LOGFILE" 2>&1 </dev/null & )
   for _ in $(seq 1 80); do up && return 0; sleep 0.25; done
   return 1
 }
@@ -40,11 +44,13 @@ ensure() {
   start_server
 }
 
-# Start a detached watcher. Always spawn it and let flock decide: if a watcher
-# already holds the lock the new one exits immediately, so concurrent hook runs
-# can never end up with duplicates and there is no pgrep race to lose.
+# Start a detached watcher. Skip entirely when one is already resident: spawning a
+# short-lived `flock` that immediately loses the lock would leave a zombie (PID 1
+# here is the agent server and does not reap). flock remains the second guard, so
+# a rare race still cannot produce two watchers.
 start_watcher() {
-  ( setsid nohup flock -n /tmp/grimhollow-watch.lock "$0" --watch >>"$WATCHLOG" 2>&1 & )
+  pgrep -f -- "$WATCH_MARKER" >/dev/null 2>&1 && return 0
+  ( exec setsid flock -n /tmp/grimhollow-watch.lock "$0" --watch >>"$WATCHLOG" 2>&1 </dev/null & )
 }
 
 case "${1:-}" in
@@ -66,3 +72,4 @@ case "${1:-}" in
     if up; then echo "listening on :$PORT"; else echo "failed to start; see $LOGFILE" >&2; exit 1; fi
     ;;
 esac
+exit 0
