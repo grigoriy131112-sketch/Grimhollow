@@ -52,11 +52,12 @@ export const api = {
   loadSave: (saveId) => request('POST', `/saves/slot/${saveId}/load`),
   deleteSave: (saveId) => request('DELETE', `/saves/slot/${saveId}`),
   exportSave: (saveId) => request('GET', `/saves/slot/${saveId}/export`),
-  importSave: (snapshot, characterId) => request('POST', '/saves/import', { snapshot, characterId }),
   getInventory: (characterId) => request('GET', `/items/${characterId}`),
   equipItem: (characterId, key) => request('POST', `/items/${characterId}/equip`, { key }),
   unequipItem: (characterId, slot) => request('POST', `/items/${characterId}/unequip`, { slot }),
   useItem: (characterId, key) => request('POST', `/items/${characterId}/use`, { key }),
   removeBuff: (characterId, payload) => request('DELETE', `/items/${characterId}/buffs`, payload),
   tickBuffs: (characterId, turns = 1) => request('POST', `/items/${characterId}/buffs/tick`, { turns }),
+  listLore: () => request('GET', '/lore'),
+  getLore: (key) => request('GET', `/lore/${key}`),
 };
