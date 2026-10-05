@@ -476,3 +476,35 @@ the game-icons.net icon named below (<author>/<icon>).
   warlock_buffDefense_14.svg  <-  lorc/bordered-shield.svg
   warlock_ultimate_15.svg  <-  faithtoken/ninja-star.svg
   warlock_passive_15.svg  <-  delapouite/eye-target.svg
+
+Per-file sources (Wave G2 item icons)
+===================================
+Each file client/public/art/items/<key>.svg is derived from the game-icons.net
+icon named below (<author>/<icon>), same CC BY 3.0 license as the rest.
+
+  shepherd_key.svg  <-  delapouite/boss-key.svg
+  shepherd_crook.svg  <-  generalace135/shepherds-crook.svg
+  rusty_sword.svg  <-  delapouite/rusty-sword.svg
+  hunter_bow.svg  <-  delapouite/bow-arrow.svg
+  ashen_dagger.svg  <-  lorc/plain-dagger.svg
+  gravewarden_maul.svg  <-  delapouite/warhammer.svg
+  worn_leathers.svg  <-  lorc/leather-vest.svg
+  iron_hauberk.svg  <-  willdabeast/chain-mail.svg
+  dusk_hood.svg  <-  lorc/hood.svg
+  pallid_gauntlets.svg  <-  delapouite/gauntlet.svg
+  gravedigger_boots.svg  <-  lorc/boots.svg
+  bone_buckler.svg  <-  delapouite/cross-shield.svg
+  moonstone_ring.svg  <-  delapouite/diamond-ring.svg
+  wolf_fang_amulet.svg  <-  lorc/bestial-fangs.svg
+  bread_loaf.svg  <-  delapouite/bread.svg
+  clean_water.svg  <-  delapouite/water-flask.svg
+  bitter_herb.svg  <-  delapouite/plant-roots.svg
+  mana_lichen.svg  <-  delapouite/herbs-bundle.svg
+  glowcap.svg  <-  lorc/spotted-mushroom.svg
+  shadow_draught.svg  <-  lorc/standing-potion.svg
+  iron_brew.svg  <-  delapouite/health-potion.svg
+  wolfsblood.svg  <-  lorc/potion-ball.svg
+  hex_vial.svg  <-  sbed/vial.svg
+  crow_feather.svg  <-  lorc/feather.svg
+  ossuary_heart.svg  <-  delapouite/heart-armor.svg
+  pale_lantern.svg  <-  lorc/lantern.svg

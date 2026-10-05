@@ -80,6 +80,24 @@ export const landmarkIcon = (location) => {
 export const portraitIcon = (member) =>
   (member?.portrait ? member.portrait : (member?.portraitSlug ? `/art/portraits/${member.portraitSlug}.svg` : null));
 
+// Item icons live in /art/items/<key>.svg, named after the item's latin key.
+// Only known keys resolve, so an unknown item renders no icon instead of a
+// broken image.
+const ITEM_ICONS = {
+  shepherd_key: 'shepherd_key', shepherd_crook: 'shepherd_crook',
+  rusty_sword: 'rusty_sword', hunter_bow: 'hunter_bow', ashen_dagger: 'ashen_dagger',
+  gravewarden_maul: 'gravewarden_maul',
+  worn_leathers: 'worn_leathers', iron_hauberk: 'iron_hauberk', dusk_hood: 'dusk_hood',
+  pallid_gauntlets: 'pallid_gauntlets', gravedigger_boots: 'gravedigger_boots',
+  bone_buckler: 'bone_buckler', moonstone_ring: 'moonstone_ring', wolf_fang_amulet: 'wolf_fang_amulet',
+  bread_loaf: 'bread_loaf', clean_water: 'clean_water', bitter_herb: 'bitter_herb',
+  mana_lichen: 'mana_lichen', glowcap: 'glowcap',
+  shadow_draught: 'shadow_draught', iron_brew: 'iron_brew', wolfsblood: 'wolfsblood', hex_vial: 'hex_vial',
+  crow_feather: 'crow_feather', ossuary_heart: 'ossuary_heart', pale_lantern: 'pale_lantern',
+};
+
+export const itemIcon = (key) => (key && ITEM_ICONS[key] ? `/art/items/${ITEM_ICONS[key]}.svg` : null);
+
 // A stable accent colour per class, used for portrait frames and name plates.
 export const CLASS_COLORS = {
   fighter: '#c96a4a', barbarian: '#b3452f', paladin: '#d9b44a', ranger: '#6fae5a',
