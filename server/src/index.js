@@ -17,6 +17,7 @@ import resurrectionRoutes from './routes/resurrections.js';
 import saveRoutes from './routes/saves.js';
 import itemRoutes from './routes/items.js';
 import settlementRoutes from './routes/settlements.js';
+import tradeRoutes from './routes/trade.js';
 
 export function createApp() {
   const app = express();
@@ -34,6 +35,7 @@ export function createApp() {
   app.use('/api/saves', saveRoutes);
   app.use('/api/items', itemRoutes);
   app.use('/api/settlements', settlementRoutes);
+  app.use('/api/trade', tradeRoutes);
 
   // Serve the built SPA when present (production / work-host preview).
   const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
