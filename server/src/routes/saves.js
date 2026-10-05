@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-  listSaves, getSave, createSave, loadSave, deleteSave, exportSave, importSave,
+  listSaves, listAllSaves, getSave, createSave, loadSave, deleteSave, exportSave, importSave,
 } from '../services/saves.js';
 
 const router = Router();
@@ -15,6 +15,10 @@ router.post('/import', (req, res) => {
     res.status(201).json(importSave(snapshot, { characterId }));
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
+
+// Every save across all heroes, for the title screen's saves list. Must sit
+// before /:characterId so 'all' is not read as a character id.
+router.get('/all', (req, res) => res.json(listAllSaves()));
 
 // Named slots for one character.
 router.get('/:characterId', (req, res) => {

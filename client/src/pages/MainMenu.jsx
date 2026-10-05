@@ -1,70 +1,108 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import SceneBackdrop from '../scenes.jsx';
+import { api } from '../api.js';
 
-// The start menu (Wave W-MENU): the first page of the game, like the title
-// screen of an old RPG. Every entry is a plain link; the saves list on the
-// right is the "Сохранённые игры" column and doubles as "continue".
+// The title screen (Wave W-MENU, restyled). A full-viewport menu like a classic
+// RPG: a big letter-spaced title over an atmospheric scene, a column of
+// buttons, and the saves as a slide-up sheet.
 
-const MENU_ITEMS = [
-  { to: '/characters', title: 'Новая игра', blurb: 'Создать героя и начать заново', icon: '⚔️' },
-  { to: '/characters', title: 'Герои', blurb: 'Все ваши герои и их судьбы', icon: '👥' },
-  { to: '/world', title: 'Мир', blurb: 'Атлас Гримхоула', icon: '🗺️' },
-  { to: '/settings', title: 'Настройки', blurb: 'Звук, интерфейс, сохранения', icon: '⚙️' },
-  { to: '/creators', title: 'Создатели', blurb: 'Кто сделал эту игру', icon: '✒️' },
-  { to: '/lore', title: 'Лор', blurb: 'Мир и сюжет — канон', icon: '📖' },
-];
-
-function recentSaveLabel(save) {
-  return save.name || `Сохранение #${save.id}`;
+function SavesSheet({ saves, busy, onClose, onResume, onDelete }) {
+  return (
+    <div className="menu-sheet open" role="dialog" aria-label="Сохранённые игры">
+      <div className="sheet-inner">
+        <h2>Сохранённые игры</h2>
+        {saves.length === 0 && (
+          <p className="muted">Пока пусто. Начните новую игру — сохранение появится здесь.</p>
+        )}
+        <ul className="save-list">
+          {saves.map((s) => (
+            <li className="save-row" key={s.id}>
+              <div className="save-info">
+                <span className="save-name">{s.name}</span>
+                <span className="save-meta muted small">
+                  {s.characterName} · ур. {s.level} · {String(s.updatedAt).replace('T', ' ').slice(0, 16)}
+                </span>
+              </div>
+              <div className="save-acts">
+                <button className="btn small" disabled={busy} onClick={() => onResume(s.id)}>Продолжить</button>
+                <button className="btn small danger" disabled={busy} onClick={() => onDelete(s.id)}>Удалить</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="sheet-acts">
+          <button className="btn ghost" onClick={onClose}>Закрыть</button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export default function MainMenuPage({ characters = [], saves = [] }) {
+export default function MainMenuPage({ characters = [], saves = [], onRefresh }) {
+  const navigate = useNavigate();
+  const [sheet, setSheet] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const last = characters[0];
+
+  const resume = async (saveId) => {
+    setBusy(true);
+    try {
+      const result = await api.loadSave(saveId);
+      navigate(`/characters/${result.characterId}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (saveId) => {
+    if (!confirm('Стереть это сохранение?')) return;
+    setBusy(true);
+    try {
+      await api.deleteSave(saveId);
+      await onRefresh?.();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <div className="menu-page">
-      <header className="menu-hero">
-        <div className="menu-mark">☠</div>
-        <h1>Гримхоллоу</h1>
-        <p className="menu-tagline">Мрачная низина. Мир, у которого отняли память.</p>
-      </header>
-
-      <div className="menu-columns">
-        <nav className="menu-list">
-          {MENU_ITEMS.map((item) => (
-            <Link key={item.title} className="menu-item" to={item.to}>
-              <span className="menu-item-icon">{item.icon}</span>
-              <span className="menu-item-text">
-                <span className="menu-item-title">{item.title}</span>
-                <span className="menu-item-blurb">{item.blurb}</span>
-              </span>
-            </Link>
-          ))}
-        </nav>
-
-        <aside className="menu-saves card">
-          <h2>Сохранённые игры</h2>
-          {saves.length === 0 && (
-            <p className="muted small">Пока пусто. Начните новую игру — герой появится здесь.</p>
-          )}
-          <ul className="menu-save-list">
-            {saves.slice(0, 8).map((s) => (
-              <li key={s.id}>
-                <Link to={`/characters/${s.characterId}`} className="menu-save">
-                  <span className="menu-save-name">{recentSaveLabel(s)}</span>
-                  <span className="menu-save-meta">{s.characterName} · ур. {s.level}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {characters.length > 0 && (
-            <Link className="btn ghost menu-continue" to={`/characters/${characters[0].id}`}>
-              ▶ Продолжить за {characters[0].name}
-            </Link>
-          )}
-        </aside>
+    <section className="menu">
+      <div className="menu-bg" aria-hidden="true">
+        <SceneBackdrop scene="crossroads" biome="waste" danger={1} name="Гримхоллоу" />
       </div>
 
-      <p className="menu-foot muted small">
-        {characters.length} гер. · {saves.length} сохр.
-      </p>
-    </div>
+      <div className="menu-inner">
+        <h1 className="menu-title">ГРИМХОЛЛОУ</h1>
+        <div className="menu-sub">Мрачная низина · мир, у которого отняли память</div>
+
+        <div className="menu-btns">
+          {last && (
+            <button className="menu-btn primary" onClick={() => navigate(`/characters/${last.id}`)}>
+              Продолжить
+            </button>
+          )}
+          <button className="menu-btn" onClick={() => navigate('/characters')}>Новая игра</button>
+          <button className="menu-btn" onClick={() => setSheet(true)}>Сохранённые игры</button>
+          <button className="menu-btn" onClick={() => navigate('/settings')}>Настройки</button>
+          <button className="menu-btn" onClick={() => navigate('/creators')}>Создатели</button>
+          <button className="menu-btn" onClick={() => navigate('/lore')}>Лор</button>
+        </div>
+
+        <div className="menu-foot muted small">
+          {characters.length} гер. · {saves.length} сохр.
+        </div>
+      </div>
+
+      {sheet && (
+        <SavesSheet
+          saves={saves}
+          busy={busy}
+          onClose={() => setSheet(false)}
+          onResume={resume}
+          onDelete={remove}
+        />
+      )}
+    </section>
   );
 }

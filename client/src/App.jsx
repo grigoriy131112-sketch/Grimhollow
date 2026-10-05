@@ -1,5 +1,5 @@
-import { Routes, Route, Navigate, NavLink } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
 import CharactersPage from './pages/Characters.jsx';
 import CharacterSheetPage from './pages/CharacterSheet.jsx';
 import WorldPage from './pages/World.jsx';
@@ -23,6 +23,8 @@ import LorePage from './pages/Lore.jsx';
 import { api } from './api.js';
 
 function Nav() {
+  const { pathname } = useLocation();
+  if (pathname === '/') return null; // the title screen is full-viewport
   return (
     <nav className="nav">
       <div className="brand">☠ Grimhollow</div>
@@ -41,22 +43,25 @@ function Nav() {
 }
 
 export default function App() {
+  const { pathname } = useLocation();
   const [menu, setMenu] = useState({ characters: [], saves: [] });
 
-  useEffect(() => {
-    let alive = true;
-    Promise.all([api.listCharacters(), api.listSaves()])
-      .then(([characters, saves]) => { if (alive) setMenu({ characters, saves }); })
-      .catch(() => { /* menu still renders without the lists */ });
-    return () => { alive = false; };
-  }, []);
+  const refreshMenu = useCallback(
+    () => Promise.all([api.listCharacters(), api.listAllSaves()])
+      .then(([characters, saves]) => setMenu({ characters, saves }))
+      .catch(() => { /* menu still renders without the lists */ }),
+    [],
+  );
+  // Reload the lists every time the title screen is shown, so a fresh hero or
+  // save is there when the player comes back.
+  useEffect(() => { if (pathname === '/') refreshMenu(); }, [pathname, refreshMenu]);
 
   return (
     <div className="app">
       <Nav />
-      <main className="container">
+      <main className={pathname === '/' ? 'menu-host' : 'container'}>
         <Routes>
-          <Route path="/" element={<MainMenuPage characters={menu.characters} saves={menu.saves} />} />
+          <Route path="/" element={<MainMenuPage characters={menu.characters} saves={menu.saves} onRefresh={refreshMenu} />} />
           <Route path="/creators" element={<CreatorsPage />} />
           <Route path="/lore" element={<LorePage />} />
           <Route path="/lore/:key" element={<LorePage />} />

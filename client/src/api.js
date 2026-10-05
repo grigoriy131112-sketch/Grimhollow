@@ -48,6 +48,7 @@ export const api = {
   getRitual: (leaderId) => request('GET', `/resurrections/${leaderId}`),
   startResurrection: (leaderId, memberId) => request('POST', `/resurrections/${leaderId}/start`, { memberId }),
   listSaves: (characterId) => request('GET', `/saves/${characterId}`),
+  listAllSaves: () => request('GET', '/saves/all'),
   createSave: (characterId, name) => request('POST', `/saves/${characterId}`, { name }),
   loadSave: (saveId) => request('POST', `/saves/slot/${saveId}/load`),
   deleteSave: (saveId) => request('DELETE', `/saves/slot/${saveId}`),
