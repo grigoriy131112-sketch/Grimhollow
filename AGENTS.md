@@ -7,25 +7,27 @@ with a React (Vite) client.
 
 Grimhollow is built one **wave** at a time. One wave = one approval (`погнали`)
 = one chat = one branch = one PR. The wave map, the chat roles and the
-file-ownership rules live in `docs/CHATPLAN.md`. Order:
+file-ownership rules live in `docs/CHATPLAN.md`. The lore/story canon lives in
+`docs/lore/**` (written by the orchestrator; chats never re-write it).
 
-1. **G1 lore** — DONE by the orchestrator; canon in `docs/lore/**` (world, 5 continents, story arc). No chat re-writes it.
-2. **G2 items** — items, equipment, artifacts, buffs/debuffs (modifier engine).
-3. **G3 survival** — hunger/thirst/fatigue as debuffs (needs G2).
-4. **G4 save & settings** — save slots/export + a settings page.
-5. **G5 continents** — the 5 continents + inter-continent travel.
-6. **G6 settlements** — cities/villages with taverns, temples, libraries,
-   guilds, smiths, shops, markets.
-7. **G7 trade** — buying/selling, prices, stock.
-8. **G8 quests & rewards** — quests from guilds/taverns/NPCs + rewards.
-9. **G9 clan/guild** — the player's own clan or guild.
-10. **G10 monsters & randomizer** — more creatures + encounter/loot generation.
-11. **G11 campaign** — the story chains from G1, final goal.
-12. **G12 online** — last, per directive; needs re-architecting (accounts,
-    shared world). Not started without a new explicit approval.
+Status:
 
-Parallel-safe batches: **G1 + G2 + G4 + G6** first, then G3 + G5, then G7, then
-G8, then G9, then G10 + G11, then G12.
+1. **G1 lore** — DONE. Canon in `docs/lore/**` (world, 5 continents, cosmology,
+   factions, campaign, quests, bestiary, clan, campaign progress, online).
+2. **G2 items** — DONE (merged). Typed catalogue + modifier engine (buffs/debuffs).
+3. **G3 survival** — DONE (merged). Hunger/thirst/fatigue meters as debuffs.
+4. **G4 save & settings** — DONE (merged). Save slots/export + settings page.
+5. **G5 continents** — DONE (merged). 4 new continents + inter-continent travel.
+6. **G6 settlements** — DONE (merged). City Гримхольд + village Соляной Брод.
+7. **G7 trade** — DONE (merged). Buy/sell on the settlement stock shape.
+8. **G8 quests & rewards** — RUNNING. Quests from guilds/taverns/temples/NPCs.
+9. **G9 clan/guild** — NOT STARTED. Spec in `docs/lore/clan.md`.
+10. **G10 monsters & randomizer** — RUNNING. Bestiary + encounters/loot.
+11. **G11 campaign** — NOT STARTED. Spec in `docs/lore/campaign_progress.md`.
+12. **G12 online** — LAST, per directive. Scope in `docs/lore/online.md`.
+
+Parallel-safe batches: G1+G2+G4+G6, then G3+G5, then G7, then **G8+G10**, then
+G9, then G11, then G12 last.
 
 ## Layout
 
