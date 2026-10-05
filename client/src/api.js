@@ -47,4 +47,10 @@ export const api = {
   chooseTravel: (id, choice) => request('POST', `/travel/${id}/choose`, { choice }),
   getRitual: (leaderId) => request('GET', `/resurrections/${leaderId}`),
   startResurrection: (leaderId, memberId) => request('POST', `/resurrections/${leaderId}/start`, { memberId }),
+  listSaves: (characterId) => request('GET', `/saves/${characterId}`),
+  createSave: (characterId, name) => request('POST', `/saves/${characterId}`, { name }),
+  loadSave: (saveId) => request('POST', `/saves/slot/${saveId}/load`),
+  deleteSave: (saveId) => request('DELETE', `/saves/slot/${saveId}`),
+  exportSave: (saveId) => request('GET', `/saves/slot/${saveId}/export`),
+  importSave: (snapshot, characterId) => request('POST', '/saves/import', { snapshot, characterId }),
 };

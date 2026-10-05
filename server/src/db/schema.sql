@@ -230,3 +230,15 @@ CREATE TABLE IF NOT EXISTS character_items (
   updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (character_id, item_key)
 );
+
+-- Named save slots (Wave G4). A slot freezes one character's full state as JSON
+-- so it can be listed, loaded back, exported or imported. `snapshot` holds the
+-- same shape export/import uses; the live game state is untouched.
+CREATE TABLE IF NOT EXISTS saves (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  name         TEXT NOT NULL,
+  snapshot     TEXT NOT NULL,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
