@@ -16,8 +16,10 @@ chat = one branch = one PR. Parallel chats are allowed only when they touch
 | survival | G3 | **DONE (merged)** — hunger/thirst/fatigue meters as debuffs | — |
 | continents | G5 | **DONE (merged)** — 4 new continents + crossings | — |
 | trade | G7 | **DONE (merged)** — buy/sell on the G6 stock shape | — |
-| quests | G8 | `server/src/db/seed_quests.js`*, `server/src/services/quests.js`*, `server/src/routes/quests.js`*, `client/src/pages/Quests.jsx`* | `wave/g8-quests` |
-| monsters | G10 | `server/src/db/seed_monsters_extra.js`*, `server/src/game/randomizer.js`*, `server/src/services/encounters.js`* | `wave/g10-monsters` |
+| quests | G8 | **DONE (merged)** — 14 quests, progress + rewards | — |
+| monsters | G10 | **DONE (merged)** — bestiary + encounters + loot | — |
+| clan | G9 | `server/src/db/seed_clan.js`*, `server/src/services/clan.js`*, `server/src/routes/clan.js`*, `client/src/pages/Clan.jsx`* | `wave/g9-clan` |
+| campaign | G11 | `server/src/game/campaign.js`*, `server/src/services/campaign.js`*, `server/src/routes/campaign.js`*, `client/src/pages/Campaign.jsx`* | `wave/g11-campaign` |
 
 `*` = new file, created by that chat. New files never collide.
 
@@ -39,15 +41,14 @@ shared file that another chat is also editing.
 
 ```
 DONE: G1 lore, G2 items, G3 survival, G4 save/settings, G5 continents,
-      G6 settlements, G7 trade
+      G6 settlements, G7 trade, G8 quests, G10 monsters
 
-G8 quests (uses G1 quests.md + G6 sources) ─┐
-G10 monsters + randomizer                  ─┼─> G9 clan ─> G11 campaign ─> G12 online (last)
-                                            ┘
+G9 clan (uses G7 trade + G2 items)  ─┐
+G11 campaign (uses G8 flags + G1)   ─┴─> G12 online (last)
 ```
 
-Current batch (parallel-safe, disjoint new files): **G8, G10**.
-Then **G9** (clan), then **G11** (campaign), then **G12** (online) last.
+Current batch (parallel-safe, disjoint new files): **G9, G11**.
+Then **G12** (online) last, per directive.
 
 Each of G3/G5/G7 also needs a small append-only edit to the shared files
 (`server/src/index.js`, `client/src/App.jsx`, `server/src/db/schema.sql`); the

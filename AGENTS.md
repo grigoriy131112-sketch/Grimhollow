@@ -20,14 +20,14 @@ Status:
 5. **G5 continents** — DONE (merged). 4 new continents + inter-continent travel.
 6. **G6 settlements** — DONE (merged). City Гримхольд + village Соляной Брод.
 7. **G7 trade** — DONE (merged). Buy/sell on the settlement stock shape.
-8. **G8 quests & rewards** — RUNNING. Quests from guilds/taverns/temples/NPCs.
-9. **G9 clan/guild** — NOT STARTED. Spec in `docs/lore/clan.md`.
-10. **G10 monsters & randomizer** — RUNNING. Bestiary + encounters/loot.
-11. **G11 campaign** — NOT STARTED. Spec in `docs/lore/campaign_progress.md`.
+8. **G8 quests & rewards** — DONE (merged). 14 quests with progress/rewards.
+9. **G9 clan/guild** — RUNNING. Spec in `docs/lore/clan.md`.
+10. **G10 monsters & randomizer** — DONE (merged). Bestiary + encounters/loot.
+11. **G11 campaign** — RUNNING. Spec in `docs/lore/campaign_progress.md`.
 12. **G12 online** — LAST, per directive. Scope in `docs/lore/online.md`.
 
-Parallel-safe batches: G1+G2+G4+G6, then G3+G5, then G7, then **G8+G10**, then
-G9, then G11, then G12 last.
+Parallel-safe batches: G1+G2+G4+G6, then G3+G5, then G7, then G8+G10, then
+**G9+G11**, then G12 last.
 
 ## Layout
 
