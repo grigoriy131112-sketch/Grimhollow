@@ -9,7 +9,7 @@ Grimhollow is built one **wave** at a time. One wave = one approval (`погна
 = one chat = one branch = one PR. The wave map, the chat roles and the
 file-ownership rules live in `docs/CHATPLAN.md`. Order:
 
-1. **G1 lore** — world bible, 5 continents, main story arc (`docs/lore/**`).
+1. **G1 lore** — DONE by the orchestrator; canon in `docs/lore/**` (world, 5 continents, story arc). No chat re-writes it.
 2. **G2 items** — items, equipment, artifacts, buffs/debuffs (modifier engine).
 3. **G3 survival** — hunger/thirst/fatigue as debuffs (needs G2).
 4. **G4 save & settings** — save slots/export + a settings page.

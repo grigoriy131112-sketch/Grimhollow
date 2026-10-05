@@ -8,8 +8,8 @@ chat = one branch = one PR. Parallel chats are allowed only when they touch
 
 | Chat | Wave | Owns (exclusive) | Branch |
 |------|------|------------------|--------|
-| Orchestrator | — | planning, review, merges, preview | `main` |
-| lore | G1 | `docs/lore/**` | `wave/g1-lore` |
+| Orchestrator | — | planning, review, merges, preview, **lore/story** (`docs/lore/**`) | `main` |
+| lore | G1 | **DONE by orchestrator** — canon lives in `docs/lore/**`; no chat re-writes it | — |
 | items | G2 | `server/src/game/items.js`, `server/src/game/modifiers.js`*, `server/src/services/items.js`, `server/src/routes/items.js`*, `client/src/pages/Inventory.jsx`* | `wave/g2-items` |
 | survival | G3 | `server/src/game/survival.js`*, `server/src/services/survival.js`* | `wave/g3-survival` |
 | save-settings | G4 | `server/src/services/saves.js`*, `server/src/routes/saves.js`*, `client/src/pages/Settings.jsx`* | `wave/g4-save-settings` |
@@ -34,7 +34,7 @@ shared file that another chat is also editing.
 ## Dependencies (what must land before what)
 
 ```
-G1 lore ─┐
+G1 lore (DONE, orchestrator) ─┐
 G2 items ─┼─> G3 survival (needs the modifier engine from G2)
 G4 save/settings ─┘
 G6 settlements ─> G7 trade ─> G8 quests ─> G9 clan ─> G11 campaign
@@ -42,7 +42,7 @@ G5 continents ─> G12 online (last, per directive)
 G10 monsters + randomizer
 ```
 
-Parallel-safe at the same time: **G1, G2, G4, G6**. Then G3 (after G2), G5.
+Parallel-safe at the same time: **G2, G4, G6** (G1 lore is done by the orchestrator). Then G3 (after G2), G5.
 Then G7, G8, G9. Then G10, G11. G12 last.
 
 ## How a chat is created
