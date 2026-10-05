@@ -24,6 +24,7 @@ import survivalRoutes from './routes/survival.js';
 import tradeRoutes from './routes/trade.js';
 import continentRoutes from './routes/continents.js';
 import questRoutes from './routes/quests.js';
+import campaignRoutes from './routes/campaign.js';
 
 export function createApp() {
   const app = express();
@@ -45,6 +46,7 @@ export function createApp() {
   app.use('/api/trade', tradeRoutes);
   app.use('/api/continents', continentRoutes);
   app.use('/api/quests', questRoutes);
+  app.use('/api/campaign', campaignRoutes);
 
   // Serve the built SPA when present (production / work-host preview).
   const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
