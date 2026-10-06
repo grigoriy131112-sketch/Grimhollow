@@ -343,46 +343,41 @@ ul.stats span { color: var(--muted); }
 .map-detail { margin-bottom: 0; }
 .map-detail-meta { display: flex; gap: 1rem; align-items: center; margin: 0.5rem 0; }
 
-/* Wave W-MAP: dark charts — global landmasses and a continent relief */
+/* Wave W-MAP: the global chart and a continent chart, in the atlas engraving style */
+.map-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.75rem; }
+.map-tab { padding: 0.35rem 0.9rem; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 1px; }
+.map-tab:hover { color: var(--gold-soft); border-color: var(--gold); }
+.map-tab.active { color: #1c1a17; background: rgba(242,231,205,0.9); border-color: #1c1a17; }
 .global-map-wrap { margin-bottom: 1rem; }
-.global-map { display: block; width: 100%; height: auto; border: 1px solid #241f2b; border-radius: 12px; box-shadow: var(--shadow); background: #0a0c11; }
-.map-wrap.dark, .world-map.dark { background: #0a0c11; border-color: #241f2b; }
-.gmap-grid { stroke: #232a35; stroke-width: 0.6; opacity: 0.5; }
-.gmap-sea-label { fill: #4d5566; font-family: 'Cinzel', serif; font-style: italic; }
+.global-map { display: block; width: 100%; height: auto; border: 1px solid #1c1a17; border-radius: 12px; box-shadow: var(--shadow); background: #efe3c6; }
+.gmap-grid { stroke: #1c1a17; stroke-width: 0.6; opacity: 0.18; }
+.gmap-sea-label { fill: #2b2a22; font-family: 'Cinzel', serif; font-style: italic; opacity: 0.72; }
 .gmap-land { cursor: pointer; }
-.gmap-land-shape { fill: #191520; stroke: none; transition: fill 0.15s; }
-.gmap-land-edge { fill: none; stroke: #4a3f52; stroke-width: 1.2; stroke-dasharray: 6 5; opacity: 0.7; }
-.gmap-land:hover .gmap-land-shape { fill: #221c2b; }
-.gmap-land:hover .gmap-land-edge { stroke: var(--gold); opacity: 1; }
-.gmap-land-name { fill: #d8cbb4; font-family: 'Cinzel', serif; font-size: 20px; letter-spacing: 3px; }
-.gmap-land-sub { fill: #6f6656; font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 1px; }
+.gmap-land-shape { fill: rgba(246,238,214,0.35); stroke: none; transition: fill 0.15s; }
+.gmap-land-hatch line { stroke: #1c1a17; stroke-width: 0.7; opacity: 0.32; }
+.gmap-land-edge { fill: none; stroke: #1c1a17; stroke-width: 2; stroke-linejoin: round; }
+.gmap-land:hover .gmap-land-shape { fill: rgba(232,220,190,0.6); }
+.gmap-land:hover .gmap-land-edge { stroke: #000; }
+.gmap-land-name { fill: #1c1a17; font-family: 'Cinzel', serif; font-size: 20px; letter-spacing: 3px; paint-order: stroke; stroke: #f2e7cd; stroke-width: 4px; }
+.gmap-land-sub { fill: #4a4436; font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 1px; paint-order: stroke; stroke: #f2e7cd; stroke-width: 3px; }
 .gmap-port { cursor: pointer; }
-.gmap-port-halo { fill: none; stroke: var(--gold); stroke-width: 1; opacity: 0.5; }
-.gmap-port-mark { fill: var(--gold); stroke: #0a0c11; stroke-width: 1; }
-.gmap-port-name { fill: #b8a888; font-family: 'Spectral', serif; font-size: 10px; }
+.gmap-port-halo { fill: none; stroke: #1c1a17; stroke-width: 1; opacity: 0.5; }
+.gmap-port-mark { fill: #8a2020; stroke: #f2e7cd; stroke-width: 1; }
+.gmap-port-name { fill: #1c1a17; font-family: 'Spectral', serif; font-size: 10px; paint-order: stroke; stroke: #f2e7cd; stroke-width: 3px; }
 .gmap-port:hover .gmap-port-halo { opacity: 1; }
-.gmap-compass-ring { fill: none; stroke: #4a3f52; stroke-width: 1.2; }
-.gmap-compass-needle { fill: var(--gold); opacity: 0.8; }
-.gmap-compass-n { fill: #d8cbb4; font-family: 'Cinzel', serif; font-size: 12px; }
-.gmap-legend { display: flex; flex-wrap: wrap; gap: 0.2rem 1rem; align-items: center; padding: 0.5rem 0.7rem; margin-top: 0.5rem; font-size: 0.75rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
-.gmap-legend-item { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--muted); }
-.gmap-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
-.gmap-dot.land { background: #191520; border: 1px solid #4a3f52; }
-.gmap-dot.port { background: var(--gold); }
+.gmap-compass-ring { fill: rgba(242,231,205,0.5); stroke: #1c1a17; stroke-width: 1.4; opacity: 0.8; }
+.gmap-compass-ring.thin { fill: none; stroke-dasharray: 2 4; opacity: 0.55; }
+.gmap-compass-needle { fill: #1c1a17; opacity: 0.75; }
+.gmap-compass-n { fill: #1c1a17; font-family: 'Cinzel', serif; font-size: 12px; }
+.map-legend .dot.land { background: #efe3c6; border: 1px solid #1c1a17; }
+.map-legend .dot.port { background: #8a2020; }
 
 /* continent relief */
-.cmap-region { pointer-events: none; }
-.cmap-region-shape { fill: #1a1520; stroke: none; }
-.cmap-region-edge { fill: none; stroke: #3d3547; stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.7; }
-.cmap-region-name { fill: #8a7f66; font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px; opacity: 0.85; }
-.cmap-road { stroke: #6b5f4a; stroke-width: 1.6; stroke-dasharray: 5 5; opacity: 0.65; }
-.cmap-road.hot { stroke: var(--gold); stroke-width: 2.4; opacity: 1; }
-.cmap-road-time { fill: #8a7f66; font-size: 10px; font-family: 'Spectral', serif; text-anchor: middle; }
-.cmap-seal { fill: #241d2c; stroke: #6b5f4a; stroke-width: 1.6; }
-.map-node:hover .cmap-seal { fill: #2e2538; stroke: var(--gold); }
-.map-node.active .cmap-seal { stroke: var(--gold); stroke-width: 2.4; }
-.cmap-port-mark { fill: var(--gold); stroke: #0a0c11; stroke-width: 1; }
-.node-label.dark { fill: #d8cbb4; stroke: #0a0c11; stroke-width: 3px; }
+.cmap-region-shape { fill: rgba(246,238,214,0.35); stroke: none; }
+.cmap-land-hatch line { stroke: #1c1a17; stroke-width: 0.7; opacity: 0.32; }
+.cmap-region-edge { fill: none; stroke: #1c1a17; stroke-width: 2; stroke-linejoin: round; }
+.cmap-region-name { fill: #2b2a22; font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px; opacity: 0.8; paint-order: stroke; stroke: #f2e7cd; stroke-width: 4px; }
+.cmap-port-mark { fill: #8a2020; stroke: #f2e7cd; stroke-width: 1; }
 
 /* continent cards under the global chart */
 .continent-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; margin-top: 1rem; }

@@ -145,5 +145,17 @@ export function wobbleLine(pts, rng, amp = 2) {
   return d;
 }
 
+// Parallel diagonal rules for an engraver's hatching. Meant to be drawn inside
+// a clipPath of a landmass: they run at 45°, spaced `gap` px, across the box.
+export function hatchLines(minX, minY, maxX, maxY, gap = 8) {
+  const lines = [];
+  const span = (maxX - minX) + (maxY - minY);
+  for (let o = -((maxY - minY)); o < span; o += gap) {
+    const x0 = minX + o;
+    lines.push([x0, minY, x0 + (maxY - minY), maxY]);
+  }
+  return lines;
+}
+
 export const DANGER_COLORS = ['#5f7a3f', '#a8862a', '#b5672f', '#a13f2a', '#8a2020', '#5f1830'];
 export const dangerColor = (d) => DANGER_COLORS[Math.min(Math.max(d, 1), 5)] || '#6b5335';

@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
-import { WORLD, makeLocalProjector, blobPath, wobbleLine, rngFrom, hash, dangerColor } from './mapProjection.js';
+import { WORLD, makeLocalProjector, blobPath, wobbleLine, hatchLines, rngFrom, hash, dangerColor } from './mapProjection.js';
 import { landmarkIcon } from './icons.jsx';
 
-// The continent chart: one land's regions and every place inside them, drawn as
-// a dark relief with inked roads. Ports keep a harbour mark so the crossing is
-// visible from here too. Selecting a place opens a detail card with a road
-// button.
+// The continent chart, in the same antique-engraving style as the atlas: one
+// land's regions and every place inside them, drawn as an ink relief with a
+// hatched fill and hand-inked roads on a parchment sheet. Ports keep a harbour
+// mark so the crossing is visible from here too. Selecting a place opens a
+// detail card with a road button.
 
-const SEA_FILL = '#0a0c11';
+const PARCH = '#f2e7cd';
 const MARGIN = 40; // breathing room so the land relief is never cut off
 
 export default function ContinentMap({ map, continent, onBack, onOpenLocation }) {
@@ -73,22 +74,22 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
   return (
     <div className="atlas">
       <div className="map-col">
-        <div className="map-wrap dark">
-          <svg className="world-map dark" viewBox={`0 0 ${WORLD.w} ${WORLD.h}`} role="img" aria-label={`Карта: ${continent.name}`}>
+        <div className="map-wrap">
+          <svg className="world-map" viewBox={`0 0 ${WORLD.w} ${WORLD.h}`} role="img" aria-label={`Карта: ${continent.name}`}>
             <defs>
-              <radialGradient id="cmap-sea" cx="50%" cy="45%" r="75%">
-                <stop offset="0%" stopColor="#12161d" />
-                <stop offset="100%" stopColor={SEA_FILL} />
+              <pattern id="cmap-parch" width={WORLD.w} height={WORLD.h} patternUnits="userSpaceOnUse">
+                <image href="/art/textures/parchment.jpg" x={0} y={0} width={WORLD.w} height={WORLD.h}
+                  preserveAspectRatio="xMidYMid slice" />
+              </pattern>
+              <radialGradient id="cmap-vignette" cx="50%" cy="46%" r="72%">
+                <stop offset="55%" stopColor="#000" stopOpacity="0" />
+                <stop offset="100%" stopColor="#3a2f1c" stopOpacity="0.5" />
               </radialGradient>
-              <filter id="cmap-grain">
-                <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" />
-                <feColorMatrix type="saturate" values="0" />
-                <feComponentTransfer><feFuncA type="linear" slope="0.05" /></feComponentTransfer>
-              </filter>
+              <clipPath id="cmap-land-clip"><path d={land} /></clipPath>
             </defs>
 
-            <rect width={WORLD.w} height={WORLD.h} fill="url(#cmap-sea)" />
-            <rect width={WORLD.w} height={WORLD.h} filter="url(#cmap-grain)" opacity="0.5" />
+            <rect width={WORLD.w} height={WORLD.h} fill="url(#cmap-parch)" />
+            <rect width={WORLD.w} height={WORLD.h} fill="url(#cmap-vignette)" />
             {[0.25, 0.5, 0.75].map((f) => (
               <line key={`h${f}`} x1={0} y1={WORLD.h * f} x2={WORLD.w} y2={WORLD.h * f} className="gmap-grid" />
             ))}
@@ -96,8 +97,13 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
               <line key={`v${f}`} x1={WORLD.w * f} y1={0} x2={WORLD.w * f} y2={WORLD.h} className="gmap-grid" />
             ))}
 
-            {/* the land, then the names of its regions */}
+            {/* the land: hatched ink relief, then the names of its regions */}
             <path d={land} className="cmap-region-shape" />
+            <g clipPath="url(#cmap-land-clip)" className="cmap-land-hatch">
+              {hatchLines(0, 0, WORLD.w, WORLD.h, 10).map(([x0, y0, x1, y1], i) => (
+                <line key={i} x1={x0} y1={y0} x2={x1} y2={y1} />
+              ))}
+            </g>
             <path d={land} className="cmap-region-edge" />
             {regions.map(({ region, x, y }) => (
               <text key={region.id} x={x} y={y - 78} className="cmap-region-name" textAnchor="middle">{region.name}</text>
@@ -108,9 +114,9 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
               const hot = selectedId === c.from || selectedId === c.to;
               return (
                 <g key={`r${c.from}-${c.to}`}>
-                  <path d={d} fill="none" stroke="#000" strokeWidth={hot ? 4.5 : 3.4} opacity={0.5} strokeLinecap="round" />
-                  <path className={`cmap-road ${hot ? 'hot' : ''}`} d={d} fill="none" />
-                  {c.minutes != null && <text x={mx} y={my - 4} className="cmap-road-time">{c.minutes} мин</text>}
+                  <path d={d} fill="none" stroke={PARCH} strokeWidth={hot ? 4.5 : 3.4} opacity={0.85} strokeLinecap="round" />
+                  <path className={`road ${hot ? 'hot' : ''}`} d={d} fill="none" />
+                  {c.minutes != null && <text x={mx} y={my - 4} className="road-time">{c.minutes} мин</text>}
                 </g>
               );
             })}
@@ -123,6 +129,7 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
               const dx = p.x > 860 ? -20 : p.x < 90 ? 20 : 0;
               const dy = p.y < 60 ? 30 : p.y > 580 ? -20 : 32;
               const anchor = p.x > 860 ? 'end' : p.x < 90 ? 'start' : 'middle';
+              const color = l.isSafe ? '#5f7a3f' : dangerColor(l.danger);
               return (
                 <g
                   key={l.id}
@@ -134,15 +141,15 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter') onOpenLocation(l.id); }}
                 >
-                  {active && <circle r={27} className="node-ring" />}
-                  <circle r={16} className="cmap-seal" />
+                  {active && <circle r={29} className="node-ring" />}
+                  <circle r={17} className="seal" />
                   {icon && (
-                    <image href={icon} x={-11} y={-11} width={22} height={22} className="landmark"
-                      style={{ filter: 'invert(0.82) sepia(0.4) saturate(1.2) brightness(1.1)' }} />
+                    <image href={icon} x={-12} y={-12} width={24} height={24} className="landmark"
+                      style={{ filter: 'invert(0.78) sepia(0.5) saturate(1.6) hue-rotate(330deg) brightness(0.9)' }} />
                   )}
-                  <circle cx={12} cy={-12} r={l.isSafe ? 4 : 2.5 + l.danger} fill={dangerColor(l.danger)} stroke="#0a0c11" strokeWidth={1.2} />
-                  {l.isPort && <path d="M0,-24 L5,-16 L-5,-16 Z" className="cmap-port-mark" />}
-                  <text x={dx} y={dy} className="node-label dark" textAnchor={anchor}>{l.name}</text>
+                  <circle cx={13} cy={-13} r={l.isSafe ? 4 : 2.5 + l.danger} fill={color} stroke={PARCH} strokeWidth={1.2} />
+                  {l.isPort && <path d="M0,-25 L5,-17 L-5,-17 Z" className="cmap-port-mark" />}
+                  <text x={dx} y={dy} className="node-label" textAnchor={anchor}>{l.name}</text>
                 </g>
               );
             })}
@@ -156,14 +163,21 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
           </svg>
         </div>
 
-        <div className="gmap-legend">
-          <span className="gmap-legend-item"><span className="gmap-dot land" /> {continent.name}</span>
+        <div className="map-legend">
+          <div className="legend-title">Легенда</div>
+          <div className="legend-row"><span className="dot party" /> Отряд</div>
+          <div className="legend-row"><span className="dot" style={{ background: '#5f7a3f' }} /> Безопасно</div>
           {[1, 2, 3, 4, 5].map((d) => (
-            <span className="gmap-legend-item" key={d}>
-              <span className="gmap-dot" style={{ background: dangerColor(d), width: 6 + d, height: 6 + d }} /> {'★'.repeat(d)}
-            </span>
+            <div className="legend-row" key={d}>
+              <span className="dot" style={{ background: dangerColor(d), width: 6 + d, height: 6 + d }} />
+              {'★'.repeat(d)}
+            </div>
           ))}
-          <span className="gmap-legend-item"><span className="gmap-dot port" /> порт</span>
+          <div className="legend-sep" />
+          <div className="legend-row legend-credit">
+            {continent.name} · пергамент «Pergament.1», CC0.
+            Путь указывается в минутах.
+          </div>
         </div>
       </div>
 
