@@ -157,8 +157,8 @@ export const SETTLEMENTS = [
       safe: true,
       biome: 'waste',
       scene: 'city',
-      x: 275,
-      y: 234,
+      x: 510,
+      y: 290,
       connects: ['Перекрёсток висельников', 'Пепельный лес'],
     },
     buildings: [
@@ -186,8 +186,8 @@ export const SETTLEMENTS = [
       safe: true,
       biome: 'waste',
       scene: 'village',
-      x: 182,
-      y: 264,
+      x: 440,
+      y: 265,
       connects: ['Перекрёсток висельников', 'Плачущая низина'],
     },
     buildings: [

@@ -15,7 +15,7 @@ const STACK = [
 
 const ASSETS = [
   { name: 'game-icons.net', note: 'иконки, CC BY 3.0', href: 'https://game-icons.net/' },
-  { name: 'Atlas of Mutual Heritage', note: 'гравюра карты, public domain', href: 'https://commons.wikimedia.org/wiki/File:AMH-7996-KB_Map_of_the_island_of_Boero.jpg' },
+  { name: 'Azgaar Fantasy Map Generator', note: 'основа карты мира, MIT', href: 'https://azgaar.github.io/Fantasy-Map-Generator/' },
   { name: 'Membeth / Wikimedia Commons', note: 'текстура пергамента, CC0', href: 'https://commons.wikimedia.org/wiki/File:Pergament.1.jpg' },
 ];
 

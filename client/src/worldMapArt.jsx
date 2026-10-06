@@ -1,11 +1,12 @@
 // The dark chart of Grimhollow.
 //
-// The whole world is ONE antique plate: a single Mercator engraving (public
-// domain, 1784 Vaugondy — see client/public/art/CREDITS.txt) recoloured to the
-// near-black house style by tools/gen_world_mask.mjs. The global map and a
-// continent map show the same drawing — a continent map only points its viewBox
-// at that continent's rectangle. So the continents are literally part of one
-// picture, in one style, rather than images pasted onto it.
+// The whole world is ONE generated fantasy plate: a fictional world made with
+// Azgaar's Fantasy Map Generator (see client/public/art/CREDITS.txt), reduced to
+// its coastlines and recoloured to the near-black house style by
+// tools/gen_world_map.mjs. The global map and a continent map show the same
+// drawing — a continent map only points its viewBox at that continent's
+// rectangle. So the continents are literally part of one picture, in one style,
+// rather than images pasted onto it.
 //
 // The land/sea mask the server tests against is generated from the very same
 // file, so a marker can never drift out to sea without the picture moving too.
@@ -17,7 +18,7 @@ export const CONTINENTS = geo.continents;
 export const SEAS = geo.seas;
 
 // The plate, served from client/public.
-export const MAP_IMAGE = '/art/maps/world-antique.jpg';
+export const MAP_IMAGE = '/art/maps/world-chart.svg';
 
 // The chart itself, in world coordinates. `seaLabels` adds the names of the
 // waters, which belong on the global sheet; a continent map shows only its own

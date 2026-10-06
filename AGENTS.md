@@ -482,22 +482,22 @@ marker and, since Wave 11, shows every place openly.
   `progress` from the travel clock; the client places the dot on the same
   quadratic Bézier the roads use (`(a.x+b.x)/2, (a.y+b.y)/2 - 30`). It must match
   the drawn curve or the dot drifts off the road.
-- **The chart is one antique plate now (Wave W-MAP rework).** The world is a
-  single public-domain 1784 Vaugondy Mercator engraving,
-  `client/public/art/maps/world-antique.jpg`, recoloured to the house style in
-  code. `tools/gen_world_mask.mjs` crops the neatline, shifts the tone and also
-  writes the land/sea grid. `client/src/worldMapArt.jsx` (`WorldChart`,
+- **The chart is one generated plate now (Wave W-MAP rework).** The world is a
+  single fantasy map generated with Azgaar's Fantasy Map Generator
+  (https://azgaar.github.io/Fantasy-Map-Generator/), `client/public/art/maps/world-chart.svg`,
+  reduced to its coastlines and recoloured to the house style in code by
+  `tools/gen_world_map.mjs`. `client/src/worldMapArt.jsx` (`WorldChart`,
   `Vignette`) draws the plate once. The global map and a continent map render
   **the same picture** — a continent map just sets its `viewBox` to that
   continent's `rect`. So a continent is literally part of one drawing, not an
   image pasted onto it, and every land shares one style by construction. Do not
   reintroduce per-continent base images, framed plates or a second raster.
-- **Geometry is one source of truth.** `client/public/art/maps/world-antique.jpg`
+- **Geometry is one source of truth.** `client/public/art/maps/world-chart.svg`
   is the picture; the very same pixels are thresholded into
-  `server/test-support/world-mask.json` by `tools/gen_world_mask.mjs`, and
+  `server/test-support/world-mask.json` by `tools/gen_world_map.mjs`, and
   `server/src/game/world_geo.js` reads that grid to answer `isLand`. So the
   picture and the "every location stands on land" test can never drift apart.
-  Change the chart only by re-running `node tools/gen_world_mask.mjs <source.jpg>`;
+  Change the chart only by re-running `node tools/gen_world_map.mjs <source.svg>`;
   if you move a location onto water, the land test fails immediately.
 - **Locations stand on land, and by theme.** Every `map_x`/`map_y` is chosen to
   sit on the drawn landmass with a few pixels of margin, so no seal floats out
@@ -516,12 +516,12 @@ marker and, since Wave 11, shows every place openly.
 - **The party is an inked cross** (`.party-x`), pulsing while it walks. Keep the
   chart calm: no scattered icons or "stamps" — an earlier attempt read as visual
   noise.
-- **All of it stays vector — with two deliberate raster exceptions.** The icons
-  are vector; the world chart is the one recoloured antique plate
-  (`maps/world-antique.jpg`, public domain), and the paper behind the older atlas
-  chrome is a **CC0** texture (`textures/parchment.jpg`). Icons are CC BY 3.0 SVG
-  from game-icons.net; credit the `<author>/<icon>` pair. Do not add any other
-  rasters to the map.
+- **All of it stays vector — with one deliberate raster exception.** The icons
+  are vector; the world chart is the one generated SVG plate
+  (`maps/world-chart.svg`, coastlines from Azgaar's generator recoloured in
+  code), and the paper behind the older atlas chrome is a **CC0** texture
+  (`textures/parchment.jpg`). Icons are CC BY 3.0 SVG from game-icons.net; credit
+  the `<author>/<icon>` pair. Do not add any other rasters to the map.
 - **One drawing, three views (Wave W-MAP rework).** `GlobalMap.jsx` shows the
   whole world (the five lands, the named seas, the ports) and is the entry point
   to a continent; `ContinentMap.jsx` zooms the same chart to one continent's

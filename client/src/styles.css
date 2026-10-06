@@ -355,8 +355,10 @@ ul.stats span { color: var(--muted); }
 .global-map-wrap { margin-bottom: 1rem; }
 .global-map { background: #050509; border: 1px solid #1c1a17; }
 
-/* the chart itself: one recoloured antique plate, tinted to the house palette */
-.wmap image { filter: sepia(0.4) saturate(0.65) brightness(0.9) contrast(1.05); }
+/* the chart itself: one generated fantasy plate, already in the house palette */
+/* The plate is authored in the house style by tools/gen_world_map.mjs, so it is
+   drawn as-is — no colour shift on top. */
+.wmap image { filter: none; }
 .wmap-continent { cursor: pointer; }
 .wmap-hit { pointer-events: all; }
 .wmap-continent:hover .wmap-continent-name { fill: #e7cf87; }

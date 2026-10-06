@@ -5,11 +5,11 @@ import ContinentMap from '../ContinentMap.jsx';
 import WorldMap from '../WorldMap.jsx';
 import { useMapData } from '../useMapData.js';
 
-// The atlas, in three charts, all in the same antique-engraving style. The
+// The atlas, in three charts, all in the same generated dark-fantasy style. The
 // global chart shows the whole world — the five lands, the seas and the ports.
 // Opening a land shows that continent's own chart and every place inside it.
-// The engraved atlas is the original survey sheet with every place already
-// inked on it. The hero picker decides whose eyes we look through.
+// The chart is the original survey sheet with every place already inked on it.
+// The hero picker decides whose eyes we look through.
 
 const TABS = [
   { to: '/world', label: 'Весь мир' },

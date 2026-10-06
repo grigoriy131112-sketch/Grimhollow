@@ -30,7 +30,7 @@ test('the map exposes coordinates, scenes and roads for every location', () => {
   }
 });
 
-// The world is drawn from one antique plate (maps/world-antique.jpg); the mask
+// The world is drawn from one generated plate (maps/world-chart.svg); the mask
 // is thresholded from those same pixels, so a marker cannot float out to sea.
 test('every location stands on land, not out at sea', () => {
   seedWorld();

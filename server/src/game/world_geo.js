@@ -1,7 +1,7 @@
 // The shape of Grimhollow, read from the same plate the client draws.
 //
-// The world is one antique chart (client/public/art/maps/world-antique.jpg),
-// recoloured by tools/gen_world_mask.mjs, which also writes the land/sea grid
+// The world is one generated fantasy chart (client/public/art/maps/world-chart.svg),
+// recoloured by tools/gen_world_map.mjs, which also writes the land/sea grid
 // server/test-support/world-mask.json from those very pixels. Here we only
 // answer whether a point is land — so the picture and the "every location is on
 // land" guarantee can never drift apart: change the plate, regenerate the mask,
