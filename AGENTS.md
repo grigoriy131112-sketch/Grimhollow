@@ -242,8 +242,13 @@ always the floor: with no model reachable, the template beat answers.
   lives in `server/src/data/` and is gitignored.
 - `server/src/index.js` also serves `client/dist` (SPA fallback) so the whole app
   is reachable from one port in preview.
-- **Preview "Bad Gateway" = nothing is listening on the work-host port** (12000).
-  `scripts/serve.sh` is the fix: it builds if needed and starts the server
+- **Preview "Bad Gateway" = nothing is listening on the work-host port.** The
+  work-host exposes **two** URLs (ports `12000` and `12001`), so the server
+  listens on both: `resolveListenPorts()` (`server/src/ports.js`) returns `PORT`
+  plus `PORT_ALT`, and `PORT_ALT` defaults to `12001` whenever `PORT` is the
+  `12000` preview port (set `PORT_ALT=0` to disable). A busy extra port logs and
+  is skipped, never crashing the primary. `scripts/serve.sh` is the fix: it
+  builds if needed and starts the server
   detached (`setsid nohup`, `--grimhollow` argv marker) on `PORT`, is idempotent,
   and with `--watch` restarts it after a crash. Never leave the server as a child
   of the shell that started it, and never run two copies (the second fails with
