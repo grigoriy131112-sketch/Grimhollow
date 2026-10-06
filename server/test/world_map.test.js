@@ -30,8 +30,8 @@ test('the map exposes coordinates, scenes and roads for every location', () => {
   }
 });
 
-// The map art is a real drawn isle: a fixed coastline with open sea around it.
-// Every marker must stand on dry land, or it visually floats out on the water.
+// The world is drawn from vector coastlines (client/src/world-geo.json); the
+// mask is sampled from those same polygons, so a marker cannot float out to sea.
 test('every location stands on land, not out at sea', () => {
   seedWorld();
   const cell = (x, y) => {

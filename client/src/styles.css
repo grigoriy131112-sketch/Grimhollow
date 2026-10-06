@@ -343,51 +343,47 @@ ul.stats span { color: var(--muted); }
 .map-detail { margin-bottom: 0; }
 .map-detail-meta { display: flex; gap: 1rem; align-items: center; margin: 0.5rem 0; }
 
-/* Wave W-MAP: the global chart and a continent chart, in the atlas engraving style */
+/* Wave W-MAP: one dark chart of the world. The continents are part of this
+   drawing, not images on it, so the global map and a continent map share these
+   styles; only the viewBox changes. Near-black sea, ash-dark land, bone coast,
+   dull gold letters. */
 .map-tabs { display: flex; gap: 0.4rem; margin-bottom: 0.75rem; }
 .map-tab { padding: 0.35rem 0.9rem; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 1px; }
 .map-tab:hover { color: var(--gold-soft); border-color: var(--gold); }
-.map-tab.active { color: #1c1a17; background: rgba(242,231,205,0.9); border-color: #1c1a17; }
+.map-tab.active { color: #0a0a0d; background: rgba(203,182,130,0.9); border-color: #6b5a3a; }
+
 .global-map-wrap { margin-bottom: 1rem; }
-.global-map { display: block; width: 100%; height: auto; border: 1px solid #1c1a17; border-radius: 12px; box-shadow: var(--shadow); background: #efe3c6; }
-.gmap-grid { stroke: #1c1a17; stroke-width: 0.6; opacity: 0.18; }
-.gmap-sea-label { fill: #2b2a22; font-family: 'Cinzel', serif; font-style: italic; opacity: 0.72; }
-.gmap-land { cursor: pointer; }
-.gmap-land-shape { fill: rgba(246,238,214,0.35); stroke: none; transition: fill 0.15s; }
-.gmap-land-hatch line { stroke: #1c1a17; stroke-width: 0.7; opacity: 0.32; }
-.gmap-land-edge { fill: none; stroke: #1c1a17; stroke-width: 2; stroke-linejoin: round; }
-.gmap-land:hover .gmap-land-shape { fill: rgba(232,220,190,0.6); }
-.gmap-land:hover .gmap-land-edge { stroke: #000; }
-.gmap-land-name { fill: #1c1a17; font-family: 'Cinzel', serif; font-size: 20px; letter-spacing: 3px; paint-order: stroke; stroke: #f2e7cd; stroke-width: 4px; }
-.gmap-land-sub { fill: #4a4436; font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 1px; paint-order: stroke; stroke: #f2e7cd; stroke-width: 3px; }
-.gmap-port { cursor: pointer; }
-.gmap-port-halo { fill: none; stroke: #1c1a17; stroke-width: 1; opacity: 0.5; }
-.gmap-port-mark { fill: #8a2020; stroke: #f2e7cd; stroke-width: 1; }
-.gmap-port-name { fill: #1c1a17; font-family: 'Spectral', serif; font-size: 10px; paint-order: stroke; stroke: #f2e7cd; stroke-width: 3px; }
-.gmap-port:hover .gmap-port-halo { opacity: 1; }
-.gmap-compass-ring { fill: rgba(242,231,205,0.5); stroke: #1c1a17; stroke-width: 1.4; opacity: 0.8; }
-.gmap-compass-ring.thin { fill: none; stroke-dasharray: 2 4; opacity: 0.55; }
-.gmap-compass-needle { fill: #1c1a17; opacity: 0.75; }
-.gmap-compass-n { fill: #1c1a17; font-family: 'Cinzel', serif; font-size: 12px; }
-.map-legend .dot.land { background: #efe3c6; border: 1px solid #1c1a17; }
-.map-legend .dot.port { background: #8a2020; }
+.global-map { background: #050509; border: 1px solid #1c1a17; }
 
-/* global chart: one engraved plate per continent */
-.gmap-panel { cursor: pointer; }
-.gmap-panel-art { transition: opacity 0.15s; }
-.gmap-panel:hover .gmap-panel-art { opacity: 0.86; }
-.gmap-panel-frame { fill: none; stroke: #1c1a17; stroke-width: 2; stroke-linejoin: round; }
-.gmap-panel:hover .gmap-panel-frame { stroke: #000; stroke-width: 2.6; }
-.gmap-panel-plate { fill: rgba(242,231,205,0.82); stroke: #1c1a17; stroke-width: 0.8; }
-.gmap-panel-name { fill: #1c1a17; font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1.5px; }
-.gmap-panel-sub { fill: #4a4436; font-family: 'Spectral', serif; font-size: 9px; letter-spacing: 0.5px; }
+/* the chart itself */
+.wmap-sea-hatch line { stroke: #171722; stroke-width: 0.5; opacity: 0.6; }
+.wmap-land-hatch line { stroke: #2a2118; stroke-width: 0.6; opacity: 0.6; }
+.wmap-coast { fill: none; stroke: #6b5a3a; stroke-width: 2; stroke-linejoin: round; }
+.wmap-continent { cursor: pointer; }
+.wmap-hit { pointer-events: all; }
+.wmap-continent:hover .wmap-coast { stroke: #c9a227; stroke-width: 2.6; }
+.wmap-continent-name { fill: #cbb682; font-family: 'Cinzel', serif; font-size: 20px; letter-spacing: 3px; paint-order: stroke; stroke: #050509; stroke-width: 5px; }
+.wmap-continent-sub { fill: #7d6f52; font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 1px; paint-order: stroke; stroke: #050509; stroke-width: 4px; }
+.wmap-sea-name { fill: #3f4a5a; font-family: 'Cinzel', serif; font-style: italic; letter-spacing: 2px; paint-order: stroke; stroke: #050509; stroke-width: 3px; }
+.wmap-port { cursor: pointer; }
+.wmap-port-halo { fill: none; stroke: #8a2020; stroke-width: 1; opacity: 0.5; }
+.wmap-port-mark { fill: #b32a2a; stroke: #050509; stroke-width: 1.2; }
+.wmap-port-name { fill: #a8996f; font-family: 'Spectral', serif; font-size: 10px; paint-order: stroke; stroke: #050509; stroke-width: 3px; }
+.wmap-port:hover .wmap-port-halo { opacity: 1; }
 
-/* continent relief */
-.cmap-region-shape { fill: rgba(246,238,214,0.35); stroke: none; }
-.cmap-land-hatch line { stroke: #1c1a17; stroke-width: 0.7; opacity: 0.32; }
-.cmap-region-edge { fill: none; stroke: #1c1a17; stroke-width: 2; stroke-linejoin: round; }
-.cmap-region-name { fill: #2b2a22; font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 2px; opacity: 0.8; paint-order: stroke; stroke: #f2e7cd; stroke-width: 4px; }
-.cmap-port-mark { fill: #8a2020; stroke: #f2e7cd; stroke-width: 1; }
+/* the game layer over the dark chart */
+.map-node.dark .seal { fill: #14110d; stroke: #6b5a3a; stroke-width: 1.8; }
+.map-node.dark:hover .seal { fill: #1d1812; stroke: #c9a227; }
+.map-node.dark.active .seal { stroke: #c9a227; stroke-width: 2.4; }
+.map-node.dark .node-ring { stroke: #8a2020; }
+.node-label.dark { fill: #cdbb8e; stroke: #050509; stroke-width: 3px; }
+.road { stroke: #b8a978; stroke-width: 1.6; stroke-dasharray: 5 5; opacity: 0.55; }
+.road.hot { stroke: #e7d9ab; stroke-width: 2.4; opacity: 1; }
+.road-time { fill: #a8996f; stroke: #050509; }
+.party-pulse { stroke: #b32a2a; }
+.party-x { stroke: #b32a2a; }
+.cmap-region-name { fill: #b9a97e; stroke: #050509; stroke-width: 4px; }
+.cmap-port-mark { fill: #b32a2a; stroke: #050509; stroke-width: 1.2; }
 
 /* continent cards under the global chart */
 .continent-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; margin-top: 1rem; }

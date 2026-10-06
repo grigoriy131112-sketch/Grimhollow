@@ -1,56 +1,17 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { landmarkIcon } from './icons.jsx';
+import { WorldArt, Vignette, WORLD } from './worldMapArt.jsx';
+import { wobbleLine, rngFrom, hash, dangerColor } from './mapInk.js';
 
-// Interactive atlas of Grimhollow laid over a genuine antique chart: a plain
-// 18th-century survey of the island of Boero (Jakob van der Schley / Pieter de
-// Hondt, c. 1753), which is in the public domain (see CREDITS.txt). The
-// engraving is the whole map — we add no terrain of our own. On top of it we
-// keep only the game layer: inked roads, a seal with the landmark icon for each
-// place, and the party marker. The only other raster in the project is the
-// parchment texture.
+// The interactive atlas: the same dark world chart the other maps draw, with
+// every place already inked on it. It shows the whole world — all five lands and
+// the named seas — rather than one continent, and adds only roads, seals and
+// the party marker on top of the shared drawing.
 
-const W = 1000;
-const H = 640;
-
-const DANGER_COLORS = ['#5f7a3f', '#a8862a', '#b5672f', '#a13f2a', '#8a2020', '#5f1830'];
-const dangerColor = (d) => DANGER_COLORS[Math.min(Math.max(d, 1), 5)] || '#6b5335';
-
-// Paper tone, reused for the halo behind ink drawn over the dark engraving.
-const PARCH = '#f2e7cd';
-const HALO = '#f4ead2';
-
-function hash(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i += 1) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return h >>> 0;
-}
-
-function rngFrom(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0; a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const r1 = (n) => Math.round(n * 10) / 10;
-
-// A lightly wobbled poly-line, so overlay roads read as hand-inked.
-function wobbleLine(pts, rng, amp = 2) {
-  if (pts.length < 2) return '';
-  let d = `M${r1(pts[0][0])},${r1(pts[0][1])}`;
-  for (let i = 1; i < pts.length; i += 1) {
-    const [x0, y0] = pts[i - 1];
-    const [x1, y1] = pts[i];
-    const mx = (x0 + x1) / 2 + (rng() - 0.5) * amp;
-    const my = (y0 + y1) / 2 + (rng() - 0.5) * amp;
-    d += ` Q${r1(mx)},${r1(my)} ${r1(x1)},${r1(y1)}`;
-  }
-  return d;
-}
+const W = WORLD.w;
+const H = WORLD.h;
+const INK = '#0a0a0d';
 
 export default function WorldMap({ data }) {
   const navigate = useNavigate();
@@ -100,25 +61,14 @@ export default function WorldMap({ data }) {
       <div className="map-col">
         <div className="map-wrap">
           <svg className="world-map" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Карта Гримхоула">
-          <defs>
-            {/* the antique engraving: Boero, c. 1753, public domain. It is the
-                whole map; we add no decorative drawing of our own on top. */}
-            <pattern id="antiqueMap" width={W} height={H} patternUnits="userSpaceOnUse">
-              <image
-                href="/art/maps/isle-antique.jpg" x={0} y={0} width={W} height={H}
-                preserveAspectRatio="xMidYMid slice"
-              />
-            </pattern>
-          </defs>
+          <WorldArt seaLabels />
 
-          <rect width={W} height={H} fill="url(#antiqueMap)" />
-
-          {/* roads: pale underlay then ink dashes */}
+          {/* roads: dark underlay then a pale inked dash */}
           {roads.map(({ c, a, b, mx, my, d }) => {
             const hot = selectedId === c.from || selectedId === c.to;
             return (
               <g key={`r${c.from}-${c.to}`} opacity={1}>
-                <path d={d} fill="none" stroke={HALO} strokeWidth={hot ? 4.5 : 3.4} opacity={0.85} strokeLinecap="round" />
+                <path d={d} fill="none" stroke={INK} strokeWidth={hot ? 5 : 4} opacity={0.7} strokeLinecap="round" />
                 <path className={`road ${hot ? 'hot' : ''}`} d={d} fill="none" />
                 {c.minutes != null && (
                   <text x={mx} y={my - 4} className="road-time">{c.minutes} мин</text>
@@ -141,7 +91,7 @@ export default function WorldMap({ data }) {
             return (
               <g
                 key={l.id}
-                className={`map-node ${active ? 'active' : ''}`}
+                className={`map-node dark ${active ? 'active' : ''}`}
                 transform={`translate(${l.x},${l.y})`}
                 onClick={() => setSelectedId(l.id)}
                 onDoubleClick={() => navigate(`/world/locations/${l.id}`)}
@@ -159,8 +109,8 @@ export default function WorldMap({ data }) {
                     style={{ filter: 'invert(0.78) sepia(0.5) saturate(1.6) hue-rotate(330deg) brightness(0.9)' }}
                   />
                 )}
-                <circle cx={13} cy={-13} r={l.isSafe ? 4 : 2.5 + l.danger} fill={color} stroke={PARCH} strokeWidth={1.2} />
-                <text x={labelDx} y={labelDy} className="node-label" textAnchor={labelAnchor}>{l.name}</text>
+                <circle cx={13} cy={-13} r={l.isSafe ? 4 : 2.5 + l.danger} fill={color} stroke={INK} strokeWidth={1.4} />
+                <text x={labelDx} y={labelDy} className="node-label dark" textAnchor={labelAnchor}>{l.name}</text>
               </g>
             );
           })}
@@ -172,6 +122,8 @@ export default function WorldMap({ data }) {
               <path d="M-6,-6 L6,6 M6,-6 L-6,6" className="party-x" />
             </g>
           )}
+
+          <Vignette />
           </svg>
         </div>
 
@@ -187,8 +139,7 @@ export default function WorldMap({ data }) {
           ))}
           <div className="legend-sep" />
           <div className="legend-row legend-credit">
-            van der Schley, «Остров Буру» (ок. 1753) · общественное достояние.
-            Путь указывается в минутах.
+            Берега Гримхоула начерчены нами. Путь указывается в минутах.
           </div>
         </div>
       </div>

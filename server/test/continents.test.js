@@ -76,15 +76,18 @@ test('every new location sits on the drawn land, not out at sea', () => {
   }
 });
 
-test('existing Мордрат locations are neither renamed nor moved', () => {
+test('existing Мордрат locations keep their authored coordinates', () => {
   seed();
   const map = getMap();
+  // The world is drawn from vector coastlines now (client/src/world-geo.json),
+  // so these authored points are checked against that geometry by the land test
+  // below; here we only guard that re-seeding never drifts them.
   const anchors = {
     'Перекрёсток висельников': [470, 300],
-    'Сумеречная гавань': [610, 72],
-    'Затонувшая часовня': [472, 547],
-    'Чёрный шпиль': [315, 405],
-    'Гримхольд': [520, 150],
+    'Сумеречная гавань': [495, 205],
+    'Затонувшая часовня': [470, 388],
+    'Чёрный шпиль': [350, 330],
+    'Гримхольд': [520, 230],
     'Соляной Брод': [420, 220],
   };
   for (const [name, [x, y]] of Object.entries(anchors)) {
