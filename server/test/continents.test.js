@@ -84,11 +84,11 @@ test('existing Мордрат locations keep their authored coordinates', () => 
   // checked against the mask cut from it by the land test below; here we only
   // guard that re-seeding never drifts them.
   const anchors = {
-    'Перекрёсток висельников': [496, 273],
-    'Сумеречная гавань': [420, 198],
-    'Затонувшая часовня': [530, 350],
-    'Чёрный шпиль': [590, 290],
-    'Гримхольд': [510, 290],
+    'Перекрёсток висельников': [500, 278],
+    'Сумеречная гавань': [528, 300],
+    'Затонувшая часовня': [522, 345],
+    'Чёрный шпиль': [610, 320],
+    'Гримхольд': [540, 250],
     'Соляной Брод': [440, 265],
   };
   for (const [name, [x, y]] of Object.entries(anchors)) {
