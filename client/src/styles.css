@@ -372,6 +372,16 @@ ul.stats span { color: var(--muted); }
 .map-legend .dot.land { background: #efe3c6; border: 1px solid #1c1a17; }
 .map-legend .dot.port { background: #8a2020; }
 
+/* global chart: one engraved plate per continent */
+.gmap-panel { cursor: pointer; }
+.gmap-panel-art { transition: opacity 0.15s; }
+.gmap-panel:hover .gmap-panel-art { opacity: 0.86; }
+.gmap-panel-frame { fill: none; stroke: #1c1a17; stroke-width: 2; stroke-linejoin: round; }
+.gmap-panel:hover .gmap-panel-frame { stroke: #000; stroke-width: 2.6; }
+.gmap-panel-plate { fill: rgba(242,231,205,0.82); stroke: #1c1a17; stroke-width: 0.8; }
+.gmap-panel-name { fill: #1c1a17; font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1.5px; }
+.gmap-panel-sub { fill: #4a4436; font-family: 'Spectral', serif; font-size: 9px; letter-spacing: 0.5px; }
+
 /* continent relief */
 .cmap-region-shape { fill: rgba(246,238,214,0.35); stroke: none; }
 .cmap-land-hatch line { stroke: #1c1a17; stroke-width: 0.7; opacity: 0.32; }

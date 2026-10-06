@@ -510,12 +510,21 @@ marker and, since Wave 11, shows every place openly.
 - **The party is an inked cross** (`.party-x`), pulsing while it walks. Keep the
   chart calm: no scattered icons or "stamps" — an earlier attempt read as visual
   noise.
-- **All of it stays vector — with two deliberate raster exceptions.** The map and
+- **All of it stays vector — with deliberate raster exceptions.** The map and
   icons are vector; the paper is a **CC0** texture (`textures/parchment.jpg`) and
-  the base map is the **public-domain** Boero engraving above. Both are
-  credited in `client/public/art/CREDITS.txt`. If you add art, keep it CC BY 3.0
-  SVG from game-icons.net and credit the `<author>/<icon>` pair; do not add
-  further rasters.
+  the base maps are **public-domain** antique engravings. All are credited in
+  `client/public/art/CREDITS.txt`. If you add art, keep it CC BY 3.0 SVG from
+  game-icons.net and credit the `<author>/<icon>` pair; do not add further
+  rasters.
+- **Every continent has its own engraving (Wave W-MAP).** `ContinentMap.jsx`
+  draws one land over its own public-domain sheet; `GlobalMap.jsx` shows one
+  framed plate per continent. The map from continent name → image + credit lives
+  in `client/src/continentArt.js`; the images are `client/public/art/maps/`
+  (`isle-antique.jpg` for Мордрат, `continent-{frozen,glass,havens,forest}.jpg`
+  for the four outer lands), each centre-cropped to 25:16. A continent with no
+  entry falls back to the Boero map so the atlas never renders blank. To add or
+  swap one: put the JPEG in `maps/`, add it to `continentArt.js`, and record the
+  source in `CREDITS.txt` (Commons URL, author, date, license).
 - **The list view mirrors the map.** `pages/World.jsx` also lists every place
   openly, so the two tabs never disagree.
 

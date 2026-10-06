@@ -212,6 +212,43 @@ The world map is drawn on a genuine antique engraving, not on our own art:
   The interactive layer on top of it (roads, seals, labels, party marker) is our
   own vector work. Only the engraving and the parchment texture below are rasters.
 
+Per-continent base maps (licensed rasters, deliberate exceptions)
+=================================================================
+Every continent's chart lies on its own genuine public-domain engraving. Each is
+downscaled and centre-cropped to a 25:16 window for the web; the paper tone is
+untouched. The interactive layer (roads, seals, labels, party marker) is ours.
+
+  maps/continent-frozen.jpg   (Морозная Колыбель — the frozen north)
+    Source: Wikimedia Commons, "1761 Homann Heirs Map of Iceland 'Insulae
+    Islandiae'"
+    https://commons.wikimedia.org/wiki/File:1761_Homann_Heirs_Map_of_Iceland_%22Insulae_Islandiae%22_-_Geographicus_-_Islandiae-hmhr-1761.jpg
+    Author: Homann Heirs (Johann Baptist Homann et al.)
+    Date: 1761
+    License: Public domain
+
+  maps/continent-glass.jpg    (Кор-Ашан — the glass desert in the south)
+    Source: Wikimedia Commons, "1818 Pinkerton Map of Northern Africa and the
+    Mediterranean"
+    https://commons.wikimedia.org/wiki/File:1818_Pinkerton_Map_of_Northern_Africa_and_the_Mediterranean_-_Geographicus_-_NorthernAfrica-pinkerton-1818.jpg
+    Author: John Pinkerton
+    Date: 1818
+    License: Public domain
+
+  maps/continent-havens.jpg   (Вольные Гавани — the drowned archipelago west)
+    Source: Wikimedia Commons, "1762 Zannoni Map of Central America and the West
+    Indies (Caribbean)"
+    https://commons.wikimedia.org/wiki/File:1762_Zannoni_Map_of_Central_America_and_the_West_Indies_(_Caribbean_)_-_Geographicus_-_WestIndies-zannoni-1762.jpg
+    Author: Giovanni Antonio Rizzi Zannoni
+    Date: 1762
+    License: Public domain
+
+  maps/continent-forest.jpg   (Зелёный Предел — the living forest east)
+    Source: Wikimedia Commons, "1635 Blaeu Map Guiana, Venezuela, and El Dorado"
+    https://commons.wikimedia.org/wiki/File:1635_Blaeu_Map_Guiana,_Venezuela,_and_El_Dorado_-_Geographicus_-_Guiana-blaeu-1635.jpg
+    Author: Willem Blaeu
+    Date: 1635
+    License: Public domain
+
 Textures (licensed rasters, deliberate exceptions)
 ==================================================
 The world map is otherwise pure vector, but the parchment paper itself is a

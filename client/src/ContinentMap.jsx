@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react';
-import { WORLD, makeLocalProjector, blobPath, wobbleLine, hatchLines, rngFrom, hash, dangerColor } from './mapProjection.js';
+import { WORLD, makeLocalProjector, wobbleLine, rngFrom, hash, dangerColor } from './mapProjection.js';
 import { landmarkIcon } from './icons.jsx';
+import { continentArt } from './continentArt.js';
 
-// The continent chart, in the same antique-engraving style as the atlas: one
-// land's regions and every place inside them, drawn as an ink relief with a
-// hatched fill and hand-inked roads on a parchment sheet. Ports keep a harbour
-// mark so the crossing is visible from here too. Selecting a place opens a
-// detail card with a road button.
+// The continent chart, drawn over a genuine antique engraving: one land's
+// regions and every place inside them, with hand-inked roads and inked seals on
+// top. Each continent carries its own public-domain sheet (see continentArt.js
+// and public/art/CREDITS.txt); we add no terrain of our own. Ports keep a
+// harbour mark so the crossing is visible from here too. Selecting a place
+// opens a detail card with a road button.
 
 const PARCH = '#f2e7cd';
-const MARGIN = 40; // breathing room so the land relief is never cut off
+const MARGIN = 40; // breathing room so the places never sit on the chart edge
 
 export default function ContinentMap({ map, continent, onBack, onOpenLocation }) {
   const [selectedId, setSelectedId] = useState(null);
@@ -25,14 +27,7 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
 
   const byId = useMemo(() => new Map(locations.map((l) => [l.id, l])), [locations]);
   const selected = selectedId != null ? byId.get(selectedId) : null;
-
-  // One relief for the whole land, plus a name for each region. Regions here are
-  // interleaved in space, so drawing a filled shape per region would overlap;
-  // the outline is the land, the region names are the divisions.
-  const land = useMemo(
-    () => blobPath(locations.map((l) => project(l)), 90, continent.name),
-    [locations, project, continent.name],
-  );
+  const art = continentArt(continent.name);
 
   const regions = useMemo(() => continent.regions.map((r) => {
     const own = locations.filter((l) => l.regionId === r.id);
@@ -77,34 +72,22 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
         <div className="map-wrap">
           <svg className="world-map" viewBox={`0 0 ${WORLD.w} ${WORLD.h}`} role="img" aria-label={`Карта: ${continent.name}`}>
             <defs>
-              <pattern id="cmap-parch" width={WORLD.w} height={WORLD.h} patternUnits="userSpaceOnUse">
-                <image href="/art/textures/parchment.jpg" x={0} y={0} width={WORLD.w} height={WORLD.h}
+              {/* the continent's own antique engraving (public domain); we add
+                  no terrain of our own, only roads, seals and labels on top. */}
+              <pattern id="cmap-base" width={WORLD.w} height={WORLD.h} patternUnits="userSpaceOnUse">
+                <image href={art.src} x={0} y={0} width={WORLD.w} height={WORLD.h}
                   preserveAspectRatio="xMidYMid slice" />
               </pattern>
               <radialGradient id="cmap-vignette" cx="50%" cy="46%" r="72%">
-                <stop offset="55%" stopColor="#000" stopOpacity="0" />
-                <stop offset="100%" stopColor="#3a2f1c" stopOpacity="0.5" />
+                <stop offset="58%" stopColor="#000" stopOpacity="0" />
+                <stop offset="100%" stopColor="#3a2f1c" stopOpacity="0.42" />
               </radialGradient>
-              <clipPath id="cmap-land-clip"><path d={land} /></clipPath>
             </defs>
 
-            <rect width={WORLD.w} height={WORLD.h} fill="url(#cmap-parch)" />
+            <rect width={WORLD.w} height={WORLD.h} fill="url(#cmap-base)" />
             <rect width={WORLD.w} height={WORLD.h} fill="url(#cmap-vignette)" />
-            {[0.25, 0.5, 0.75].map((f) => (
-              <line key={`h${f}`} x1={0} y1={WORLD.h * f} x2={WORLD.w} y2={WORLD.h * f} className="gmap-grid" />
-            ))}
-            {[0.25, 0.5, 0.75].map((f) => (
-              <line key={`v${f}`} x1={WORLD.w * f} y1={0} x2={WORLD.w * f} y2={WORLD.h} className="gmap-grid" />
-            ))}
 
-            {/* the land: hatched ink relief, then the names of its regions */}
-            <path d={land} className="cmap-region-shape" />
-            <g clipPath="url(#cmap-land-clip)" className="cmap-land-hatch">
-              {hatchLines(0, 0, WORLD.w, WORLD.h, 10).map(([x0, y0, x1, y1], i) => (
-                <line key={i} x1={x0} y1={y0} x2={x1} y2={y1} />
-              ))}
-            </g>
-            <path d={land} className="cmap-region-edge" />
+            {/* the names of the regions, inked straight onto the engraving */}
             {regions.map(({ region, x, y }) => (
               <text key={region.id} x={x} y={y - 78} className="cmap-region-name" textAnchor="middle">{region.name}</text>
             ))}
@@ -175,8 +158,7 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
           ))}
           <div className="legend-sep" />
           <div className="legend-row legend-credit">
-            {continent.name} · пергамент «Pergament.1», CC0.
-            Путь указывается в минутах.
+            {continent.name} · {art.credit} Путь указывается в минутах.
           </div>
         </div>
       </div>
