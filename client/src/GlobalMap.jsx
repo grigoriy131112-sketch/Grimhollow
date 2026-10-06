@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { WORLD, CONTINENTS, WorldArt, Vignette, ringPath } from './worldMapArt.jsx';
+import { WORLD, CONTINENTS, WorldChart, Vignette } from './worldMapArt.jsx';
 import { dangerColor } from './mapInk.js';
 
 // The global chart: the whole world as one drawing. The continents are not
@@ -23,7 +23,7 @@ export default function GlobalMap({ map, onOpen }) {
   return (
     <div className="global-map-wrap">
       <svg className="world-map global-map" viewBox={`0 0 ${WORLD.w} ${WORLD.h}`} role="img" aria-label="Карта мира Гримхоллоу">
-        <WorldArt seaLabels />
+        <WorldChart seaLabels />
 
         {/* continent names, and the click target is the land itself */}
         {CONTINENTS.map((c) => (
@@ -31,11 +31,9 @@ export default function GlobalMap({ map, onOpen }) {
             role="button" tabIndex={0}
             onClick={() => onOpen(c.name)}
             onKeyDown={(e) => { if (e.key === 'Enter') onOpen(c.name); }}>
-            {c.rings.map((r, i) => (
-              <path key={i} d={ringPath(r)} className="wmap-hit" fill="transparent" />
-            ))}
-            <text x={c.label[0]} y={c.label[1]} className="wmap-continent-name" textAnchor="middle">{c.name}</text>
-            <text x={c.label[0]} y={c.label[1] + 15} className="wmap-continent-sub" textAnchor="middle">
+            <rect x={c.rect[0]} y={c.rect[1]} width={c.rect[2]} height={c.rect[3]} className="wmap-hit" fill="transparent" />
+            <text x={c.cx} y={c.cy} className="wmap-continent-name" textAnchor="middle">{c.name}</text>
+            <text x={c.cx} y={c.cy + 15} className="wmap-continent-sub" textAnchor="middle">
               {(byName.get(c.name) || []).length} мест
             </text>
           </g>
@@ -58,7 +56,7 @@ export default function GlobalMap({ map, onOpen }) {
         <div className="legend-row"><span className="dot" style={{ background: '#8a2020' }} /> порт-переправа</div>
         <div className="legend-sep" />
         <div className="legend-row legend-credit">
-          Берега Гримхоула начерчены нами; клик по континенту открывает его карту.
+          Старинная гравюра Гримхоула; клик по континенту открывает его карту.
         </div>
       </div>
     </div>

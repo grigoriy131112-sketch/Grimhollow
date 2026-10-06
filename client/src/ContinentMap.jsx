@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CONTINENTS, WorldArt, Vignette } from './worldMapArt.jsx';
+import { CONTINENTS, WorldChart, Vignette } from './worldMapArt.jsx';
 import { wobbleLine, rngFrom, hash, dangerColor } from './mapInk.js';
 import { landmarkIcon } from './icons.jsx';
 
@@ -63,7 +63,7 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
         <div className="map-wrap">
           <svg className="world-map" viewBox={`${vx} ${vy} ${vw} ${vh}`}
             role="img" aria-label={`Карта: ${continent.name}`}>
-            <WorldArt only={continent.name} />
+            <WorldChart />
 
             {/* region names, inked onto the land */}
             {regions.map(({ region, x, y }) => (

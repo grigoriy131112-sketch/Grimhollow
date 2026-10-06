@@ -482,29 +482,29 @@ marker and, since Wave 11, shows every place openly.
   `progress` from the travel clock; the client places the dot on the same
   quadratic Bézier the roads use (`(a.x+b.x)/2, (a.y+b.y)/2 - 30`). It must match
   the drawn curve or the dot drifts off the road.
-- **The chart is our own vector art now (Wave W-MAP rework).** There is no
-  licensed base map. `tools/gen_world_geo.mjs` generates the coastlines and
-  writes `client/src/world-geo.json`; `client/src/worldMapArt.jsx` (`WorldArt`,
-  `Vignette`) draws that geometry once, in the dark style: near-black sea with
-  faint hatching, ash-dark land, a bone `wmap-coast` outline and dull-gold
-  letters. The global map and a continent map render **the same drawing** — a
-  continent map just sets its `viewBox` to that continent's `rect`. So a
-  continent is literally part of one picture, not an image pasted onto it, and
-  every land shares one style by construction. Do not reintroduce per-continent
-  base images, framed plates or a raster underlay.
-- **Geometry is one source of truth.** `client/src/world-geo.json` is read by the
-  client (to draw) and by `server/src/game/world_geo.js` (to answer `isLand`).
-  `server/test-support/land-mask.js` samples the mask from that same file, so the
+- **The chart is one antique plate now (Wave W-MAP rework).** The world is a
+  single public-domain 1784 Vaugondy Mercator engraving,
+  `client/public/art/maps/world-antique.jpg`, recoloured to the house style in
+  code. `tools/gen_world_mask.mjs` crops the neatline, shifts the tone and also
+  writes the land/sea grid. `client/src/worldMapArt.jsx` (`WorldChart`,
+  `Vignette`) draws the plate once. The global map and a continent map render
+  **the same picture** — a continent map just sets its `viewBox` to that
+  continent's `rect`. So a continent is literally part of one drawing, not an
+  image pasted onto it, and every land shares one style by construction. Do not
+  reintroduce per-continent base images, framed plates or a second raster.
+- **Geometry is one source of truth.** `client/public/art/maps/world-antique.jpg`
+  is the picture; the very same pixels are thresholded into
+  `server/test-support/world-mask.json` by `tools/gen_world_mask.mjs`, and
+  `server/src/game/world_geo.js` reads that grid to answer `isLand`. So the
   picture and the "every location stands on land" test can never drift apart.
-  Change a coast only by editing `tools/gen_world_geo.mjs` and re-running it; if
-  you move a location onto water, the land test fails immediately.
+  Change the chart only by re-running `node tools/gen_world_mask.mjs <source.jpg>`;
+  if you move a location onto water, the land test fails immediately.
 - **Locations stand on land, and by theme.** Every `map_x`/`map_y` is chosen to
   sit on the drawn landmass with a few pixels of margin, so no seal floats out
   over the sea. Place by biome: a `coast` port or tide-caves belongs in a bay
   near the water, a `forest` in the wooded interior, a `marsh` in the low wet
   ground, `bonefield`/`waste` inland. `server/test/world_map.test.js` guards this.
-  When you re-place a location, run the check baked into `gen_world_geo.mjs`
-  (it prints any point that lands off its own continent) and `npm test`.
+  When you re-place a location, regenerate the mask and run `npm test`.
 - **Edge labels lean inward.** Near the chart border (`x > 900`, `x < 100`,
   `y < 60`, `y > 590`) the map components shift the label toward the middle and
   anchor it start/end so it never spills past the map edge.
@@ -516,16 +516,18 @@ marker and, since Wave 11, shows every place openly.
 - **The party is an inked cross** (`.party-x`), pulsing while it walks. Keep the
   chart calm: no scattered icons or "stamps" — an earlier attempt read as visual
   noise.
-- **All of it stays vector — with one deliberate raster exception.** The map and
-  icons are vector; the paper behind the older atlas chrome is a **CC0** texture
-  (`textures/parchment.jpg`). Icons are CC BY 3.0 SVG from game-icons.net; credit
-  the `<author>/<icon>` pair. Do not add rasters to the map — the chart is ours.
+- **All of it stays vector — with two deliberate raster exceptions.** The icons
+  are vector; the world chart is the one recoloured antique plate
+  (`maps/world-antique.jpg`, public domain), and the paper behind the older atlas
+  chrome is a **CC0** texture (`textures/parchment.jpg`). Icons are CC BY 3.0 SVG
+  from game-icons.net; credit the `<author>/<icon>` pair. Do not add any other
+  rasters to the map.
 - **One drawing, three views (Wave W-MAP rework).** `GlobalMap.jsx` shows the
   whole world (the five lands, the named seas, the ports) and is the entry point
   to a continent; `ContinentMap.jsx` zooms the same chart to one continent's
   `rect`; `WorldMap.jsx` (the "Атлас" tab) shows the whole world with every place
-  inked on it. All three import `WorldArt`/`Vignette` from
-  `client/src/worldMapArt.jsx` and the shared geometry from `world-geo.json`, so
+  inked on it. All three import `WorldChart`/`Vignette` from
+  `client/src/worldMapArt.jsx` and the continent rects from `world-geo.json`, so
   they can never disagree about the coast. Continent art is keyed by name in that
   file (`CONTINENTS`), not by an image map — there is no `continentArt.js`.
 - **The list view mirrors the map.** `pages/World.jsx` also lists every place

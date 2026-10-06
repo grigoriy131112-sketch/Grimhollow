@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { landmarkIcon } from './icons.jsx';
-import { WorldArt, Vignette, WORLD } from './worldMapArt.jsx';
+import { WorldChart, Vignette, WORLD } from './worldMapArt.jsx';
 import { wobbleLine, rngFrom, hash, dangerColor } from './mapInk.js';
 
 // The interactive atlas: the same dark world chart the other maps draw, with
@@ -61,7 +61,7 @@ export default function WorldMap({ data }) {
       <div className="map-col">
         <div className="map-wrap">
           <svg className="world-map" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Карта Гримхоула">
-          <WorldArt seaLabels />
+          <WorldChart seaLabels />
 
           {/* roads: dark underlay then a pale inked dash */}
           {roads.map(({ c, a, b, mx, my, d }) => {
@@ -139,7 +139,7 @@ export default function WorldMap({ data }) {
           ))}
           <div className="legend-sep" />
           <div className="legend-row legend-credit">
-            Берега Гримхоула начерчены нами. Путь указывается в минутах.
+            Старинная гравюра Гримхоула. Путь указывается в минутах.
           </div>
         </div>
       </div>

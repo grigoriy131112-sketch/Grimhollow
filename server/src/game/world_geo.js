@@ -1,68 +1,35 @@
-// The shape of Grimhollow, read from the shared geometry the client also draws.
+// The shape of Grimhollow, read from the same plate the client draws.
 //
-// client/src/world-geo.json is written by tools/gen_world_geo.mjs and holds each
-// continent's coastlines (closed rings of world points). The client renders
-// those rings; here we only answer whether a point is land. Because both sides
-// read the same file, the picture and the "every location is on land" test can
-// never drift apart — the old design sampled a raster, so swapping the image
-// silently broke the guarantee.
+// The world is one antique chart (client/public/art/maps/world-antique.jpg),
+// recoloured by tools/gen_world_mask.mjs, which also writes the land/sea grid
+// server/test-support/world-mask.json from those very pixels. Here we only
+// answer whether a point is land — so the picture and the "every location is on
+// land" guarantee can never drift apart: change the plate, regenerate the mask,
+// and both move together.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const GEO = JSON.parse(readFileSync(join(HERE, '..', '..', '..', 'client', 'src', 'world-geo.json'), 'utf8'));
+const MASK = JSON.parse(
+  readFileSync(join(HERE, '..', '..', 'test-support', 'world-mask.json'), 'utf8'),
+);
 
-export const WORLD = GEO.world;
+export const WORLD = { w: 1000, h: 640 };
+export const LAND_MASK_COLS = MASK.cols;
+export const LAND_MASK_ROWS = MASK.rows;
 
-export const CONTINENTS_GEO = GEO.continents.map((c) => ({
-  name: c.name,
-  cx: c.cx, cy: c.cy,
-  label: c.label,
-  rect: c.rect,
-  rings: c.rings,
-}));
+// The grid, as an array of '1'/'0' rows. This is exactly what the tests sample.
+export const LAND_MASK = MASK.mask;
 
-export const SEAS = GEO.seas;
-
-function inRing(x, y, ring) {
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
-    const [xi, yi] = ring[i];
-    const [xj, yj] = ring[j];
-    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
-  }
-  return inside;
+function cell(x, y) {
+  const col = Math.min(LAND_MASK_COLS - 1, Math.max(0, Math.floor((x / WORLD.w) * LAND_MASK_COLS)));
+  const row = Math.min(LAND_MASK_ROWS - 1, Math.max(0, Math.floor((y / WORLD.h) * LAND_MASK_ROWS)));
+  return LAND_MASK[row][col];
 }
 
-// Is this world point on some continent's land?
+// Is this world point on land?
 export function isLand(x, y) {
-  for (const c of CONTINENTS_GEO) {
-    for (const ring of c.rings) if (inRing(x, y, ring)) return true;
-  }
-  return false;
-}
-
-// Which continent owns a point (or null for open sea).
-export function continentAt(x, y) {
-  for (const c of CONTINENTS_GEO) {
-    for (const ring of c.rings) if (inRing(x, y, ring)) return c.name;
-  }
-  return null;
-}
-
-// A coarse land/sea grid for tests and tooling. '1' is land, '0' is sea.
-export function landMask(cols = 160, rows = 102) {
-  const grid = [];
-  for (let r = 0; r < rows; r += 1) {
-    let row = '';
-    for (let c = 0; c < cols; c += 1) {
-      const x = ((c + 0.5) / cols) * WORLD.w;
-      const y = ((r + 0.5) / rows) * WORLD.h;
-      row += isLand(x, y) ? '1' : '0';
-    }
-    grid.push(row);
-  }
-  return grid;
+  return cell(x, y) === '1';
 }

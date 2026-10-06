@@ -79,16 +79,17 @@ test('every new location sits on the drawn land, not out at sea', () => {
 test('existing Мордрат locations keep their authored coordinates', () => {
   seed();
   const map = getMap();
-  // The world is drawn from vector coastlines now (client/src/world-geo.json),
-  // so these authored points are checked against that geometry by the land test
-  // below; here we only guard that re-seeding never drifts them.
+  // The world is drawn from the antique plate now
+  // (client/public/art/maps/world-antique.jpg), so these authored points are
+  // checked against the mask cut from it by the land test below; here we only
+  // guard that re-seeding never drifts them.
   const anchors = {
-    'Перекрёсток висельников': [470, 300],
-    'Сумеречная гавань': [495, 205],
-    'Затонувшая часовня': [470, 388],
-    'Чёрный шпиль': [350, 330],
-    'Гримхольд': [520, 230],
-    'Соляной Брод': [420, 220],
+    'Перекрёсток висельников': [239, 257],
+    'Сумеречная гавань': [154, 182],
+    'Затонувшая часовня': [254, 346],
+    'Чёрный шпиль': [368, 264],
+    'Гримхольд': [275, 234],
+    'Соляной Брод': [182, 264],
   };
   for (const [name, [x, y]] of Object.entries(anchors)) {
     const l = map.locations.find((m) => m.name === name);

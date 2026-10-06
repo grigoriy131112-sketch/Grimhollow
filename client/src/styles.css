@@ -355,13 +355,11 @@ ul.stats span { color: var(--muted); }
 .global-map-wrap { margin-bottom: 1rem; }
 .global-map { background: #050509; border: 1px solid #1c1a17; }
 
-/* the chart itself */
-.wmap-sea-hatch line { stroke: #171722; stroke-width: 0.5; opacity: 0.6; }
-.wmap-land-hatch line { stroke: #2a2118; stroke-width: 0.6; opacity: 0.6; }
-.wmap-coast { fill: none; stroke: #6b5a3a; stroke-width: 2; stroke-linejoin: round; }
+/* the chart itself: one recoloured antique plate, tinted to the house palette */
+.wmap image { filter: sepia(0.4) saturate(0.65) brightness(0.9) contrast(1.05); }
 .wmap-continent { cursor: pointer; }
 .wmap-hit { pointer-events: all; }
-.wmap-continent:hover .wmap-coast { stroke: #c9a227; stroke-width: 2.6; }
+.wmap-continent:hover .wmap-continent-name { fill: #e7cf87; }
 .wmap-continent-name { fill: #cbb682; font-family: 'Cinzel', serif; font-size: 20px; letter-spacing: 3px; paint-order: stroke; stroke: #050509; stroke-width: 5px; }
 .wmap-continent-sub { fill: #7d6f52; font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 1px; paint-order: stroke; stroke: #050509; stroke-width: 4px; }
 .wmap-sea-name { fill: #3f4a5a; font-family: 'Cinzel', serif; font-style: italic; letter-spacing: 2px; paint-order: stroke; stroke: #050509; stroke-width: 3px; }
