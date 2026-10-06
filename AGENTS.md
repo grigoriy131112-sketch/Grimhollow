@@ -255,10 +255,24 @@ always the floor: with no model reachable, the template beat answers.
   `EADDRINUSE` and pollutes the log).
 - **The preview self-heals.** `scripts/serve.sh` (no args) ensures the server is
   up *and* starts one resident watcher; the watcher polls `/api/health` every 5s
-  and restarts the server within ~5s if it dies. `.openhands/hooks.json` runs that
-  command on `session_start` and `user_prompt_submit`, so a fresh conversation
-  brings the preview back with no manual step. `scripts/serve.sh --stop` stops
+  and restarts the server within ~5s if it dies. `scripts/serve.sh --stop` stops
   both the server and the watcher.
+- **Hooks are frozen at conversation creation, not read live.** A conversation
+  captures `.openhands/hooks.json` into `meta.json`'s `hook_config` when it is
+  created; editing the file later never affects an already-running conversation.
+  Verified: the long-lived conversation `ff1ce2f0…` has `"hook_config": null`
+  because it was created *before* `hooks.json` existed, so `session_start`/
+  `user_prompt_submit` never fire there and the preview does not come back after a
+  runtime restart. `user_prompt_submit` only helps conversations created after the
+  hook file exists. To enable hooks for this repo going forward, the hook file must
+  be present when the conversation is created (i.e. committed/loaded at creation
+  time); restarting an existing conversation does not pick it up.
+- **In-session recovery is the watcher, not the hook.** Because the hook does not
+  cover a pre-existing conversation, the resident watcher started by
+  `scripts/serve.sh` is what keeps the preview up: kill the server and it restarts
+  within ~5s (verified: killed PID, both ports answered 200 again). After a
+  *runtime* restart, though, nothing runs the watcher automatically — start it
+  once with `bash scripts/serve.sh` (it is idempotent and returns in ~25ms).
 - **Do not blame the hook matcher.** `"matcher": "*"` on a lifecycle hook *does*
   fire — verified: a `SessionStart` test hook with matcher `"*"` ran and exited 0
   (`HookExecutionEvent` with `success: true`). The real failure is the hook
