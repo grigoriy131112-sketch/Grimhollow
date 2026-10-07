@@ -39,9 +39,12 @@ export default function GlobalMap({ map, onOpen }) {
           </g>
         ))}
 
-        {/* ports: the gates out to another shore */}
+        {/* ports: the gates out to another shore; clicking one opens its continent */}
         {ports.map((p) => (
-          <g key={p.id} className="wmap-port" transform={`translate(${p.x},${p.y})`}>
+          <g key={p.id} className="wmap-port" transform={`translate(${p.x},${p.y})`}
+            role="button" tabIndex={0}
+            onClick={() => onOpen(p.continentName)}
+            onKeyDown={(e) => { if (e.key === 'Enter') onOpen(p.continentName); }}>
             <circle r={9} className="wmap-port-halo" />
             <circle r={3.6} className="wmap-port-mark" />
             <text x={10} y={4} className="wmap-port-name">{p.name}</text>

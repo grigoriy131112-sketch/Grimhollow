@@ -1,19 +1,18 @@
 import { useMemo, useState } from 'react';
-import { CONTINENTS, WorldChart, Vignette } from './worldMapArt.jsx';
+import { CONTINENTS, WORLD, Vignette } from './worldMapArt.jsx';
 import { wobbleLine, rngFrom, hash, dangerColor } from './mapInk.js';
 import { landmarkIcon } from './icons.jsx';
 
-// A continent's chart is the global chart zoomed onto that continent's
-// rectangle — the same drawing, the same coast, the same dark style, so a
-// continent is literally a part of the world map rather than a separate image.
-// On top of the shared land we ink this continent's regions, roads, seals and
-// the party. Selecting a place opens a detail card.
+// A continent's chart is its own drawing, cut from the world plate by
+// tools/gen_continent_maps.mjs: only this continent's island(s), framed to the
+// same 1000x640 sheet as the global map but zoomed to fill it. No other land is
+// shown, so the continent reads clearly under its seals. Locations keep their
+// world coordinates, so the seals sit on the same land as on the global map.
 
 export default function ContinentMap({ map, continent, onBack, onOpenLocation }) {
   const [selectedId, setSelectedId] = useState(null);
 
   const geo = CONTINENTS.find((c) => c.name === continent.name);
-  const [vx, vy, vw, vh] = geo.rect;
 
   const locations = useMemo(
     () => map.locations.filter((l) => l.continentName === continent.name),
@@ -61,9 +60,11 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
     <div className="atlas">
       <div className="map-col">
         <div className="map-wrap">
-          <svg className="world-map" viewBox={`${vx} ${vy} ${vw} ${vh}`}
+          <svg className="world-map" viewBox={`0 0 ${WORLD.w} ${WORLD.h}`}
             role="img" aria-label={`Карта: ${continent.name}`}>
-            <WorldChart />
+            {geo.map && (
+              <image className="wmap" href={geo.map} x={0} y={0} width={WORLD.w} height={WORLD.h} preserveAspectRatio="none" />
+            )}
 
             {/* region names, inked onto the land */}
             {regions.map(({ region, x, y }) => (
@@ -121,7 +122,7 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
               </g>
             )}
 
-            <Vignette x={vx} y={vy} w={vw} h={vh} />
+            <Vignette x={0} y={0} w={WORLD.w} h={WORLD.h} />
           </svg>
         </div>
 

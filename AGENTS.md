@@ -495,11 +495,22 @@ marker and, since Wave 11, shows every place openly.
   (https://azgaar.github.io/Fantasy-Map-Generator/), `client/public/art/maps/world-chart.svg`,
   reduced to its coastlines and recoloured to the house style in code by
   `tools/gen_world_map.mjs`. `client/src/worldMapArt.jsx` (`WorldChart`,
-  `Vignette`) draws the plate once. The global map and a continent map render
-  **the same picture** — a continent map just sets its `viewBox` to that
-  continent's `rect`. So a continent is literally part of one drawing, not an
-  image pasted onto it, and every land shares one style by construction. Do not
-  reintroduce per-continent base images, framed plates or a second raster.
+  `Vignette`) draws the plate once on the global map. **Each continent has its
+  own chart** — `tools/gen_continent_maps.mjs` cuts that continent's island(s)
+  (and their satellite islets) out of the plate into
+  `client/public/art/maps/continent-<slug>.svg`, framed to the same 1000x640
+  sheet but zoomed so the land fills it; nothing else is drawn, so a continent
+  reads clearly under its own seals. The file is recorded as `map` on the
+  continent entry in `client/src/world-geo.json`. So a continent map and the
+  global map share one style and one coastline, but a continent map shows only
+  that continent. Do not reintroduce per-continent base images, framed plates or
+  a second raster; re-run `node tools/gen_continent_maps.mjs` after changing the
+  plate.
+- **Locations keep world coordinates on every chart.** A continent map reuses the
+  world viewBox (`0 0 1000 640`), so it places a seal at the same `x`/`y` the
+  global map uses; only the coastline picture differs. Ports on the **global**
+  map are clickable and open their own continent (same target as clicking the
+  island), so a port is a real gate into that continent's chart.
 - **Geometry is one source of truth.** `client/public/art/maps/world-chart.svg`
   is the picture; the very same pixels are thresholded into
   `server/test-support/world-mask.json` by `tools/gen_world_map.mjs`, and
