@@ -369,9 +369,12 @@ ul.stats span { color: var(--muted); }
 .wmap-continent-sub { fill: #7d6f52; font-family: 'Spectral', serif; font-size: 11px; letter-spacing: 1px; paint-order: stroke; stroke: #050509; stroke-width: 4px; }
 .wmap-sea-name { fill: #3f4a5a; font-family: 'Cinzel', serif; font-style: italic; letter-spacing: 2px; paint-order: stroke; stroke: #050509; stroke-width: 3px; }
 .wmap-port { cursor: pointer; }
-.wmap-port-halo { fill: none; stroke: #8a2020; stroke-width: 1; opacity: 0.5; }
-.wmap-port-mark { fill: #b32a2a; stroke: #050509; stroke-width: 1.2; }
-.wmap-port-name { fill: #a8996f; font-family: 'Spectral', serif; font-size: 10px; paint-order: stroke; stroke: #050509; stroke-width: 3px; }
+/* Only the seal itself is a click target: the label must never cover a
+   neighbouring port. */
+.wmap-port-hit { fill: transparent; pointer-events: all; }
+.wmap-port-halo { fill: none; stroke: #8a2020; stroke-width: 1; opacity: 0.5; pointer-events: none; }
+.wmap-port-mark { fill: #b32a2a; stroke: #050509; stroke-width: 1.2; pointer-events: none; }
+.wmap-port-name { fill: #a8996f; font-family: 'Spectral', serif; font-size: 10px; paint-order: stroke; stroke: #050509; stroke-width: 3px; pointer-events: none; }
 .wmap-port:hover .wmap-port-halo { opacity: 1; }
 
 /* the game layer over the dark chart */

@@ -10,6 +10,13 @@ import { dangerColor } from './mapInk.js';
 export default function GlobalMap({ map, onOpen }) {
   const ports = useMemo(() => map.locations.filter((l) => l.isPort), [map]);
 
+  // A port label is drawn to the side with room: if another port sits close on
+  // the right, flip the label left so it never covers that port's seal.
+  const labeled = useMemo(() => ports.map((p) => {
+    const right = ports.some((q) => q !== p && q.x > p.x && q.x - p.x < 130 && Math.abs(q.y - p.y) < 40);
+    return { ...p, anchor: right ? 'end' : 'start', lx: right ? -10 : 10 };
+  }), [ports]);
+
   const byName = useMemo(() => {
     const m = new Map();
     for (const l of map.locations) {
@@ -40,14 +47,15 @@ export default function GlobalMap({ map, onOpen }) {
         ))}
 
         {/* ports: the gates out to another shore; clicking one opens its continent */}
-        {ports.map((p) => (
+        {labeled.map((p) => (
           <g key={p.id} className="wmap-port" transform={`translate(${p.x},${p.y})`}
             role="button" tabIndex={0}
             onClick={() => onOpen(p.continentName)}
             onKeyDown={(e) => { if (e.key === 'Enter') onOpen(p.continentName); }}>
+            <circle r={13} className="wmap-port-hit" />
             <circle r={9} className="wmap-port-halo" />
             <circle r={3.6} className="wmap-port-mark" />
-            <text x={10} y={4} className="wmap-port-name">{p.name}</text>
+            <text x={p.lx} y={4} textAnchor={p.anchor} className="wmap-port-name">{p.name}</text>
           </g>
         ))}
 
