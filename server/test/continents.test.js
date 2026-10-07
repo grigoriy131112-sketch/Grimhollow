@@ -80,16 +80,17 @@ test('existing Мордрат locations keep their authored coordinates', () => 
   seed();
   const map = getMap();
   // The world is drawn from the generated plate now
-  // (client/public/art/maps/world-chart.svg), so these authored points are
-  // checked against the mask cut from it by the land test below; here we only
-  // guard that re-seeding never drifts them.
+  // (client/public/art/maps/world-chart.svg), so these are the canonical points
+  // cut onto that plate by tools/place_map_locations.mjs; the land test below
+  // checks them against the same mask, and this guards that re-seeding never
+  // drifts them.
   const anchors = {
     'Перекрёсток висельников': [500, 278],
     'Сумеречная гавань': [528, 300],
-    'Затонувшая часовня': [522, 345],
-    'Чёрный шпиль': [610, 320],
-    'Гримхольд': [540, 250],
-    'Соляной Брод': [440, 265],
+    'Затонувшая часовня': [484, 348],
+    'Чёрный шпиль': [584, 218],
+    'Гримхольд': [552, 203],
+    'Соляной Брод': [434, 344],
   };
   for (const [name, [x, y]] of Object.entries(anchors)) {
     const l = map.locations.find((m) => m.name === name);

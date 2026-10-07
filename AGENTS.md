@@ -511,8 +511,18 @@ marker and, since Wave 11, shows every place openly.
   sit on the drawn landmass with a few pixels of margin, so no seal floats out
   over the sea. Place by biome: a `coast` port or tide-caves belongs in a bay
   near the water, a `forest` in the wooded interior, a `marsh` in the low wet
-  ground, `bonefield`/`waste` inland. `server/test/world_map.test.js` guards this.
+  ground,   `bonefield`/`waste` inland. `server/test/world_map.test.js` guards this.
   When you re-place a location, regenerate the mask and run `npm test`.
+- **Re-placing a broken layout.** `tools/place_map_locations.mjs` rewrites the
+  seed `x`/`y` in place: it keeps every authored point that already sits on its
+  own continent's land (and, for ports, on its shore), and moves only the ones
+  that fell in the sea or on the wrong island — to the nearest valid cell of the
+  named continent. Ports are the `CROSSING_GATES` in
+  `server/src/game/continent_travel.js`. Because `seedContinents()` and
+  `seedSettlements()` skip when their rows already exist, a running DB keeps the
+  old points until you apply them: `DB_PATH=server/src/data/grimhollow.sqlite
+  node tools/apply_coords.mjs` then restart (or `bash scripts/serve.sh`), and
+  `backfillTravel()` re-times every road. Run `npm test` afterwards.
 - **Edge labels lean inward.** Near the chart border (`x > 900`, `x < 100`,
   `y < 60`, `y > 590`) the map components shift the label toward the middle and
   anchor it start/end so it never spills past the map edge.
