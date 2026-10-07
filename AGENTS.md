@@ -529,11 +529,19 @@ marker and, since Wave 11, shows every place openly.
   own continent's land (and, for ports, on its shore), and moves only the ones
   that fell in the sea or on the wrong island — to the nearest valid cell of the
   named continent. Ports are the `CROSSING_GATES` in
-  `server/src/game/continent_travel.js`. Because `seedContinents()` and
-  `seedSettlements()` skip when their rows already exist, a running DB keeps the
-  old points until you apply them: `DB_PATH=server/src/data/grimhollow.sqlite
-  node tools/apply_coords.mjs` then restart (or `bash scripts/serve.sh`), and
+  `server/src/game/continent_travel.js`. A running DB keeps the old points until
+  you apply them: `DB_PATH=server/src/data/grimhollow.sqlite node
+  tools/apply_coords.mjs` then restart (or `bash scripts/serve.sh`), and
   `backfillTravel()` re-times every road. Run `npm test` afterwards.
+- **Seeds are additive, so a live DB gains later places.** `seedWorld()` and
+  `seedContinents()` skip wholly-seeded databases, and each backfills what is
+  missing rather than reseeding: `backfillLocations()` inserts Мордрат places and
+  their roads by name, `seedContinents()` inserts any new locations/roads into an
+  already-seeded continent. So a wave can spread a continent out (add places,
+  move coords, add roads) and a restart of `serve.sh` picks it up with no
+  destructive reseed; never `rm` the DB to make a change land. Each continent
+  keeps its places spread across its land — `server/test/continents.test.js`
+  guards the span so they cannot cluster again.
 - **Edge labels lean inward.** Near the chart border (`x > 900`, `x < 100`,
   `y < 60`, `y > 590`) the map components shift the label toward the middle and
   anchor it start/end so it never spills past the map edge.

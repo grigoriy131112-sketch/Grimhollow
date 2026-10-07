@@ -359,6 +359,9 @@ ul.stats span { color: var(--muted); }
 /* The plate is authored in the house style by tools/gen_world_map.mjs, so it is
    drawn as-is — no colour shift on top. */
 .wmap image { filter: none; }
+/* The vignette is a full-sheet dark rect drawn last for mood; it must never
+   eat clicks meant for the continents and ports underneath it. */
+.wmap-vignette { pointer-events: none; }
 .wmap-continent { cursor: pointer; }
 .wmap-hit { pointer-events: all; }
 .wmap-continent:hover .wmap-continent-name { fill: #e7cf87; }

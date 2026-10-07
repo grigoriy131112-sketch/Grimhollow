@@ -17,6 +17,7 @@ const WORLD = [
           { name: 'Плачущая низина', description: 'Ложбина, задушенная туманом, что глотает и звук, и свет.', danger: 2, biome: 'marsh', scene: 'hollow', x: 459, y: 326, connects: ['Перекрёсток висельников', 'Пепельный лес'] },
           { name: 'Утонувшая дорога', description: 'Затонувшая гать, где болото поглотило королевский тракт.', danger: 2, biome: 'marsh', scene: 'drowned_road', x: 495, y: 320, connects: ['Перекрёсток висельников', 'Затонувшая часовня', 'Сумеречная гавань'] },
           { name: 'Пепельный лес', description: 'Обгоревшие деревья, всё ещё тёплые на ощупь спустя годы после пожара.', danger: 3, biome: 'forest', scene: 'ash_forest', x: 557, y: 235, connects: ['Плачущая низина', 'Костяные поля'] },
+          { name: 'Стеклянная топь', description: 'Топь на южном краю пустоши, где из грязи торчат оплавленные камни, будто поле боя, что обратили в стекло.', danger: 2, biome: 'marsh', scene: 'glass_mire', x: 439, y: 398, connects: ['Соляной Брод', 'Плачущая низина'] },
         ],
       },
       {
@@ -28,6 +29,7 @@ const WORLD = [
           { name: 'Затонувшая часовня', description: 'Затопленная часовня богу, что утонул вместе со своим стадом.', danger: 4, biome: 'coast', scene: 'sunken_chapel', x: 484, y: 348, connects: ['Утонувшая дорога', 'Пещеры, изгрызенные приливом'] },
           { name: 'Костяные поля', description: 'Равнина выбеленных останков, где земля так и не зажила.', danger: 4, biome: 'bonefield', scene: 'bone_field', x: 523, y: 251, connects: ['Пепельный лес', 'Пещеры, изгрызенные приливом', 'Чёрный шпиль'] },
           { name: 'Чёрный шпиль', description: 'Игла обсидиана, что гудит звуком, похожим на жужжание мух.', danger: 5, biome: 'waste', scene: 'black_spire', x: 584, y: 218, connects: ['Костяные поля'] },
+          { name: 'Вдовья роща', description: 'Роща на северном отроге, где мёртвые сосны стоят так плотно, что в ней никогда не рассветает.', danger: 3, biome: 'forest', scene: 'widows_wood', x: 582, y: 160, connects: ['Чёрный шпиль', 'Костяные поля'] },
         ],
       },
     ],
@@ -91,6 +93,48 @@ function backfillMap() {
   });
 }
 
+// New waves add places to Мордрат. An existing database predates them, so
+// insert anything missing by name into its region and lay its roads, without
+// touching rows that already exist. Coordinates come from the seed, so a
+// re-layout reaches the live DB as well.
+function backfillLocations() {
+  const d = getDb();
+  const have = new Set(d.prepare('SELECT name FROM locations').all().map((r) => r.name));
+  const insLoc = d.prepare('INSERT INTO locations (region_id, name, description, danger, is_safe, sort_order, map_x, map_y, scene, biome) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  const insConn = d.prepare('INSERT OR IGNORE INTO connections (from_id, to_id, label, minutes) VALUES (?, ?, ?, ?)');
+  const regionId = (continent, region) => d.prepare(
+    `SELECT r.id FROM regions r JOIN continents c ON c.id = r.continent_id WHERE c.name = ? AND r.name = ?`,
+  ).get(continent, region)?.id;
+  const locRow = (name) => d.prepare('SELECT * FROM locations WHERE name = ?').get(name);
+  const all = WORLD.flatMap((c) => c.regions).flatMap((r) => r.locations);
+
+  transaction(() => {
+    WORLD.forEach((c) => c.regions.forEach((r) => {
+      const rid = regionId(c.name, r.name);
+      if (!rid) return;
+      r.locations.forEach((l, li) => {
+        if (have.has(l.name)) return;
+        insLoc.run(rid, l.name, l.description, l.danger, l.safe ? 1 : 0, li, l.x ?? null, l.y ?? null, l.scene ?? null, l.biome ?? null);
+      });
+    }));
+    // Lay every declared road both ways; INSERT OR IGNORE keeps existing ones.
+    all.forEach((l) => {
+      const from = locRow(l.name);
+      if (!from) return;
+      for (const target of l.connects || []) {
+        const to = locRow(target);
+        if (!to) continue;
+        const minutes = travelMinutes({
+          from: { x: l.x, y: l.y, biome: l.biome, danger: l.danger },
+          to: { x: to.map_x, y: to.map_y, biome: to.biome, danger: to.danger },
+        });
+        insConn.run(from.id, to.id, `Дорога к ${to.name}`, minutes);
+        insConn.run(to.id, from.id, `Дорога к ${from.name}`, minutes);
+      }
+    });
+  });
+}
+
 // Travel time is derived from the drawn map, so it is recomputed (not stored in
 // the world definition) and written for every road, including old databases.
 function backfillTravel() {
@@ -143,6 +187,7 @@ export function seedWorld() {
   const db = getDb();
   const existing = db.prepare('SELECT COUNT(*) AS n FROM continents').get().n;
   if (existing > 0) {
+    backfillLocations();
     backfillMap();
     backfillTravel();
     backfillMonsters();

@@ -48,7 +48,7 @@ test('the four new continents are seeded beside Мордрат, each with region
     assert.ok(/[А-Яа-яЁё]/.test(c.description), `${name} has a Russian description`);
     assert.ok(c.regions.length >= 2, `${name} has at least two regions`);
     const locations = c.regions.flatMap((r) => r.locations);
-    assert.ok(locations.length >= 3 && locations.length <= 4, `${name} has 3-4 locations`);
+    assert.ok(locations.length >= 4, `${name} has several locations spread across it`);
     for (const l of locations) {
       assert.ok(/[А-Яа-яЁё]/.test(l.name), `${l.name} has a Russian name`);
       assert.ok(/[А-Яа-яЁё]/.test(l.description), `${l.name} has a Russian description`);
@@ -73,6 +73,22 @@ test('every new location sits on the drawn land, not out at sea', () => {
   assert.equal(checked.length, newNames.size, 'all new locations are on the map');
   for (const l of checked) {
     assert.equal(cell(l.x, l.y), '1', `${l.name} (${l.x},${l.y}) sits on land`);
+  }
+});
+
+test('every continent\'s places are spread across its land, not clustered', () => {
+  seed();
+  const map = getMap();
+  for (const continent of listContinents()) {
+    const own = map.locations.filter((l) => l.continentName === continent.name);
+    assert.ok(own.length >= 6, `${continent.name} has enough places to spread out`);
+    const xs = own.map((l) => l.x);
+    const ys = own.map((l) => l.y);
+    const w = Math.max(...xs) - Math.min(...xs);
+    const h = Math.max(...ys) - Math.min(...ys);
+    const [long, short] = w >= h ? [w, h] : [h, w];
+    assert.ok(long >= 40, `${continent.name} places reach across the land (span ${long})`);
+    assert.ok(short >= 15, `${continent.name} places are not strung on one line (span ${short})`);
   }
 });
 

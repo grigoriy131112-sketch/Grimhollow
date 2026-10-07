@@ -154,14 +154,15 @@ test('each continent carries its own statistics', () => {
     );
   }
 
-  // Мордрат holds the nine starting places plus the city and the village; the
-  // four outer continents each hold two regions of two places.
+  // Мордрат holds its starting places plus the city and the village, and two
+  // more added when the continents were spread out; the four outer continents
+  // each hold two regions of eight places, spread across the whole landmass.
   const mordrat = map.continents.find((c) => c.name === 'Мордрат');
-  assert.equal(mordrat.stats.locations, 11);
+  assert.equal(mordrat.stats.locations, 13);
   assert.equal(mordrat.stats.regions, 2);
   for (const name of ['Морозная Колыбель', 'Кор-Ашан', 'Вольные Гавани', 'Зелёный Предел']) {
     const c = map.continents.find((x) => x.name === name);
-    assert.equal(c.stats.locations, 4, `${name} has four places`);
+    assert.equal(c.stats.locations, 8, `${name} has eight places`);
     assert.equal(c.stats.regions, 2, `${name} has two regions`);
   }
 
