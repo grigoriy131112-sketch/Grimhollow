@@ -3,6 +3,9 @@ import { getCharacter } from './characters.js';
 import { activeMembers, getMember, grantMemberXp } from './party.js';
 import { getLocation, recordVisit } from './world.js';
 import { startBattle } from './battles.js';
+import { grantItem } from './items.js';
+import { RITUAL_ITEM, itemInfo } from '../game/items.js';
+import { RITUAL_SITE } from '../game/revival.js';
 import {
   planTravel, startState, tick, resume, hasArrived, elapsedWalkMs, currentMinute,
   MS_PER_MINUTE, encounterOptions, resolveEncounter,
@@ -61,6 +64,16 @@ export function startTravel({ characterId, fromId, toId, now = clock() }) {
   if (!from || !to) throw new Error('Локация не найдена');
   if (from.id === to.id) throw new Error('Вы уже здесь');
 
+  // The party can only set out from where it actually stands. Without this a
+  // client could name any place as the origin and teleport across the map.
+  const here = db.prepare('SELECT location_id FROM characters WHERE id = ?').get(characterId)?.location_id;
+  if (here == null) {
+    // A character that has never been placed begins its journey at the origin.
+    recordVisit(characterId, from.id);
+  } else if (here !== from.id) {
+    throw new Error('Отряд не находится здесь');
+  }
+
   const road = db.prepare('SELECT 1 FROM connections WHERE from_id = ? AND to_id = ?').get(from.id, to.id);
   if (!road) throw new Error('Между этими местами нет дороги');
 
@@ -89,12 +102,19 @@ export function getTravelView(id, now = clock()) {
 }
 
 // Mark a road complete: remember where the party arrived, keep the row so the
-// arrival is idempotent, and hand back the arrived view.
+// arrival is idempotent, and hand back the arrived view. The drowned chapel
+// yields the key the resurrection ritual needs the first time it is entered.
 function finish(travel, state, now) {
   getDb().prepare("UPDATE travels SET state = ?, arrived = 1, updated_at = datetime('now') WHERE id = ?")
     .run(JSON.stringify(state), travel.id);
-  recordVisit(travel.character_id, travel.to_id);
-  return buildView({ ...travel, state, arrived: 1 }, now);
+  const { firstVisit } = recordVisit(travel.character_id, travel.to_id);
+  const arrivedAt = getLocation(travel.to_id);
+  let found = null;
+  if (firstVisit && arrivedAt && arrivedAt.name === RITUAL_SITE) {
+    grantItem(travel.character_id, RITUAL_ITEM, 1);
+    found = { key: RITUAL_ITEM, ...itemInfo(RITUAL_ITEM) };
+  }
+  return { ...buildView({ ...travel, state, arrived: 1 }, now), found };
 }
 
 function buildView(travel, now) {

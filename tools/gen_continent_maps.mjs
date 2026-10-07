@@ -110,6 +110,11 @@ ${body}
   const file = `continent-${slug}.svg`;
   writeFileSync(join(OUT_DIR, file), out);
   con.map = `/art/maps/${file}`;
+  // The world→chart frame. The chart magnifies the continent to fill the sheet,
+  // so a place drawn at its raw world x/y would bunch in the middle instead of
+  // following the land. The client maps world coords through this frame:
+  // chart = scale * world + (tx, ty).
+  con.frame = { scale: +scale.toFixed(6), tx: +tx.toFixed(4), ty: +ty.toFixed(4) };
   console.log(`${con.name.padEnd(20)} -> ${file}  islands=${idx.length} frame=scale ${scale.toFixed(3)}`);
 });
 

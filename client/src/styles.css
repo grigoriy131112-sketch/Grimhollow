@@ -278,9 +278,12 @@ ul.stats span { color: var(--muted); }
 
 .danger-hist { margin-bottom: 1rem; }
 .legend-title { font-family: 'Cinzel', serif; color: var(--gold-soft); font-size: 0.85rem; margin-bottom: 0.5rem; }
-.hist { display: flex; align-items: flex-end; gap: 1rem; height: 110px; }
+/* The bars are sized as a share of the tallest one inside a fixed-height track,
+   so a busy continent (13+ places) cannot grow a bar over the labels below. */
+.hist { display: flex; align-items: flex-end; gap: 1rem; }
 .hist-col { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
-.hist-bar { width: 26px; background: linear-gradient(180deg, var(--gold-soft), #6b4d12); border-radius: 4px 4px 0 0; align-self: flex-end; }
+.hist-track { height: 90px; display: flex; align-items: flex-end; }
+.hist-bar { width: 26px; min-height: 4px; background: linear-gradient(180deg, var(--gold-soft), #6b4d12); border-radius: 4px 4px 0 0; }
 
 /* map */
 .atlas { display: grid; grid-template-columns: minmax(0, 3fr) minmax(240px, 1fr); gap: 1rem; align-items: start; }
@@ -382,6 +385,13 @@ ul.stats span { color: var(--muted); }
 .map-node.dark:hover .seal { fill: #1d1812; stroke: #c9a227; }
 .map-node.dark.active .seal { stroke: #c9a227; stroke-width: 2.4; }
 .map-node.dark .node-ring { stroke: #8a2020; }
+/* the party's own place, ringed in bone; places with no road from here are
+   dimmed, so the map shows where the party may set out for. */
+.map-node.dark .node-here { fill: none; stroke: #e7d9ab; stroke-width: 2; opacity: 0.9; }
+.map-node.dark.locked { cursor: not-allowed; }
+.map-node.dark.locked .seal { fill: #100e0b; stroke: #3c362a; opacity: 0.7; }
+.map-node.dark.locked .landmark { opacity: 0.45; }
+.map-node.dark.locked .node-label { fill: #6b6250; opacity: 0.8; }
 .node-label.dark { fill: #cdbb8e; stroke: #050509; stroke-width: 3px; }
 .road { stroke: #b8a978; stroke-width: 1.6; stroke-dasharray: 5 5; opacity: 0.55; }
 .road.hot { stroke: #e7d9ab; stroke-width: 2.4; opacity: 1; }

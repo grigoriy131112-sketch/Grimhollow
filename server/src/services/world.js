@@ -109,10 +109,18 @@ export function characterExploration(characterId) {
 
 // The party has stood here: remember it for the fog of war and mark the spot.
 // Returns whether this was the first time, so callers can hand out a discovery.
+// This also moves the party: use it when the party really arrives somewhere.
 export function recordVisit(characterId, locationId) {
   const db = getDb();
   db.prepare('UPDATE characters SET location_id = ? WHERE id = ?').run(locationId, characterId);
-  const info = db.prepare('INSERT OR IGNORE INTO character_visits (character_id, location_id) VALUES (?, ?)')
+  return recordVisited(characterId, locationId);
+}
+
+// Remember a place the party has seen without moving it there. Opening a place
+// to read about it must never teleport the party, so the client's visit route
+// uses this and only walking a road calls recordVisit.
+export function recordVisited(characterId, locationId) {
+  const info = getDb().prepare('INSERT OR IGNORE INTO character_visits (character_id, location_id) VALUES (?, ?)')
     .run(characterId, locationId);
   return { firstVisit: info.changes > 0 };
 }

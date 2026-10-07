@@ -181,7 +181,7 @@ export default function WorldMap({ data }) {
               <span className="muted small">{selected.monsterCount} вид(ов) существ</span>
             </div>
             <div className="actions">
-              <button type="button" onClick={() => navigate(`/world/locations/${selected.id}`)}>Отправиться</button>
+              <button type="button" onClick={() => navigate(`/world/locations/${selected.id}`)}>Открыть место</button>
             </div>
           </>
         )}

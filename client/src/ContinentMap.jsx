@@ -6,13 +6,24 @@ import { landmarkIcon } from './icons.jsx';
 // A continent's chart is its own drawing, cut from the world plate by
 // tools/gen_continent_maps.mjs: only this continent's island(s), framed to the
 // same 1000x640 sheet as the global map but zoomed to fill it. No other land is
-// shown, so the continent reads clearly under its seals. Locations keep their
-// world coordinates, so the seals sit on the same land as on the global map.
+// shown, so the continent reads clearly under its seals.
+//
+// The chart magnifies the continent, so a place drawn at its raw world x/y would
+// bunch in the middle instead of following the land. The generator records the
+// world->chart frame (scale, tx, ty) on the continent, and every marker is put
+// through it here, so seals sit on the same land the coastline draws.
+//
+// The party may only set out for a place joined to where it stands by a road,
+// so only the current place and its neighbours are openable; the rest of the
+// continent is read-only until the party walks to them.
 
-export default function ContinentMap({ map, continent, onBack, onOpenLocation }) {
+export default function ContinentMap({ map, continent, onBack, onOpenLocation, onTravel }) {
   const [selectedId, setSelectedId] = useState(null);
 
   const geo = CONTINENTS.find((c) => c.name === continent.name);
+  const frame = geo?.frame;
+  const fx = (x) => (frame ? frame.scale * x + frame.tx : x);
+  const fy = (y) => (frame ? frame.scale * y + frame.ty : y);
 
   const locations = useMemo(
     () => map.locations.filter((l) => l.continentName === continent.name),
@@ -21,40 +32,59 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
   const byId = useMemo(() => new Map(locations.map((l) => [l.id, l])), [locations]);
   const selected = selectedId != null ? byId.get(selectedId) : null;
 
+  // Where the party stands, and every place it may leave for from there.
+  const character = map.character || null;
+  const hereId = character?.locationId ?? null;
+  const reachable = useMemo(() => {
+    const s = new Set();
+    if (hereId == null) return s;
+    s.add(hereId);
+    const road = character?.travel;
+    if (road) { s.add(road.from); s.add(road.to); }
+    for (const c of map.connections) {
+      if (c.from === hereId) s.add(c.to);
+      if (c.to === hereId) s.add(c.from);
+    }
+    return s;
+  }, [map, character, hereId]);
+  // Without a hero to move there is nothing to gate: the chart is just an atlas.
+  const canOpen = (id) => !character || reachable.has(id);
+
   const regions = useMemo(() => continent.regions.map((r) => {
     const own = locations.filter((l) => l.regionId === r.id);
     return {
       region: r,
-      x: own.reduce((s, l) => s + l.x, 0) / (own.length || 1),
-      y: own.reduce((s, l) => s + l.y, 0) / (own.length || 1),
+      x: fx(own.reduce((s, l) => s + l.x, 0) / (own.length || 1)),
+      y: fy(own.reduce((s, l) => s + l.y, 0) / (own.length || 1)),
     };
-  }), [continent, locations]);
+  }), [continent, locations, frame]);
 
   const roads = useMemo(() => map.connections.map((c) => {
     const a = byId.get(c.from); const b = byId.get(c.to);
     if (!a || !b) return null;
-    const mx = (a.x + b.x) / 2;
-    const my = (a.y + b.y) / 2 - 14;
+    const ax = fx(a.x), ay = fy(a.y), bx = fx(b.x), by = fy(b.y);
+    const mx = (ax + bx) / 2;
+    const my = (ay + by) / 2 - 14;
     const rng = rngFrom(hash(`road-${c.from}-${c.to}`));
-    return { c, mx, my, d: wobbleLine([[a.x, a.y], [mx, my], [b.x, b.y]], rng, 8) };
-  }).filter(Boolean), [map, byId]);
+    return { c, mx, my, d: wobbleLine([[ax, ay], [mx, my], [bx, by]], rng, 8) };
+  }).filter(Boolean), [map, byId, frame]);
 
   const marker = useMemo(() => {
-    const ch = map.character;
-    if (!ch) return null;
-    const road = ch.travel;
+    if (!character) return null;
+    const road = character.travel;
     const a = road && byId.get(road.from);
     const b = road && byId.get(road.to);
     if (a && b) {
+      const ax = fx(a.x), ay = fy(a.y), bx = fx(b.x), by = fy(b.y);
       const t = Math.max(0, Math.min(1, road.progress));
       const u = 1 - t;
-      const my = (a.y + b.y) / 2 - 14;
-      return { x: u * u * a.x + 2 * u * t * ((a.x + b.x) / 2) + t * t * b.x,
-        y: u * u * a.y + 2 * u * t * my + t * t * b.y, paused: road.paused };
+      const my = (ay + by) / 2 - 14;
+      return { x: u * u * ax + 2 * u * t * ((ax + bx) / 2) + t * t * bx,
+        y: u * u * ay + 2 * u * t * my + t * t * by, paused: road.paused };
     }
-    const here = byId.get(ch.locationId);
-    return here ? { x: here.x, y: here.y, paused: false } : null;
-  }, [map, byId]);
+    const here = byId.get(hereId);
+    return here ? { x: fx(here.x), y: fy(here.y), paused: false } : null;
+  }, [character, byId, hereId, frame]);
 
   return (
     <div className="atlas">
@@ -86,23 +116,26 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
             {/* places */}
             {locations.map((l) => {
               const active = selectedId === l.id;
+              const open = canOpen(l.id);
+              const cx = fx(l.x), cy = fy(l.y);
               const icon = landmarkIcon(l);
-              const dx = l.x > 900 ? -18 : l.x < 100 ? 18 : 0;
-              const dy = l.y < 60 ? 28 : l.y > 590 ? -18 : 30;
-              const anchor = l.x > 900 ? 'end' : l.x < 100 ? 'start' : 'middle';
+              const dx = cx > 900 ? -18 : cx < 100 ? 18 : 0;
+              const dy = cy < 60 ? 28 : cy > 590 ? -18 : 30;
+              const anchor = cx > 900 ? 'end' : cx < 100 ? 'start' : 'middle';
               const color = l.isSafe ? '#6f8f4a' : dangerColor(l.danger);
               return (
                 <g
                   key={l.id}
-                  className={`map-node dark ${active ? 'active' : ''}`}
-                  transform={`translate(${l.x},${l.y})`}
+                  className={`map-node dark ${active ? 'active' : ''} ${open ? '' : 'locked'}`}
+                  transform={`translate(${cx},${cy})`}
                   onClick={() => setSelectedId(l.id)}
-                  onDoubleClick={() => onOpenLocation(l.id)}
+                  onDoubleClick={() => { if (!open) return; if (l.id === hereId) onOpenLocation(l.id); else onTravel(l.id); }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter') onOpenLocation(l.id); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && open) { if (l.id === hereId) onOpenLocation(l.id); else onTravel(l.id); } }}
                 >
                   {active && <circle r={30} className="node-ring" />}
+                  {l.id === hereId && <circle r={24} className="node-here" />}
                   <circle r={17} className="seal" />
                   {icon && (
                     <image href={icon} x={-12} y={-12} width={24} height={24} className="landmark"
@@ -154,7 +187,7 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
         )}
         {!selected && (
           <p className="muted">
-            Кликните по метке, чтобы увидеть место. Двойной клик — открыть его.
+            Кликните по метке, чтобы увидеть место. Открыть можно только те места, что соединены дорогой с отрядом.
           </p>
         )}
         {selected && (
@@ -169,9 +202,17 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation })
               <span className="danger-tag">Опасность {'★'.repeat(Math.min(selected.danger, 5))}</span>
               <span className="muted small">{selected.monsterCount} вид(ов) существ</span>
             </div>
-            <div className="actions">
-              <button type="button" onClick={() => onOpenLocation(selected.id)}>Открыть место</button>
-            </div>
+            {canOpen(selected.id) ? (
+              <div className="actions">
+                {selected.id === hereId ? (
+                  <button type="button" onClick={() => onOpenLocation(selected.id)}>Открыть место</button>
+                ) : (
+                  <button type="button" onClick={() => onTravel(selected.id)}>Отправиться сюда</button>
+                )}
+              </div>
+            ) : (
+              <p className="muted small">Сюда нет дороги от отряда — сначала дойдите до соседнего места.</p>
+            )}
           </>
         )}
       </div>

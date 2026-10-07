@@ -8,7 +8,7 @@ import { getDb, closeDb } from '../src/db/index.js';
 import { seedWorld } from '../src/db/seed.js';
 import { getMap, getLocation, characterExploration, recordVisit } from '../src/services/world.js';
 import { createCharacter } from '../src/services/characters.js';
-import { seedContinents } from '../src/db/seed_continents.js';
+import { seedContinents, CONTINENTS } from '../src/db/seed_continents.js';
 import { seedSettlements } from '../src/db/seed_settlements.js';
 import { LAND_MASK, LAND_MASK_COLS, LAND_MASK_ROWS } from '../test-support/land-mask.js';
 
@@ -18,6 +18,37 @@ const GEO = JSON.parse(readFileSync(
 ));
 
 test.after(() => closeDb());
+
+test('each continent chart carries the world->chart frame its seals need', () => {
+  seedWorld();
+  const map = getMap();
+  // The outer continents' places live in the seed definition; Мордрат's are in
+  // the seeded world. Both are authored in world coordinates.
+  const authored = new Map(CONTINENTS.map((c) => [c.name, c.regions.flatMap((r) => r.locations)]));
+  authored.set('Мордрат', map.locations.filter((l) => l.continentName === 'Мордрат'));
+
+  for (const geo of GEO.continents) {
+    assert.ok(geo.frame, `${geo.name} has a frame`);
+    assert.ok(geo.frame.scale > 0, `${geo.name} frame has a positive scale`);
+    assert.equal(typeof geo.frame.tx, 'number', `${geo.name} frame has tx`);
+    assert.equal(typeof geo.frame.ty, 'number', `${geo.name} frame has ty`);
+
+    // Mapping the places through the frame must spread them across the chart,
+    // not bunch them in the middle: the chart magnifies the land, so drawing
+    // raw world coordinates would collapse every seal toward the centre.
+    const own = authored.get(geo.name) || [];
+    assert.ok(own.length > 0, `${geo.name} has places`);
+    const xs = own.map((l) => geo.frame.scale * l.x + geo.frame.tx);
+    const ys = own.map((l) => geo.frame.scale * l.y + geo.frame.ty);
+    const spread = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+    assert.ok(spread >= 120, `${geo.name} places spread across the chart (${Math.round(spread)}px)`);
+    for (const l of own) {
+      const cx = geo.frame.scale * l.x + geo.frame.tx;
+      const cy = geo.frame.scale * l.y + geo.frame.ty;
+      assert.ok(cx >= 0 && cx <= 1000 && cy >= 0 && cy <= 640, `${l.name} maps inside the chart frame`);
+    }
+  }
+});
 
 test('the map exposes coordinates, scenes and roads for every location', () => {
   seedWorld();

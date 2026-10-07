@@ -506,11 +506,29 @@ marker and, since Wave 11, shows every place openly.
   that continent. Do not reintroduce per-continent base images, framed plates or
   a second raster; re-run `node tools/gen_continent_maps.mjs` after changing the
   plate.
-- **Locations keep world coordinates on every chart.** A continent map reuses the
-  world viewBox (`0 0 1000 640`), so it places a seal at the same `x`/`y` the
-  global map uses; only the coastline picture differs. Ports on the **global**
-  map are clickable and open their own continent (same target as clicking the
-  island), so a port is a real gate into that continent's chart.
+- **A continent chart magnifies the land, so seals go through its frame.**
+  `tools/gen_continent_maps.mjs` scales the continent to fill the 1000x640
+  sheet, so a seal drawn at its raw world `x`/`y` would bunch toward the middle
+  instead of following the coast. The generator records the world->chart frame
+  (`scale`, `tx`, `ty`) on the continent entry in `world-geo.json`, and
+  `ContinentMap.jsx` maps every seal, road and the party dot through
+  `chart = scale * world + (tx, ty)`. The global map (`WorldMap.jsx`) and the
+  `GlobalMap` ports are already in chart space and draw `x`/`y` directly.
+  Re-run `node tools/gen_continent_maps.mjs` after changing the plate so the
+  frames stay current; `server/test/world_map.test.js` checks that every
+  continent has a frame and that its places spread across the chart.
+- **Ports on the global map are clickable gates.** Clicking a port opens its own
+  continent, the same target as clicking the island.
+- **The party can only set out from where it stands, to a neighbouring place.**
+  `startTravel()` in `services/travel.js` refuses a `fromId` the character is not
+  at (`Отряд не находится здесь`) and a `fromId`/`toId` pair with no road, so a
+  client cannot name a far origin and teleport. Opening a place is **not**
+  travel: `POST /world/locations/:id/visit` only marks it seen
+  (`recordVisited`), it never moves the party. Only `finish()` (a completed road)
+  calls `recordVisit()`, which sets `characters.location_id` and can yield the
+  drowned chapel's ritual key. `ContinentMap.jsx` mirrors the rule: only the
+  current place and its road-neighbours are openable, the rest are dimmed, and
+  clicking a neighbour sets out for it.
 - **Geometry is one source of truth.** `client/public/art/maps/world-chart.svg`
   is the picture; the very same pixels are thresholded into
   `server/test-support/world-mask.json` by `tools/gen_world_map.mjs`, and

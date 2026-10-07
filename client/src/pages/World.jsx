@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import GlobalMap from '../GlobalMap.jsx';
 import ContinentMap from '../ContinentMap.jsx';
 import WorldMap from '../WorldMap.jsx';
 import { useMapData } from '../useMapData.js';
+import { api } from '../api.js';
 
 // The atlas, in three charts, all in the same generated dark-fantasy style. The
 // global chart shows the whole world — the five lands, the seas and the ports.
@@ -21,6 +22,19 @@ export default function WorldPage() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { map, characters, heroId, pickHero, error } = useMapData();
+  const [travelError, setTravelError] = useState('');
+
+  // Setting out is a real journey: the party may only leave the place it stands
+  // in, for a place a road connects to it. The server enforces the same rule.
+  const setOut = async (toId) => {
+    if (!heroId) { setTravelError('Сначала создайте героя.'); return; }
+    setTravelError('');
+    try {
+      const trip = await api.startTravel({ characterId: Number(heroId), fromId: map.character.locationId, toId: Number(toId) });
+      if (trip.arrived) navigate(`/world/locations/${trip.to.id}`);
+      else navigate(`/travel/${trip.id}`);
+    } catch (err) { setTravelError(err.message); }
+  };
 
   const continent = useMemo(
     () => (map && continentName ? map.continents.find((c) => c.name === continentName) : null),
@@ -32,6 +46,7 @@ export default function WorldPage() {
 
   const atlasView = pathname === '/world/atlas';
   const stats = continent ? continent.stats : map.stats;
+  const histMax = Math.max(1, ...(stats.byDanger || [0]));
 
   return (
     <div>
@@ -69,7 +84,9 @@ export default function WorldPage() {
           <div className="hist">
             {(stats.byDanger || []).map((n, i) => (
               <div className="hist-col" key={i}>
-                <div className="hist-bar" style={{ height: `${Math.max(4, n * 22)}px` }} title={`${n} локаций`} />
+                <div className="hist-track">
+                  <div className="hist-bar" style={{ height: `${Math.round((n / histMax) * 90)}px` }} title={`${n} локаций`} />
+                </div>
                 <span className="small muted">{'★'.repeat(i + 1)}</span>
                 <span className="small">{n}</span>
               </div>
@@ -77,6 +94,8 @@ export default function WorldPage() {
           </div>
         </div>
       )}
+
+      {travelError && <div className="error">{travelError}</div>}
 
       {atlasView ? (
         <WorldMap data={map} />
@@ -86,6 +105,7 @@ export default function WorldPage() {
           continent={continent}
           onBack={() => navigate('/world')}
           onOpenLocation={(id) => navigate(`/world/locations/${id}`)}
+          onTravel={setOut}
         />
       ) : (
         <GlobalMap map={map} onOpen={(name) => navigate(`/world/continents/${encodeURIComponent(name)}`)} />
