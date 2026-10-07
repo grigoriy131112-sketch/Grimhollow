@@ -31,7 +31,7 @@ export default function GlobalMap({ map, onOpen }) {
             role="button" tabIndex={0}
             onClick={() => onOpen(c.name)}
             onKeyDown={(e) => { if (e.key === 'Enter') onOpen(c.name); }}>
-            <rect x={c.rect[0]} y={c.rect[1]} width={c.rect[2]} height={c.rect[3]} className="wmap-hit" fill="transparent" />
+            <path d={c.hits} className="wmap-hit" fill="transparent" />
             <text x={c.cx} y={c.cy} className="wmap-continent-name" textAnchor="middle">{c.name}</text>
             <text x={c.cx} y={c.cy + 15} className="wmap-continent-sub" textAnchor="middle">
               {(byName.get(c.name) || []).length} мест

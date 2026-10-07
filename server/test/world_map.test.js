@@ -1,6 +1,9 @@
 import test from 'node:test';
 import "../test-support/env.js";
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { getDb, closeDb } from '../src/db/index.js';
 import { seedWorld } from '../src/db/seed.js';
 import { getMap, getLocation, characterExploration, recordVisit } from '../src/services/world.js';
@@ -8,6 +11,11 @@ import { createCharacter } from '../src/services/characters.js';
 import { seedContinents } from '../src/db/seed_continents.js';
 import { seedSettlements } from '../src/db/seed_settlements.js';
 import { LAND_MASK, LAND_MASK_COLS, LAND_MASK_ROWS } from '../test-support/land-mask.js';
+
+const GEO = JSON.parse(readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'client', 'src', 'world-geo.json'),
+  'utf8',
+));
 
 test.after(() => closeDb());
 
@@ -163,3 +171,76 @@ test('each continent carries its own statistics', () => {
   assert.ok(map.locations.filter((l) => l.isPort).every((l) => l.isSafe), 'ports are safe places');
 });
 
+
+// The global map opens a continent by clicking its land. Rectangles cannot do
+// that job: the continents' bounding boxes overlap, so the northern landmass's
+// box sits wholly inside the eastern one's and every click there opened the
+// wrong continent. Each continent therefore carries a `hits` path traced from
+// the plate itself. These tests guard the two properties that fix depends on.
+function hitRuns(d) {
+  const runs = [];
+  const re = /M([\d.-]+) ([\d.-]+)h([\d.-]+)v([\d.-]+)h([\d.-]+)z/g;
+  let m;
+  while ((m = re.exec(d))) runs.push([+m[1], +m[2], +m[3], +m[4]]);
+  return runs;
+}
+
+const inside = (runs, x, y) => runs.some(([rx, ry, w, h]) => x >= rx && x < rx + w && y >= ry && y < ry + h);
+
+test('every continent carries a click shape traced from the land', () => {
+  assert.equal(GEO.continents.length, 5, 'the world still has five continents');
+  for (const c of GEO.continents) {
+    assert.ok(typeof c.hits === 'string' && c.hits.length > 0, `${c.name} has a hits path`);
+    assert.ok(hitRuns(c.hits).length > 0, `${c.name} hits path has geometry`);
+  }
+});
+
+test('continent click shapes never overlap and stay on land', () => {
+  const cell = (x, y) => {
+    const col = Math.min(LAND_MASK_COLS - 1, Math.max(0, Math.floor((x / 1000) * LAND_MASK_COLS)));
+    const row = Math.min(LAND_MASK_ROWS - 1, Math.max(0, Math.floor((y / 640) * LAND_MASK_ROWS)));
+    return LAND_MASK[row][col];
+  };
+  // The mask the tests carry is coarser than the grid the shapes are traced on,
+  // so a shape's coastal edge can land one mask cell out. Treat a cell as sea
+  // only when neither it nor any neighbour is land.
+  const nearLand = (x, y) => {
+    for (let dx = -8; dx <= 8; dx += 4) {
+      for (let dy = -8; dy <= 8; dy += 4) if (cell(x + dx, y + dy) === '1') return true;
+    }
+    return false;
+  };
+  const runs = GEO.continents.map((c) => ({ name: c.name, runs: hitRuns(c.hits) }));
+  // Sample the centre of each 5px block and count who owns it.
+  const owners = new Map();
+  for (let x = 2; x < 1000; x += 5) {
+    for (let y = 2; y < 640; y += 5) {
+      const hit = runs.filter((c) => inside(c.runs, x, y));
+      assert.ok(hit.length <= 1, `only one continent owns (${x},${y})`);
+      if (hit.length === 1) {
+        owners.set(hit[0].name, (owners.get(hit[0].name) || 0) + 1);
+        assert.ok(nearLand(x, y), `${hit[0].name} claims land at (${x},${y}), not open sea`);
+      }
+    }
+  }
+  // The north was the continent the old rectangles lost; it must own real land.
+  assert.ok((owners.get('Морозная Колыбель') || 0) > 0, 'Морозная Колыбель is clickable');
+  for (const c of GEO.continents) {
+    assert.ok((owners.get(c.name) || 0) > 0, `${c.name} owns clickable land`);
+  }
+});
+
+// Travel time is derived from the drawn distance between two places. When the
+// world was redrawn as one compact plate the coordinates shrank about fourfold,
+// but the pixels-per-minute divisor did not — every road's raw time fell under
+// the floor and the whole map read "15 мин". Guard that a real spread survives.
+test('roads on the seeded map take a range of times, not all the minimum', () => {
+  seedWorld();
+  const map = getMap();
+  const minutes = map.connections.map((c) => c.minutes);
+  assert.ok(map.connections.length > 10, 'the world has a road network');
+  assert.ok(minutes.every((m) => m >= 15 && m <= 50), 'every road stays in the 15-50 band');
+  assert.ok(new Set(minutes).size >= 4, `road times vary, got ${[...new Set(minutes)].sort((a, b) => a - b)}`);
+  assert.ok(minutes.some((m) => m > 15), 'at least one road is longer than the floor');
+  assert.ok(minutes.some((m) => m < 50), 'not every road is clamped to the ceiling');
+});

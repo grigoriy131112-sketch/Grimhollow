@@ -408,6 +408,14 @@ Roads are journeys, not teleports. `GET /api/world/map` and
 - **Minutes are derived, never authored.** `game/travel.js#travelMinutes` scales
   the drawn map distance by the average of both endpoints' terrain factors, so a
   longer road always takes longer and a road takes the same time either way.
+
+  The scale is `PX_PER_MINUTE` (2 px per game minute). When the world was
+  redrawn as one compact plate the coordinates shrank about fourfold; the
+  old divisor left every road clamped to the 15-minute floor (every road on
+  the map showed the same minutes). Any future change to the coordinate scale
+  must re-calibrate `PX_PER_MINUTE`; `server/test/world_map.test.js` fails if
+  road times collapse to one value.
+
   `seedWorld()` recomputes them into `connections.minutes` (including on old
   databases, via `backfillTravel`). Changing the map geometry therefore changes
   travel times on the next seed — do not hand-write minutes into `seed.js`.
