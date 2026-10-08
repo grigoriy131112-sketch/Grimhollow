@@ -213,8 +213,26 @@ long detail in the daily logs.
 - **Preview hardening:** `server/src/ports.js` serves both work-host ports
   (`PORT` + `PORT_ALT`, default 12001 when PORT=12000); `index.js` binds both, a
   busy extra port is skipped. Branch also merges `wave/w-menu`.
-- Test baseline on this branch, Node 24.21: **287 pass / 0 fail** (was 251 before
-  W-MAP/w-menu work).
+- Test baseline on this branch, Node 24.21: **290 pass / 0 fail** (was 251 before
+  W-MAP/w-menu work; sea travel + origin gate added 3).
+- **Sea travel (added 2026-10-08 on `wave/w-map`):** the global map draws the
+  `CROSSINGS` lanes (from `seaLanes()` in `services/world.js`, exposed as
+  `GET /api/world/map` -> `voyages[]`, time in **days**); `GlobalMap.jsx` bows
+  each lane with `wobbleLine`/`rngFrom`. `services/continents.js#startCrossing`
+  now **`recordVisit(characterId, toId)`** so a cross lands the party at the far
+  port (before, the fare was charged but the party stayed put), and it **refuses
+  an origin the party is not standing in** (`Отряд не находится здесь`), like
+  `startTravel`. Crossing UI is the «Морской путь» card on `pages/Location.jsx`
+  (`api.getCrossings`/`startCrossing`). W-SEA (pirates/islands/ship combat)
+  remains unbuilt.
+- **Testing gotcha:** `recordVisit` (POST visit) only marks a place **seen** — it
+  does **not** move `characters.location_id`. To place a hero in a port in a test
+  or script, call `services/world.js#recordVisit` directly (what `finish()` does).
+- **AGENTS.md was double-encoded** (all Russian -> mojibake) by commit `7dd4fc1`
+  on `wave/w-map`; repaired 2026-10-08 (`edcbd65`) by restoring the affected
+  lines from clean `origin/main`, content unchanged. When editing these files,
+  use python UTF-8 writes — the in-session editor corrupted Russian text.
+
 - **W-MAP status 2026-10-08:** branch rescued via `git bundle` after the old
   orchestrator sandbox ERRORed; pushed to GitHub, PR **#14** opened
   (`wave/w-map` -> `main`, draft). Only open PRs: #13 (W-MENU, draft) and #14.
