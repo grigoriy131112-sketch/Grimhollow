@@ -261,3 +261,18 @@ long detail in the daily logs.
   is the earlier **W-CODEX / W-SHELL** plan (`docs/CHAT_ARCHIVE_MAIN.md`); it
   needs W-MENU in `main` first, since the header it removes lives in PR #13.
 
+
+## W-SHIP (added on `wave/w-ship`, PR #15)
+
+- A hero buys a **ship** in a **port** for gold (ports = `CROSSING_GATES` in
+  `game/continent_travel.js`); one ship per hero; it waits in the port. Tables
+  `ships`/`ship_upgrades`/`ship_works` (additive in `schema.sql`).
+- **10 levels x 3 branches x 2 upgrades = 60** (`game/ship.js`): hull, guns,
+  class guns (20 guns, class-locked, own ability). A level needs all six forged
+  before the ship rises. Cost `base*n` points; dock time `HOURS_BASE*n` in-game
+  hours on the **road clock** (`MS_PER_MINUTE`), one job at a time, hired hands
+  halve it for gold.
+- Points **only from sea battles** (`awardShipPoints`); W-SEA pays +5 pirates /
+  6-10 monsters. UI `pages/Shipyard.jsx` (`/shipyard/:characterId`), linked from
+  the party strip. `npm test` 282/0 (+15).
+

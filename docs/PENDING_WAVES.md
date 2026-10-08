@@ -22,6 +22,11 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
   style) but **with other shapes**; assemble the **global map ourselves** from
   those images. **Generate the art in the current style** (procedural SVG
   engraving, no rasters).
+- **Ship:** bought in **ports for gold**. **10 levels** (see the built section
+  below), each unlocking upgrades. Ship **upgrade points** come **only from sea
+  battles** (W-SEA). **Classes exist for both heroes and guns.** The ship
+  **stays in the port after arrival and waits for the hero there**.
+- **Ship combat:** a **separate, pure** system.
 - **Ship:** bought in **ports for gold**. **10 levels** (the earlier "level 1
   only" is dropped); each level unlocks its own upgrades and **everything
   from lower levels stays available**. Separate **upgrade points** (sea
@@ -49,6 +54,10 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 | **W-MENU** | Start menu hub: Новая игра / Сохранённые игры (continue) / Настройки / Создатели / Лор. Remove save **import**. | `client/src/pages/MainMenu.jsx`, `Creators.jsx`, `Lore.jsx` | — | **PR #13 (in review)** |
 | **W-CODEX / W-SHELL** | Remove the top text nav; add a journal/book to the character's inventory (Лор / Карта мира / Настройки / Создатели), separate from the item slots. Depends on W-MENU being in `main` | `client/src/App.jsx`, `client/src/pages/Inventory.jsx`, new `pages/Codex.jsx` | W-MENU | not started |
 | **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | not started |
+| **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) | `client/src/GlobalMap.jsx`, art | — | not started |
+| **W-MAP-CONT** | Per-continent map (regions + locations) shown when the hero is on it | `client/src/ContinentMap.jsx` | W-MAP-GLOBAL | not started |
+| **W-SHIP** | Ship: buy in port for gold, **10 levels x 3 branches x 2 upgrades (60)**, **timed port shipyard**, classes (heroes & guns), ship waits in port. Points come only from sea battles (W-SEA) | `server/src/game/ship.js`, `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | **in this PR** (`wave/w-ship`) |
+| **W-SEA** | Sea crossing: pirates, non-repeating islands (Fortune), sea monsters, **ship combat**, party talk + papers on board | `server/src/game/naval.js`, `services/voyage.js`, `routes/voyage.js`, `client/src/pages/Voyage.jsx` | W-SHIP, W-MAP-GLOBAL | not started |
 | **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) + **sea lanes with their voyage time** | `client/src/GlobalMap.jsx`, `client/src/mapProjection.js` | — | **in this PR** |
 | **W-MAP-CONT** | Per-continent map (regions + locations) shown when the hero is on it | `client/src/ContinentMap.jsx` | W-MAP-GLOBAL | **in this PR** |
 | **W-SHIP** | Ship: buy in port for gold, **10 levels x 3 branches**, **2 upgrades each per level (60 total)** + **timed port shipyard**, classes (heroes & guns), ship waits in port. Points are earned in W-SEA battles, not elsewhere | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
@@ -93,6 +102,15 @@ SFX are short one-shots. Audio credits go in the same `client/public/art/CREDITS
 
 ## Ship upgrade points (W-SHIP) — revised by the user (2026-10-08)
 
+> **Superseded (2026-10-08).** The earlier list (+1 per hero level, +1 per sea
+> encounter, +2 per island, +1 per harbour quest) was replaced. Points now come
+> **only from sea battles**: **+5** for a won pirate battle and **6-10** for a
+> won sea-monster battle (scaled by danger). Islands and harbour quests do not
+> pay ship points. See the built section below and `game/ship.js`
+> (`POINTS_PER_PIRATE_WIN`, `POINTS_PER_MONSTER_WIN`).
+
+Spent on: hull, guns (damage / reload / slot count) and class guns — 60 upgrades
+over 10 levels, two per branch per level.
 > **User requirement (verbatim):** «Игрок должен иметь возможность покупать
 > корабль и улучшать его за отдельные очки которые можно получить только при
 > плавоние в сражениях с пиратами (с ними сражается отряд+пушки коробля по
@@ -306,6 +324,28 @@ This is the **W-CODEX / W-SHELL** work already agreed earlier (see
 - **Note:** W-MENU (`wave/w-menu`, PR #13) is still unmerged, so the header this
   removes only exists in that branch. This wave must land **after** W-MENU is in
   `main`, or be built on top of it, or the header will not be there to remove.
+
+## W-SHIP — built in `wave/w-ship`
+
+The ship wave is implemented (the full per-level design lives in the W-MAP
+branch's `docs/PENDING_WAVES.md`, "The ship: 10 levels, three branches"):
+
+- **Buy in a port for gold** (`SHIP_PRICE = 500`); one ship per hero; it stays
+  in the port and waits. `ships` / `ship_upgrades` / `ship_works` tables.
+- **10 levels x 3 branches x 2 upgrades = 60**, unlocked one level at a time
+  (a level opens six; every level needs all six forged before the next). The
+  three branches are **Корпус**, **Пушки** and **Оружие классов** (20 class
+  guns, each mannable only by listed hero classes, each with its own ability).
+- **Points only from sea battles** (`awardShipPoints`): W-SEA pays **+5** for
+  pirates and **6-10** for sea monsters. W-SHIP exposes the hook and the rule.
+- **Upgrades happen only in a port and take in-game time**: the dock runs on the
+  same real clock as a road (`MS_PER_MINUTE`), one job at a time; **hired dock
+  hands** pay gold to halve the time. `GET/POST /api/ship/:characterId`.
+- **UI:** `pages/Shipyard.jsx` (`/shipyard/:characterId`), linked from the party
+  strip; it shows the level, points, the three branches and the dock countdown.
+
+W-SEA still owns the sea battles themselves (pirates, monsters, islands, the
+papers) and calls `awardShipPoints`.
 
 ## Open questions
 
