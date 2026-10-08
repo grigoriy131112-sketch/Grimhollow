@@ -51,7 +51,7 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 | **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | not started |
 | **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) + **sea lanes with their voyage time** | `client/src/GlobalMap.jsx`, `client/src/mapProjection.js` | — | **in this PR** |
 | **W-MAP-CONT** | Per-continent map (regions + locations) shown when the hero is on it | `client/src/ContinentMap.jsx` | W-MAP-GLOBAL | **in this PR** |
-| **W-SHIP** | Ship: buy in port for gold, **10 levels x 3 branches** (hull / guns / class guns, each level unlocking one of each) + **timed port shipyard**, classes (heroes & guns), ship waits in port. Points are earned in W-SEA battles, not elsewhere | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
+| **W-SHIP** | Ship: buy in port for gold, **10 levels x 3 branches**, **2 upgrades each per level (60 total)** + **timed port shipyard**, classes (heroes & guns), ship waits in port. Points are earned in W-SEA battles, not elsewhere | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
 | **W-SEA** | Sea crossing: **pirates** (party + guns vs pirate ship) and **sea monsters** (ship alone), non-repeating islands (Fortune), **ship combat**, party talk + papers on board, and the ship **points** that W-SHIP spends | `server/src/game/naval.js`, `services/voyage.js`, `routes/voyage.js`, `client/src/pages/Voyage.jsx` | W-SHIP, W-MAP-GLOBAL | not started |
 
 Order: `W-MENU → W-CODEX/W-SHELL → W-AUDIO → W-MAP-GLOBAL → W-MAP-CONT →
@@ -113,45 +113,66 @@ harbour quest"), which is removed: those no longer grant ship points.
 Spent at the port shipyard on the components in the **three branches** below
 (hull pieces, gun pieces, class guns).
 
-### The ship: 10 levels, three branches (agent-decided)
+### The ship: 10 levels, three branches, several upgrades each (agent-decided)
 
-The ship has **10 levels**. Each level unlocks **three things at once — one per
-branch**: the **hull** (the ship itself), the **guns** (damage / reload / count),
-and the **class weapons** (special guns only some classes can man, each with its
-own ability). A component is raised up to the **current ship level**; everything
-unlocked earlier stays available forever.
+The ship has **10 levels**. Each level unlocks **six upgrades — two in each of
+the three branches**: the **hull** (the ship itself), the **guns** (damage /
+reload / count), and the **class guns** (special guns only some classes can man,
+each with its own ability). So the whole tree is **60 upgrades** (20 hull, 20
+guns, 20 class guns). A component is raised up to the **current ship level**;
+everything unlocked earlier stays available forever.
 
-**Branch A — Корпус (the ship itself)**
+**Branch A — Корпус (the ship itself) — 2 per level**
 
-| Lvl | Unlocks | Effect |
+| Lvl | Upgrade | Effect |
 |----:|---------|--------|
 | 1 | Обшивка | hull HP |
-| 2 | Паруса | sail speed / evade |
+| 1 | Набор корпуса | structure (less damage taken) |
+| 2 | Паруса | sail speed |
+| 2 | Такелаж | rigging / evade |
 | 3 | Трюм | cargo for crossings |
+| 3 | Кладовые | extra cargo |
 | 4 | Команда | boarding strength |
-| 5 | Укреплённый корпус | +hull, less flooding |
+| 4 | Камбуз | crew morale / heal |
+| 5 | Укреплённый корпус | +hull armour |
+| 5 | Дубовый пояс | resist damage |
 | 6 | Киль | resist being boarded |
+| 6 | Форштевень | bow strength |
 | 7 | Насосы | recover from flooding |
+| 7 | Переборки | limit flooding spread |
 | 8 | Руль | escape / disengage |
-| 9 | Таран | ramming on the boarding approach |
+| 8 | Штурвал | helm control |
+| 9 | Таран | ramming on the approach |
+| 9 | Бивень | +ram damage |
 | 10 | Флагман | every hull cap +1 |
+| 10 | Адмиральский флаг | party aura at sea |
 
-**Branch B — Пушки (guns: damage, reload, count)**
+**Branch B — Пушки (damage, reload, count) — 2 per level**
 
-| Lvl | Unlocks | Effect |
+| Lvl | Upgrade | Effect |
 |----:|---------|--------|
 | 1 | Заряд | cannon damage |
+| 1 | Фитиль | ignition / reliability |
 | 2 | Перезарядка | reload speed |
+| 2 | Пороховая камора | powder charge |
 | 3 | Второй борт | 2nd gun slot |
+| 3 | Ядровый погреб | magazine capacity |
 | 4 | Картечь | anti-crew shot |
+| 4 | Дробь | scatter shot |
 | 5 | Тяжёлые ядра | heavier damage |
+| 5 | Каменные ядра | shatter rigging |
 | 6 | Третий борт | 3rd gun slot |
+| 6 | Бомбовые лотки | bomb racks |
 | 7 | Наводка | accuracy |
+| 7 | Дальномер | range finding |
 | 8 | Четвёртый борт | 4th gun slot |
+| 8 | Скорострельные салазки | quick-slide mounts |
 | 9 | Дальность | range (reaches monsters sooner) |
+| 9 | Удлинённые стволы | long barrels |
 | 10 | Батарея | every gun cap +1 |
+| 10 | Шквал огня | full barrage |
 
-**Branch C — Оружие классов (class guns, each with its own ability)**
+**Branch C — Оружие классов (class guns, own ability) — 2 per level**
 
 A class gun may only be manned by the classes listed. It mounts in a gun slot
 (from branch B); its ability is used in the sea battle. `key` stays Latin.
@@ -159,15 +180,25 @@ A class gun may only be manned by the classes listed. It mounts in a gun slot
 | Lvl | Gun (`key`) | Classes | Ability |
 |----:|-------------|---------|---------|
 | 1 | Кулеврина `culverin` | ranger, rogue | Прицельный залп — long, precise |
+| 1 | Фальконет `falconet` | rogue, bard | Лёгкий залп — cheap, fast |
 | 2 | Карронада `carronade` | fighter, barbarian | Бортовой залп — heavy, close |
+| 2 | Мушкетон `musketoon` | fighter, paladin | Залп дробью — anti-crew |
 | 3 | Мортира `mortar` | wizard, sorcerer | Навесный огонь — area |
-| 4 | Гарпун `harpoon` | ranger, druid | Гарпунный трос — pull / slow a monster |
+| 3 | Бомбарда `bombard` | wizard, warlock | Бомбарда — siege damage |
+| 4 | Гарпун `harpoon` | ranger, druid | Гарпунный трос — pull / slow |
+| 4 | Китобой `whaler` | barbarian, ranger | Китобойный гарпун — heavy pull |
 | 5 | Мистический жезл `arcane_rod` | wizard, warlock, sorcerer | Разряд — chain damage |
-| 6 | Святая пушка `holy_cannon` | cleric, paladin | Кара — smite the enemy ship |
-| 7 | Певчая мортира `chant_mortar` | bard | Вдохновляющий залп — buff the party |
-| 8 | Костяной требушет `bone_trebuchet` | warlock | Залп костей — fear / debuff crew |
+| 5 | Рунический болт `runic_ballista` | wizard, paladin | Рунический болт — pierce |
+| 6 | Святая пушка `holy_cannon` | cleric, paladin | Кара — smite the ship |
+| 6 | Реликварий `reliquary_gun` | cleric, monk | Залп мощей — ward the party |
+| 7 | Певчая мортира `chant_mortar` | bard | Вдохновляющий залп — party buff |
+| 7 | Певчий вертлюг `sonnet_swivel` | bard, rogue | Быстрый вертлюг — tempo |
+| 8 | Костяной требушет `bone_trebuchet` | warlock | Залп костей — fear |
+| 8 | Чумной залп `plague_caster` | warlock, druid | Чума — damage over time |
 | 9 | Звериный гарпун `beast_harpoon` | druid, barbarian | Рывок зверя — charge |
+| 9 | Залп шипов `thorn_volley` | druid, ranger | Шипы — bleed |
 | 10 | Драконий огнемёт `dragon_lance` | any class | Драконье пламя — flagship gun |
+| 10 | Левиафанов залп `leviathan_gun` | any class | Левиафан — huge burst |
 
 **Points.** A component's level `n` costs `base * n` points (the same scale as
 the party tree, so each level costs more). Bases: hull pieces 3, gun pieces 3,
@@ -183,15 +214,36 @@ piece is ~10 real minutes and a level-5 piece is ~50 real minutes at base speed.
 Example: raising the hull from 1 to 2 = `3 * 2 = 6` points and `1 * 2 = 2` in-game
 hours (~20 real minutes), or ~10 real minutes with dock hands.
 
+### Balance: enemies scale with the ship (W-SEA)
+
+> **User requirement (verbatim, 2026-10-08):** «пиратов и монстров надо будет
+> делать тоже такими же сильными, что бы был баланс»
+
+A 60-upgrade ship would trivialise a fixed enemy, so **pirates and sea monsters
+scale with the ship's level**: a level-N ship meets **tier-N** pirates and
+monsters. Enemy hull HP, crew strength, gun damage and count are derived from the
+tier, so a maxed ship still faces a real fight and a fresh ship is not
+slaughtered. Concretely, each tier sets:
+
+- **Pirates** — crew size and their ship's hull/guns grow with the tier (the
+  boarding fight: party vs crew, guns vs pirate hull).
+- **Sea monsters** — hull, damage and any special ability grow with the tier (the
+  ship fights alone).
+
+Because the enemy scales, the fixed payouts (**+5** pirates, **6-10** monsters by
+danger) would make a maxed ship a long grind. **Open point:** whether the payout
+should also scale with the tier (e.g. a tier multiplier) — flagged for W-SEA so
+the effort/reward stays fair; the user's flat numbers are the tier-1 baseline.
+
 **Upgrades happen only in a port, and cost in-game time** — the timed dock is
 described under **The ship: 10 levels** above (the party waits at the port
 while the work runs; hired dock hands trade gold for half the time).
 
 ## Classes (W-SHIP / W-SEA) — both kinds
 
-- **Class guns (branch C)** are the "weapon classes": ten guns, one unlocked per
-  ship level, each usable only by the classes listed in the table above and each
-  with its own sea-battle ability (`culverin` … `dragon_lance`).
+- **Class guns (branch C)** are the "weapon classes": **twenty guns**, two
+  unlocked per ship level, each usable only by the classes listed in the table
+  above and each with its own sea-battle ability (`culverin` … `leviathan_gun`).
 - **Hero classes**: reuse the existing 12 hero classes; a gun may only be manned
   by the classes its row allows, so the party composition decides which guns you
   can actually fire.
@@ -263,9 +315,11 @@ This is the **W-CODEX / W-SHELL** work already agreed earlier (see
    style. *(W-MAP-GLOBAL)*
 3. **"New game"** — confirmed: routes to the existing hero-creation page. *(W-MENU)*
 4. **Ship upgrade points & time** — settled: source is **only** sea battles
-   (**+5** pirates, **6-10** monsters); the ship is **10 levels** with a
-   per-level unlock table, and each component level `n` costs `base * n`
-   points and `n` in-game hours on the dock. *(W-SHIP / W-SEA)*
+   (**+5** pirates, **6-10** monsters); the ship is **10 levels x 3 branches
+   x 2 upgrades** (60 total), each component level `n` costing `base * n`
+   points and `n` in-game hours on the dock. **Open:** whether the payout
+   scales with the enemy tier (enemies scale with the ship — see below).
+   *(W-SHIP / W-SEA)*
 5. **Papers on the ship** — confirmed: free-form notes + event log + auto lore
    notes. Need the lore "learned" hook (which discoveries set a flag). *(W-SEA)*
 
