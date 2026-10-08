@@ -244,8 +244,14 @@ long detail in the daily logs.
   W-SHIP -> W-SEA).
 - **Ship points (user, 2026-10-08, supersedes the old list):** ship upgrade
   points come **only from sea battles** — pirates (party + guns vs the pirate
-  ship) and sea monsters (the ship fights **alone**). The old "+1/hero level,
-  +2/island, +1/harbour quest" is dead. Upgrades happen **only in a port and
-  cost in-game time** (a timed shipyard on the travel clock). Recorded in
-  `docs/PENDING_WAVES.md`; nothing built (no `погнали` yet).
+  ship) pay **+5**, sea monsters (the ship fights **alone**) pay **6-10** (by
+  danger). The old "+1/hero level, +2/island, +1/harbour quest" is dead.
+  Upgrades happen **only in a port and cost in-game time** (a timed shipyard on
+  the travel clock). Recorded in `docs/PENDING_WAVES.md`; nothing built (no
+  `погнали` yet).
+- **Journal in the inventory (user, re-confirmed 2026-10-08):** remove the top
+  text nav and add a **journal/«дневник»** to the character's inventory (book
+  tab separate from item slots: Лор / Карта мира / Настройки / Создатели). This
+  is the earlier **W-CODEX / W-SHELL** plan (`docs/CHAT_ARCHIVE_MAIN.md`); it
+  needs W-MENU in `main` first, since the header it removes lives in PR #13.
 
