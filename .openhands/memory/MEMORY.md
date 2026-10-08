@@ -246,8 +246,11 @@ long detail in the daily logs.
   points come **only from sea battles** — pirates (party + guns vs the pirate
   ship) pay **+5**, sea monsters (the ship fights **alone**) pay **6-10** (by
   danger). The old "+1/hero level, +2/island, +1/harbour quest" is dead.
-  Upgrades happen **only in a port and cost in-game time** (a timed shipyard on
-  the travel clock). Recorded in `docs/PENDING_WAVES.md`; nothing built (no
+  The ship has **10 levels** (the old "level 1 only" is dropped); each level
+  **unlocks** components and everything lower stays available. Upgrades happen
+  **only in a port and cost in-game time** (a timed dock on the travel clock;
+  hired hands trade gold for half the time). Full per-level unlock table and the
+  `base * n` points/time scale are in `docs/PENDING_WAVES.md`; nothing built (no
   `погнали` yet).
 - **Journal in the inventory (user, re-confirmed 2026-10-08):** remove the top
   text nav and add a **journal/«дневник»** to the character's inventory (book
