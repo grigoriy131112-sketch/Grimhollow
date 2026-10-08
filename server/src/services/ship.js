@@ -54,25 +54,33 @@ function activeWork(shipId) {
   ).get(shipId) || null;
 }
 
-// Apply a job whose time has come. Returns the fresh ship row.
+// Apply a job whose time has come. Returns the fresh ship row, or null when the
+// job is not due yet. Idempotent: the active job is re-read inside the
+// transaction and only applied if it is still active, so two concurrent reads
+// cannot apply the same job twice.
 function resolveWork(shipId, now = nowMs()) {
   const work = activeWork(shipId);
   if (!work) return null;
   const state = JSON.parse(work.state || '{}');
   const startMs = state.startMs || now;
-  const elapsed = now - startMs;
-  if (elapsed < work.minutes * MS_PER_MINUTE) return null;
+  if (now - startMs < work.minutes * MS_PER_MINUTE) return null;
 
   transaction((d) => {
-    if (work.kind === 'level') {
-      d.prepare("UPDATE ships SET level = ?, updated_at = datetime('now') WHERE id = ?").run(work.to_level, shipId);
+    const current = d.prepare("SELECT * FROM ship_works WHERE id = ? AND status = 'active'").get(work.id);
+    if (!current) return;
+    if (current.kind === 'level') {
+      d.prepare("UPDATE ships SET level = ?, updated_at = datetime('now') WHERE id = ?").run(current.to_level, shipId);
     } else {
-      d.prepare(
-        `INSERT INTO ship_upgrades (ship_id, key, level) VALUES (?, ?, ?)
-         ON CONFLICT (ship_id, key) DO UPDATE SET level = excluded.level`,
-      ).run(shipId, work.upgrade_key, work.to_level);
+      // UPDATE first, then INSERT only if no row exists, so a component that was
+      // deleted between start and completion is re-created instead of vanishing.
+      const updated = d.prepare('UPDATE ship_upgrades SET level = ? WHERE ship_id = ? AND key = ?')
+        .run(current.to_level, shipId, current.upgrade_key);
+      if (updated.changes === 0) {
+        d.prepare('INSERT INTO ship_upgrades (ship_id, key, level) VALUES (?, ?, ?)')
+          .run(shipId, current.upgrade_key, current.to_level);
+      }
     }
-    d.prepare("UPDATE ship_works SET status = 'done', updated_at = datetime('now') WHERE id = ?").run(work.id);
+    d.prepare("UPDATE ship_works SET status = 'done', updated_at = datetime('now') WHERE id = ?").run(current.id);
   });
   return work;
 }
@@ -85,7 +93,15 @@ export function getShipView(characterId, now = nowMs()) {
   const loc = locationOf(characterId);
   const atPort = !!loc && isPortName(loc.name);
   const forged = ship ? forgedMap(ship.id) : {};
+  // resolveWork already applied a due job, so this returns the next job or none.
   const work = ship ? activeWork(ship.id) : null;
+  // A ship remembers the port it was bought in, so the header can name a port
+  // even while the hero stands elsewhere.
+  let inPortName = loc ? loc.name : null;
+  if (!atPort && ship && ship.home_port_id) {
+    const home = getDb().prepare('SELECT name FROM locations WHERE id = ?').get(ship.home_port_id);
+    if (home) inPortName = home.name;
+  }
   const state = work ? JSON.parse(work.state || '{}') : {};
   const elapsed = work ? now - (state.startMs || now) : 0;
   const remainingMs = work ? Math.max(0, work.minutes * MS_PER_MINUTE - elapsed) : 0;
@@ -96,7 +112,7 @@ export function getShipView(characterId, now = nowMs()) {
     points: ship ? ship.points : 0,
     classKeys: partyClasses(characterId),
     atPort,
-    inPortName: loc ? loc.name : null,
+    inPortName,
   });
   tree.gold = character.gold;
   tree.dockHandGold = DOCK_HAND_GOLD;
@@ -196,9 +212,12 @@ export function awardShipPoints(characterId, amount = 0) {
   return ship.points + n;
 }
 
-// The flat bonuses a sea battle applies, plus the ship's level.
+// The flat bonuses a sea battle applies, plus the ship's level. `gunSlots` is
+// the same number the tree reports (base 1 plus every slot upgrade), so a
+// battle reads one honest figure.
 export function getShipBonuses(characterId) {
   const ship = shipRow(characterId);
   if (!ship) return null;
-  return { level: ship.level, gunSlots: 1, ...bonusesFrom(forgedMap(ship.id)) };
+  const bonuses = bonusesFrom(forgedMap(ship.id));
+  return { level: ship.level, ...bonuses, gunSlots: 1 + bonuses.gunSlots };
 }

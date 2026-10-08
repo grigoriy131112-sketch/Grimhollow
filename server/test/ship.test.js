@@ -11,7 +11,8 @@ import {
 import {
   UPGRADES, UPGRADES_PER_LEVEL, MAX_SHIP_LEVEL, SHIP_PRICE, DOCK_HAND_GOLD,
   upgradesForLevel, upgradesForBranch, componentCap, levelComplete, canLevelUp,
-  costForLevel, minutesForLevel, minutesForLevelUp, levelUpCost, mannableGuns, bonusesFrom,
+  costForLevel, minutesForLevel, minutesForLevelUp, levelUpCost, levelUpMinutes,
+  mannableGuns, bonusesFrom,
 } from '../src/game/ship.js';
 
 let n = 0;
@@ -224,4 +225,89 @@ test('a sea win pays ship points; without a ship it pays nothing', () => {
   assert.equal(awardShipPoints(c.id, 5), 5);
   assert.equal(awardShipPoints(c.id, 7), 12);
   assert.equal(getShipBonuses(c.id).level, 1);
+});
+
+test('getShipBonuses reports the same gun slots the tree shows', () => {
+  const c = hero();
+  putInPort(c.id);
+  buyShip(c.id);
+  assert.equal(getShipBonuses(c.id).gunSlots, 1, 'a fresh ship has one slot');
+  assert.equal(getShipBonuses(c.id).gunSlots, getShipView(c.id).gunSlots);
+
+  // Forge the second-broadside slot and the battery; both add a slot.
+  getDb().prepare('UPDATE ships SET level = 3, points = 500 WHERE character_id = ?').run(c.id);
+  const forge = (key) => {
+    startWork(c.id, { upgradeKey: key });
+    const job = activeJob(shipIdOf(c.id));
+    getShipView(c.id, Date.now() + job.minutes * 10000 + 1000);
+  };
+  forge('gun_second_broad');
+  assert.equal(getShipBonuses(c.id).gunSlots, 2);
+  assert.equal(getShipBonuses(c.id).gunSlots, getShipView(c.id).gunSlots);
+});
+
+test('canLevelUp refuses a hero who has no ship yet', () => {
+  const check = canLevelUp(0, {});
+  assert.equal(check.ok, false);
+  assert.match(check.reason, /купите корабль/);
+});
+
+test('the tree carries the real level-up cost and dock time', () => {
+  const c = hero();
+  putInPort(c.id);
+  buyShip(c.id);
+  const view = getShipView(c.id);
+  assert.equal(view.levelUpCost, levelUpCost(1));
+  assert.equal(view.levelUpMinutes, levelUpMinutes(1));
+  assert.equal(view.levelUpMinutes, minutesForLevelUp(2), 'level 2 is heavy (x2)');
+});
+
+test('a finished job is applied exactly once', () => {
+  const c = hero();
+  putInPort(c.id);
+  buyShip(c.id);
+  awardShipPoints(c.id, 500);
+  startWork(c.id, { upgradeKey: 'hull_planking' });
+  const job = activeJob(shipIdOf(c.id));
+  const future = Date.now() + job.minutes * 10000 + 1000;
+
+  // Two reads at the same due time must not apply the upgrade twice.
+  getShipView(c.id, future);
+  getShipView(c.id, future);
+  const rank = getDb().prepare(
+    'SELECT level FROM ship_upgrades WHERE ship_id = ? AND key = ?',
+  ).get(shipIdOf(c.id), 'hull_planking').level;
+  assert.equal(rank, 1);
+  assert.equal(
+    getDb().prepare("SELECT COUNT(*) AS n FROM ship_works WHERE ship_id = ? AND status = 'done'").get(shipIdOf(c.id)).n,
+    1,
+  );
+});
+
+test('a component deleted between start and completion is re-created, not lost', () => {
+  const c = hero();
+  putInPort(c.id);
+  buyShip(c.id);
+  awardShipPoints(c.id, 500);
+  // A component caps at the ship's level, so allow rank 2 before forging it.
+  getDb().prepare('UPDATE ships SET level = 2 WHERE character_id = ?').run(c.id);
+  startWork(c.id, { upgradeKey: 'hull_planking' });
+  const job = activeJob(shipIdOf(c.id));
+  getShipView(c.id, Date.now() + job.minutes * 10000 + 1000); // rank 1 applied
+  // Start the next level, then delete the row before it lands.
+  startWork(c.id, { upgradeKey: 'hull_planking' });
+  const job2 = activeJob(shipIdOf(c.id));
+  getDb().prepare('DELETE FROM ship_upgrades WHERE ship_id = ? AND key = ?').run(shipIdOf(c.id), 'hull_planking');
+  const view = getShipView(c.id, Date.now() + job2.minutes * 10000 + 1000);
+  assert.equal(view.nodes.find((x) => x.key === 'hull_planking').rank, 2, 're-created at the new level');
+});
+
+test('the header names the home port even when the hero is elsewhere', () => {
+  const c = hero();
+  putInPort(c.id);
+  buyShip(c.id);
+  putInland(c.id);
+  const view = getShipView(c.id);
+  assert.equal(view.atPort, false);
+  assert.equal(view.inPortName, 'Сумеречная гавань', 'the bought-in port is remembered');
 });

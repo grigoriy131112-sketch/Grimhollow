@@ -54,37 +54,40 @@ export default function ShipyardPage() {
   const [busy, setBusy] = useState(false);
   const [hired, setHired] = useState(false);
   const [name, setName] = useState('');
-  const [nowTick, setNowTick] = useState(Date.now());
-  const workRef = useRef(null);
+  const [, setNowTick] = useState(0);
+  // When the current view was fetched, so the dock countdown is measured from it
+  // (not from the page mount, which would undercount after a refetch).
+  const fetchedAtRef = useRef(Date.now());
 
-  const load = () => api.getShip(characterId).then(setView).catch((e) => setError(e.message));
+  const load = () => api.getShip(characterId)
+    .then((v) => { fetchedAtRef.current = Date.now(); setView(v); })
+    .catch((e) => setError(e.message));
   useEffect(() => { load(); }, [characterId]);
 
   // While a job is on the dock, tick every second; when it lands, reload.
   useEffect(() => {
-    workRef.current = view?.work || null;
     if (!view?.work) return undefined;
     const startedAt = Date.now();
     const baseRemaining = view.work.remainingMs;
     const timer = setInterval(() => {
-      const left = baseRemaining - (Date.now() - startedAt);
-      setNowTick(Date.now());
-      if (left <= 0) { clearInterval(timer); load(); }
+      setNowTick((n) => n + 1);
+      if (baseRemaining - (Date.now() - startedAt) <= 0) { clearInterval(timer); load(); }
     }, 1000);
     return () => clearInterval(timer);
   }, [view]);
 
   const run = async (fn) => {
     setBusy(true); setError('');
-    try { setView(await fn()); }
+    try { const v = await fn(); fetchedAtRef.current = Date.now(); setView(v); }
     catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
 
+  // `remainingMs` was measured when this view was fetched; count down from it.
   const remaining = () => {
-    const w = workRef.current;
+    const w = view?.work;
     if (!w) return 0;
-    return Math.max(0, w.remainingMs - (nowTick - (view?.fetchedAt || nowTick)));
+    return Math.max(0, w.remainingMs - (Date.now() - fetchedAtRef.current));
   };
 
   if (error && !view) return <div className="error">{error}</div>;
@@ -158,7 +161,8 @@ export default function ShipyardPage() {
             <>
               <p className="muted">
                 Сначала укрепите все шесть узлов текущего уровня. Стоимость:{' '}
-                ✦ {view.levelUpCost} · время: {Math.round(view.levelUpCost ? view.levelUpCost * 6 : 0)} мин.
+                ✦ {view.levelUpCost} · время: {view.levelUpMinutes} мин
+                {hired ? ' (мастеровые — вдвое быстрее)' : ''}.
               </p>
               {!view.canLevelUp.ok && <p className="upg-reason small">{view.canLevelUp.reason}</p>}
               <div className="row">

@@ -42,6 +42,8 @@ export function minutesForLevel(level, heavy = 1) {
 export function minutesForLevelUp(level) {
   return minutesForLevel(level, 2);
 }
+// Dock time to raise the ship from `shipLevel` to the next level.
+export const levelUpMinutes = (shipLevel) => minutesForLevelUp(Math.min(MAX_SHIP_LEVEL, shipLevel + 1));
 export const levelUpCost = (level) => LEVEL_UP_BASE * level;
 
 const H = (level, key, name, blurb, effect, base = 3, heavy = 1.5) =>
@@ -148,6 +150,7 @@ export function levelComplete(forged = {}, level) {
 }
 
 export function canLevelUp(shipLevel, forged = {}) {
+  if (shipLevel < 1) return { ok: false, reason: 'Сначала купите корабль.' };
   if (shipLevel >= MAX_SHIP_LEVEL) return { ok: false, reason: 'Корабль уже флагман.' };
   if (!levelComplete(forged, shipLevel)) {
     return { ok: false, reason: `Сначала укрепите все шесть узлов уровня ${shipLevel}.` };
@@ -231,7 +234,8 @@ export function buildShipTree({ ship, forged = {}, points = 0, classKeys = [], a
     cap,
     gunSlots: 1 + bonuses.gunSlots,
     price: SHIP_PRICE,
-    levelUpCost: shipLevel < MAX_SHIP_LEVEL ? levelUpCost(shipLevel) : 0,
+    levelUpCost: shipLevel >= 1 && shipLevel < MAX_SHIP_LEVEL ? levelUpCost(shipLevel) : 0,
+    levelUpMinutes: shipLevel >= 1 && shipLevel < MAX_SHIP_LEVEL ? levelUpMinutes(shipLevel) : 0,
     canLevelUp: canLevelUp(shipLevel, forged),
     branches: BRANCHES.map((br) => ({ ...br, nodes: nodes.filter((n) => n.branch === br.key) })),
     nodes,

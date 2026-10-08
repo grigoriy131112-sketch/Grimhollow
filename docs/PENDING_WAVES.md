@@ -22,9 +22,10 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
   style) but **with other shapes**; assemble the **global map ourselves** from
   those images. **Generate the art in the current style** (procedural SVG
   engraving, no rasters).
-- **Ship:** bought in **ports for gold**. **Level 1 only** for now. Separate
-  **upgrade points** for the ship. **Classes exist for both heroes and guns.**
-  The ship **stays in the port after arrival and waits for the hero there**.
+- **Ship:** bought in **ports for gold**. **10 levels** (see the built section
+  below), each unlocking upgrades. Ship **upgrade points** come **only from sea
+  battles** (W-SEA). **Classes exist for both heroes and guns.** The ship
+  **stays in the port after arrival and waits for the hero there**.
 - **Ship combat:** a **separate, pure** system.
 - **Crossing time:** keep as-is (1 in-game hour; `MINUTE_MS = 10_000` ⇒ ~10 min
   real time).
@@ -88,14 +89,15 @@ SFX are short one-shots. Audio credits go in the same `client/public/art/CREDITS
 
 ## Ship upgrade points (W-SHIP) — decided
 
-Upgrade points are earned by:
+> **Superseded (2026-10-08).** The earlier list (+1 per hero level, +1 per sea
+> encounter, +2 per island, +1 per harbour quest) was replaced. Points now come
+> **only from sea battles**: **+5** for a won pirate battle and **6-10** for a
+> won sea-monster battle (scaled by danger). Islands and harbour quests do not
+> pay ship points. See the built section below and `game/ship.js`
+> (`POINTS_PER_PIRATE_WIN`, `POINTS_PER_MONSTER_WIN`).
 
-- **+1 per hero level** (ship grows with its captain);
-- **+1 per cleared sea encounter** (pirates / sea monsters) — a capped trickle;
-- **+2 for discovering a new island** (exploration reward);
-- **+1 for each completed harbour quest** tied to a shipwright.
-
-Spent on: hull HP, cannon damage, extra cannon slots, reload speed, cargo/crew.
+Spent on: hull, guns (damage / reload / slot count) and class guns — 60 upgrades
+over 10 levels, two per branch per level.
 
 ## Classes (W-SHIP / W-SEA) — both kinds
 
