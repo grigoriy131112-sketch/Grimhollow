@@ -22,9 +22,11 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
   style) but **with other shapes**; assemble the **global map ourselves** from
   those images. **Generate the art in the current style** (procedural SVG
   engraving, no rasters).
-- **Ship:** bought in **ports for gold**. **Level 1 only** for now. Separate
-  **upgrade points** for the ship. **Classes exist for both heroes and guns.**
-  The ship **stays in the port after arrival and waits for the hero there**.
+- **Ship:** bought in **ports for gold**. **10 levels** (the earlier "level 1
+  only" is dropped); each level unlocks its own upgrades and **everything
+  from lower levels stays available**. Separate **upgrade points** (sea
+  battles only). **Classes exist for both heroes and guns.** The ship
+  **stays in the port after arrival and waits for the hero there**.
 - **Ship combat:** a **separate, pure** system with two kinds — **pirates**
   (party + guns vs the pirate ship) and **sea monsters** (the ship alone).
 - **Crossing time:** keep as-is (1 in-game hour; `MINUTE_MS = 10_000` ⇒ ~10 min
@@ -49,7 +51,7 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 | **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | not started |
 | **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) + **sea lanes with their voyage time** | `client/src/GlobalMap.jsx`, `client/src/mapProjection.js` | — | **in this PR** |
 | **W-MAP-CONT** | Per-continent map (regions + locations) shown when the hero is on it | `client/src/ContinentMap.jsx` | W-MAP-GLOBAL | **in this PR** |
-| **W-SHIP** | Ship: buy in port for gold, L1, **upgrade tree + timed port shipyard**, classes (heroes & guns), ship waits in port. Points are earned in W-SEA battles, not elsewhere | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
+| **W-SHIP** | Ship: buy in port for gold, **10 levels**, **upgrade tree gated by level + timed port shipyard**, classes (heroes & guns), ship waits in port. Points are earned in W-SEA battles, not elsewhere | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
 | **W-SEA** | Sea crossing: **pirates** (party + guns vs pirate ship) and **sea monsters** (ship alone), non-repeating islands (Fortune), **ship combat**, party talk + papers on board, and the ship **points** that W-SHIP spends | `server/src/game/naval.js`, `services/voyage.js`, `routes/voyage.js`, `client/src/pages/Voyage.jsx` | W-SHIP, W-MAP-GLOBAL | not started |
 
 Order: `W-MENU → W-CODEX/W-SHELL → W-AUDIO → W-MAP-GLOBAL → W-MAP-CONT →
@@ -108,12 +110,51 @@ harbour quest"), which is removed: those no longer grant ship points.
   play, the party is not involved. **6-10 points** per win (scaled by the
   monster's danger, so a bigger beast pays more).
 
-Spent on: hull HP, cannon damage, extra cannon slots, reload speed, cargo/crew.
+Spent at the port shipyard on the components listed under **The ship: 10
+levels** below (hull, cannon damage, extra cannon slots, reload speed,
+range, cargo, crew, sails).
 
-**Upgrades happen only in a port, and cost in-game time.** The shipyard is a
-**timed action** on the same clock as travel/voyage (~10 min real time per
-in-game hour; `MINUTE_MS = 10_000`), not an instant click — while the work runs,
-the party waits at the port. Confirm the per-upgrade time cost.
+### The ship: 10 levels, and what each level unlocks (agent-decided)
+
+The ship has **10 levels**. A level does **not** hand you free upgrades — it
+**unlocks** them. Every component has its own level, and a component can only be
+raised up to the **current ship level**; a new component (or an extra cannon
+slot) only appears at the ship level shown below, and everything unlocked at a
+lower level stays available forever.
+
+| Ship lvl | Unlocks | Component cap |
+|---------:|---------|:-------------:|
+| 1 | Hull, sails, and **1 cannon slot** | 1 |
+| 2 | **Cargo hold** | 1 |
+| 3 | **2nd cannon slot** | 2 |
+| 4 | **Crew** (boarding strength) | 2 |
+| 5 | Reinforced hull | 3 |
+| 6 | **3rd cannon slot** | 3 |
+| 7 | **Reload speed** | 3 |
+| 8 | **4th cannon slot** | 4 |
+| 9 | **Range** | 4 |
+| 10 | **Flagship** (every cap +1) | 5 |
+
+**Points (spent at the shipyard).** A component's level `n` costs `base * n`
+points, the same scale as the party tree — so each further level of a component
+costs more than the last. Bases: hull 3, cannon 3, slots 4, reload 3, range 3,
+cargo 2, crew 2, sails 2. A fully maxed ship costs a lot on purpose; W-SEA tunes
+the income (pirates +5, monsters 6-10) against it.
+
+**Time (the shipyard works on the game clock).** A component's level `n` takes
+`HOURS_BASE * n` **in-game hours** on the dock (`HOURS_BASE = 1`; the heavy
+pieces — hull, slots — use 1.5-2). While the work runs the party waits at the
+port. **Hired dock hands** can do the same job for **gold** in **half the time**.
+Reference: 1 in-game hour ≈ 10 real minutes (`MINUTE_MS = 10_000`), so a
+level-1 piece is ~10 real minutes and a level-5 piece is ~50 real minutes at
+base speed.
+
+Example: raising the hull from 1 to 2 = `3 * 2 = 6` points and `1 * 2 = 2` in-game
+hours (~20 real minutes), or ~10 real minutes with dock hands.
+
+**Upgrades happen only in a port, and cost in-game time** — the timed dock is
+described under **The ship: 10 levels** above (the party waits at the port
+while the work runs; hired dock hands trade gold for half the time).
 
 ## Classes (W-SHIP / W-SEA) — both kinds
 
@@ -188,10 +229,10 @@ This is the **W-CODEX / W-SHELL** work already agreed earlier (see
 2. **Map art** — confirmed: generate procedural SVG in the current engraving
    style. *(W-MAP-GLOBAL)*
 3. **"New game"** — confirmed: routes to the existing hero-creation page. *(W-MENU)*
-4. **Ship upgrade points** — settled: source is **only** sea battles;
-   **+5** per pirate win, **6-10** per sea-monster win (by danger). Still
-   to confirm: the **in-game time cost** of an upgrade at the port.
-   *(W-SHIP / W-SEA)*
+4. **Ship upgrade points & time** — settled: source is **only** sea battles
+   (**+5** pirates, **6-10** monsters); the ship is **10 levels** with a
+   per-level unlock table, and each component level `n` costs `base * n`
+   points and `n` in-game hours on the dock. *(W-SHIP / W-SEA)*
 5. **Papers on the ship** — confirmed: free-form notes + event log + auto lore
    notes. Need the lore "learned" hook (which discoveries set a flag). *(W-SEA)*
 
