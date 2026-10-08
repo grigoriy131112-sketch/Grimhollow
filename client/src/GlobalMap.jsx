@@ -1,14 +1,25 @@
 import { useMemo } from 'react';
 import { WORLD, CONTINENTS, WorldChart, Vignette } from './worldMapArt.jsx';
-import { dangerColor } from './mapInk.js';
+import { dangerColor, wobbleLine, rngFrom, hash } from './mapInk.js';
 
 // The global chart: the whole world as one drawing. The continents are not
 // pasted images — they are the same coastlines the continent maps zoom into
 // (world-geo.json), drawn here in the dark style. We lay the land, then only
-// the names, the ports and the click targets on top.
+// the names, the sea lanes, the ports and the click targets on top.
 
 export default function GlobalMap({ map, onOpen }) {
   const ports = useMemo(() => map.locations.filter((l) => l.isPort), [map]);
+
+  // The sea lanes between the ports, bowed away from the straight line so they
+  // read as voyages over water rather than roads across land.
+  const lanes = useMemo(() => (map.voyages || []).map((v) => {
+    const dx = v.toX - v.fromX; const dy = v.toY - v.fromY;
+    const len = Math.hypot(dx, dy) || 1;
+    const cx = (v.fromX + v.toX) / 2 + (-dy / len) * 46;
+    const cy = (v.fromY + v.toY) / 2 + (dx / len) * 46;
+    const rng = rngFrom(hash(`sea-${v.key}`));
+    return { ...v, cx, cy, d: wobbleLine([[v.fromX, v.fromY], [cx, cy], [v.toX, v.toY]], rng, 12) };
+  }), [map]);
 
   // A port label is drawn to the side with room: if another port sits close on
   // the right, flip the label left so it never covers that port's seal.
@@ -31,6 +42,16 @@ export default function GlobalMap({ map, onOpen }) {
     <div className="global-map-wrap">
       <svg className="world-map global-map" viewBox={`0 0 ${WORLD.w} ${WORLD.h}`} role="img" aria-label="Карта мира Гримхоллоу">
         <WorldChart seaLabels />
+
+        {/* sea lanes: the voyages between ports, drawn over the water with
+            their length in days */}
+        {lanes.map((l) => (
+          <g key={`sea-${l.key}`}>
+            <path d={l.d} fill="none" stroke="#0a0a0d" strokeWidth={4} opacity={0.6} strokeLinecap="round" />
+            <path className="sea-lane" d={l.d} fill="none" />
+            <text x={l.cx} y={l.cy - 6} className="sea-lane-time" textAnchor="middle">{l.days} дн</text>
+          </g>
+        ))}
 
         {/* continent names, and the click target is the land itself */}
         {CONTINENTS.map((c) => (
@@ -65,6 +86,7 @@ export default function GlobalMap({ map, onOpen }) {
       <div className="map-legend">
         <div className="legend-title">Легенда</div>
         <div className="legend-row"><span className="dot" style={{ background: '#8a2020' }} /> порт-переправа</div>
+        <div className="legend-row"><span className="sea-lane-swatch" /> морской путь (в днях)</div>
         <div className="legend-sep" />
         <div className="legend-row legend-credit">
           Старинная гравюра Гримхоула; клик по континенту открывает его карту.

@@ -276,3 +276,23 @@ test('roads on the seeded map take a range of times, not all the minimum', () =>
   assert.ok(minutes.some((m) => m > 15), 'at least one road is longer than the floor');
   assert.ok(minutes.some((m) => m < 50), 'not every road is clamped to the ceiling');
 });
+
+test('the map carries the sea lanes between ports, with their voyage time in days', () => {
+  seedWorld();
+  seedSettlements();
+  seedContinents();
+  const map = getMap();
+  assert.equal(map.voyages.length, 4, 'one lane per port crossing');
+  const byKey = new Map(map.voyages.map((v) => [v.key, v]));
+  for (const v of map.voyages) {
+    assert.ok(v.from && v.to, `${v.key} joins two real places`);
+    assert.ok(Number.isInteger(v.days) && v.days >= 2, `${v.key} takes days, not minutes`);
+    assert.ok(typeof v.gold === 'number', `${v.key} names its fare`);
+    assert.ok(Number.isFinite(v.fromX) && Number.isFinite(v.fromY), `${v.key} has drawable endpoints`);
+    assert.ok(Number.isFinite(v.toX) && Number.isFinite(v.toY), `${v.key} has drawable endpoints`);
+  }
+  const hub = byKey.get('frozen_harbor');
+  assert.equal(hub.fromName, 'Сумеречная гавань');
+  assert.equal(hub.toName, 'Ледяной причал');
+});
+

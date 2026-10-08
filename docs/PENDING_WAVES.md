@@ -45,7 +45,7 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 |------|------|-------------------|------------|--------|
 | **W-MENU** | Start menu hub: Новая игра / Сохранённые игры (continue) / Настройки / Создатели / Лор. Remove save **import**. | `client/src/pages/MainMenu.jsx`, `Creators.jsx`, `Lore.jsx` | — | **PR #13 (in review)** |
 | **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | not started |
-| **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) | `client/src/GlobalMap.jsx`, `client/src/mapProjection.js` | — | **in this PR** |
+| **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) + **sea lanes with their voyage time** | `client/src/GlobalMap.jsx`, `client/src/mapProjection.js` | — | **in this PR** |
 | **W-MAP-CONT** | Per-continent map (regions + locations) shown when the hero is on it | `client/src/ContinentMap.jsx` | W-MAP-GLOBAL | **in this PR** |
 | **W-SHIP** | Ship: buy in port for gold, L1, upgrade points, classes (heroes & guns), ship waits in port | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
 | **W-SEA** | Sea crossing: pirates, non-repeating islands (Fortune), sea monsters, **ship combat**, party talk + papers on board | `server/src/game/naval.js`, `services/voyage.js`, `routes/voyage.js`, `client/src/pages/Voyage.jsx` | W-SHIP, W-MAP-GLOBAL | not started |
@@ -103,6 +103,33 @@ Spent on: hull HP, cannon damage, extra cannon slots, reload speed, cargo/crew.
   each with its own damage/arc/reload profile.
 - **Hero classes**: reuse the existing hero classes; each class mans guns with a
   small bonus (e.g. a warrior reloads slower but hits harder).
+
+## Sea travel on the global map (W-MAP-GLOBAL, done in this PR)
+
+> **User requirement (verbatim):** «Игрок появляется на континенте… и там он может
+> переходить из локации в те, которые соединены дорогой с той, где он находится.
+> Когда он плывёт по миру (сделай в мире пути и время этого пути…) и приплывает
+> на другой континент, то он может из порта переместиться в те локации, которые
+> соединены с портом дорогой.»
+
+What this settled:
+
+- The **global map draws the sea lanes** between the five port gates, each with
+  its **voyage time in days** (from `CROSSINGS`). The lanes come from
+  `GET /api/world/map` as `voyages[]`, not hand-drawn in the client, so the map
+  and the crossing screen read one source.
+- A **crossing now lands the party at the far port** (`startCrossing` calls
+  `recordVisit(characterId, toId)`), and
+  `GET /api/continents/locations/:id/crossings` is wired to a **«Морской путь»**
+  card on the location page with an **«Отплыть»** button. Before this the fare was
+  charged and the sea resolved, but the party was never moved to the destination.
+- From the port the normal **road rules** apply: only places joined by a road to
+  the port can be entered, obeyed by `startTravel` and mirrored on
+  `ContinentMap.jsx`. So "from the port move to locations joined by a road" is the
+  existing road system, not a new one.
+- The separate `W-SEA` wave still owns pirates, non-repeating islands (Fortune),
+  sea monsters, ship combat and the papers; this PR only adds **paths + time** and
+  the arrival-at-the-port move.
 
 ## Open questions
 

@@ -9,7 +9,7 @@ import {
   listContinents, getContinent, listGates, crossingsFor, startCrossing, resolveCrossing,
 } from '../src/services/continents.js';
 import { createCharacter, getCharacter } from '../src/services/characters.js';
-import { getMap, getLocation } from '../src/services/world.js';
+import { getMap, getLocation, recordVisit, characterExploration } from '../src/services/world.js';
 import { grantItem, hasItem } from '../src/services/items.js';
 import {
   CROSSINGS, CROSSING_GATES, MINUTES_PER_DAY, MIN_DAYS, MAX_DAYS,
@@ -284,6 +284,28 @@ test('a party without the fare cannot sail', () => {
     /Не хватает/,
   );
   assert.equal(getCharacter(hero.id).gold, 0, 'no gold is taken from a failed attempt');
+});
+
+
+test('sailing lands the party at the far port', () => {
+  seed();
+  const from = getDb().prepare('SELECT id FROM locations WHERE name = ?').get('Сумеречная гавань');
+  const to = getDb().prepare('SELECT id FROM locations WHERE name = ?').get('Порт Солёного Стекла');
+  const route = routeFor('Сумеречная гавань', 'Порт Солёного Стекла');
+  const hero = createCharacter({ name: `Пассажир ${Math.floor(Math.random() * 1e6)}`, class: 'fighter' });
+  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(route.gold + 10, hero.id);
+  grantItem(hero.id, route.item.key, route.item.qty);
+
+  // Stand at the gate so the map agrees with the crossing.
+  recordVisit(hero.id, from.id);
+
+  const res = startCrossing({ characterId: hero.id, fromId: from.id, toId: to.id });
+  assert.equal(res.arrivedAt, to.id, 'the crossing reports where it landed');
+  // Whether the sea was calm or threw a fight, the hero now stands at the far
+  // port; a battle is seeded there, so the map and the fight both point at it.
+  assert.equal(characterExploration(hero.id).locationId, to.id, 'the party moved to the far port');
+  const map = getMap(hero.id);
+  assert.equal(map.character.locationId, to.id, 'the map places the party at the port');
 });
 
 test('a crossing only runs between two gates', () => {

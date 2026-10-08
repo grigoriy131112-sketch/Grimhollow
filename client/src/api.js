@@ -19,6 +19,11 @@ export const api = {
   getWorld: () => request('GET', '/world'),
   getMap: (characterId) => request('GET', `/world/map${characterId ? `?characterId=${characterId}` : ''}`),
   getContinent: (idOrName) => request('GET', `/continents/${encodeURIComponent(idOrName)}`),
+  getGates: () => request('GET', '/continents/gates'),
+  getCrossings: (locationId, characterId) => request(
+    'GET', `/continents/locations/${locationId}/crossings${characterId ? `?characterId=${characterId}` : ''}`,
+  ),
+  startCrossing: (payload) => request('POST', '/continents/cross', payload),
   visitLocation: (id, characterId) => request('POST', `/world/locations/${id}/visit`, { characterId }),
   getLocation: (id) => request('GET', `/world/locations/${id}`),
   getItems: (characterId) => request('GET', `/world/characters/${characterId}/items`),

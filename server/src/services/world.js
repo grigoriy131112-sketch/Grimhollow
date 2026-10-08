@@ -1,6 +1,6 @@
 import { getDb } from '../db/index.js';
 import { MS_PER_MINUTE, elapsedWalkMs, hasArrived } from '../game/travel.js';
-import { CROSSING_GATES } from '../game/continent_travel.js';
+import { CROSSING_GATES, CROSSINGS } from '../game/continent_travel.js';
 
 // Per-continent tallies, so the atlas shows each land's own numbers instead of
 // one global total. Ports are the places that open a crossing to another land.
@@ -32,6 +32,24 @@ export function getWorld() {
   }));
 }
 
+// The sea lanes the player can sail: each crossing as an edge between two gates
+// with its voyage length in days. Kept here (not in the client) so the world
+// chart and the crossing screen read the same routes.
+function seaLanes(locations) {
+  const byName = new Map(locations.map((l) => [l.name, l]));
+  return CROSSINGS.map((route) => {
+    const from = byName.get(route.from);
+    const to = byName.get(route.to);
+    if (!from || !to) return null;
+    return {
+      key: route.key, from: from.id, to: to.id,
+      fromName: route.from, toName: route.to,
+      days: route.days, gold: route.gold, danger: route.danger,
+      fromX: from.map_x, fromY: from.map_y, toX: to.map_x, toY: to.map_y,
+    };
+  }).filter(Boolean);
+}
+
 // Flat location list with map coordinates, for the interactive map. When a
 // character is given, the map also carries where they stand, which places they
 // have seen, and any road they are currently walking.
@@ -60,6 +78,10 @@ export function getMap(characterId) {
     connections: connections
       .filter((c) => c.from_id < c.to_id)
       .map((c) => ({ from: c.from_id, to: c.to_id, label: c.label, minutes: c.minutes })),
+    // Sea lanes between the port gates. A road is a walk; a lane is a voyage,
+    // so its time is in days, not minutes. Both endpoints are real gates, so
+    // the client can draw them and start a crossing without another lookup.
+    voyages: seaLanes(locations),
   };
   // Each continent carries its own tallies; the atlas shows one land at a time.
   map.continents = map.continents.map((c) => {

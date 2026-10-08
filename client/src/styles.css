@@ -396,6 +396,10 @@ ul.stats span { color: var(--muted); }
 .road { stroke: #b8a978; stroke-width: 1.6; stroke-dasharray: 5 5; opacity: 0.55; }
 .road.hot { stroke: #e7d9ab; stroke-width: 2.4; opacity: 1; }
 .road-time { fill: #a8996f; stroke: #050509; }
+/* Sea lanes read as water, not roads: a cool dashed line over the dark chart. */
+.sea-lane { stroke: #6fa0b8; stroke-width: 1.7; stroke-dasharray: 2 7; stroke-linecap: round; opacity: 0.85; }
+.sea-lane-time { fill: #8fb6c8; stroke: #050509; stroke-width: 3px; font-size: 10px; font-family: 'Cinzel', serif; paint-order: stroke; }
+.sea-lane-swatch { display: inline-block; width: 22px; height: 0; border-top: 2px dashed #6fa0b8; }
 .party-pulse { stroke: #b32a2a; }
 .party-x { stroke: #b32a2a; }
 .cmap-region-name { fill: #b9a97e; stroke: #050509; stroke-width: 4px; }
