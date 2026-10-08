@@ -242,4 +242,10 @@ long detail in the daily logs.
   `main` unchanged. The next wave still needs an explicit `погнали`
   (`docs/PENDING_WAVES.md` order: W-MENU -> W-AUDIO -> W-MAP-GLOBAL/CONT ->
   W-SHIP -> W-SEA).
+- **Ship points (user, 2026-10-08, supersedes the old list):** ship upgrade
+  points come **only from sea battles** — pirates (party + guns vs the pirate
+  ship) and sea monsters (the ship fights **alone**). The old "+1/hero level,
+  +2/island, +1/harbour quest" is dead. Upgrades happen **only in a port and
+  cost in-game time** (a timed shipyard on the travel clock). Recorded in
+  `docs/PENDING_WAVES.md`; nothing built (no `погнали` yet).
 
