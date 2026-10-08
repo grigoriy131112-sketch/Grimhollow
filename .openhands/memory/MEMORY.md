@@ -262,6 +262,24 @@ long detail in the daily logs.
   needs W-MENU in `main` first, since the header it removes lives in PR #13.
 
 
+## main is now up to date (2026-10-08) — W-MAP + W-MENU + W-SHIP merged
+
+- **`main` HEAD `028b078`** contains everything: **#14** (`wave/w-map` -> main,
+  merge-commit `207185f`) and **#15** (`wave/w-ship` -> main, `028b078`). **#13**
+  (`wave/w-menu`) was closed as superseded — it is fully contained in
+  `wave/w-map` (`git merge-base --is-ancestor origin/wave/w-menu origin/main`).
+- **Merge style is merge-commits** (not squash): `git log --merges` shows
+  `Merge G5/G7/G8/...`. Use `merge_method=merge` when merging PRs.
+- Before merging #15 I merged `main` into `wave/w-ship` (commit `0b5fa30`) and
+  resolved 5 conflicts — all **union** conflicts (both sides append to the same
+  spot): `.openhands/memory/{MEMORY,2026-10-08}.md`, `client/src/styles.css`,
+  `docs/PENDING_WAVES.md`, `server/src/index.js`. Both routers
+  (`/api/lore`, `/api/ship`) and both port resolvers survive.
+- **Test baseline on `main`: 312 pass / 0 fail** (was 251 before W-MAP/W-SHIP).
+- Preview: both work-host ports answer 200 (`server/src/ports.js`).
+- **Next wave: W-SEA** (pirates, non-repeating islands/Fortune, sea monsters,
+  ship combat; spends the ship points W-SHIP awards). Then W-CODEX/W-SHELL.
+
 ## W-SHIP (added on `wave/w-ship`, PR #15)
 
 - A hero buys a **ship** in a **port** for gold (ports = `CROSSING_GATES` in
