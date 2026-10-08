@@ -100,6 +100,11 @@ long detail in the daily logs.
 
 ## Gotchas
 
+- **After a sandbox pause/resume, rebuild before chasing a "site error".** A
+  stale `client/dist` was served once the runtime came back (server up, all APIs
+  200, but the client bundle predated HEAD). The fix is `npm run build` then
+  `bash scripts/serve.sh` (idempotent restart). Confirm `client/dist` matches
+  HEAD before hunting a source bug — the SPA can render and still look "broken".
 - `docs/lore/` did not exist before G1; the editor cannot create a file in a
   missing directory ‚Äî `mkdir -p docs/lore` first.
 - `getLocation()` returns DB rows (`map_x`/`map_y`); the travel engine wants
