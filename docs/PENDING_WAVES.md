@@ -25,7 +25,8 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 - **Ship:** bought in **ports for gold**. **Level 1 only** for now. Separate
   **upgrade points** for the ship. **Classes exist for both heroes and guns.**
   The ship **stays in the port after arrival and waits for the hero there**.
-- **Ship combat:** a **separate, pure** system.
+- **Ship combat:** a **separate, pure** system with two kinds — **pirates**
+  (party + guns vs the pirate ship) and **sea monsters** (the ship alone).
 - **Crossing time:** keep as-is (1 in-game hour; `MINUTE_MS = 10_000` ⇒ ~10 min
   real time).
 - **On the ship:** while sailing, the player can **talk with the party** and
@@ -47,8 +48,8 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 | **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | not started |
 | **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) + **sea lanes with their voyage time** | `client/src/GlobalMap.jsx`, `client/src/mapProjection.js` | — | **in this PR** |
 | **W-MAP-CONT** | Per-continent map (regions + locations) shown when the hero is on it | `client/src/ContinentMap.jsx` | W-MAP-GLOBAL | **in this PR** |
-| **W-SHIP** | Ship: buy in port for gold, L1, upgrade points, classes (heroes & guns), ship waits in port | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
-| **W-SEA** | Sea crossing: pirates, non-repeating islands (Fortune), sea monsters, **ship combat**, party talk + papers on board | `server/src/game/naval.js`, `services/voyage.js`, `routes/voyage.js`, `client/src/pages/Voyage.jsx` | W-SHIP, W-MAP-GLOBAL | not started |
+| **W-SHIP** | Ship: buy in port for gold, L1, **upgrade tree + timed port shipyard**, classes (heroes & guns), ship waits in port. Points are earned in W-SEA battles, not elsewhere | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
+| **W-SEA** | Sea crossing: **pirates** (party + guns vs pirate ship) and **sea monsters** (ship alone), non-repeating islands (Fortune), **ship combat**, party talk + papers on board, and the ship **points** that W-SHIP spends | `server/src/game/naval.js`, `services/voyage.js`, `routes/voyage.js`, `client/src/pages/Voyage.jsx` | W-SHIP, W-MAP-GLOBAL | not started |
 
 Order: `W-MENU → W-AUDIO → W-MAP-GLOBAL → W-MAP-CONT → W-SHIP → W-SEA`.
 (`W-MENU` and `W-MAP-GLOBAL` are independent; shared files — `App.jsx`,
@@ -86,16 +87,31 @@ Music tracks are **seamlessly looped** (the engine crossfades and restarts them)
 SFX are short one-shots. Audio credits go in the same `client/public/art/CREDITS.txt`
 (a new "Audio credits" section), not a separate file.
 
-## Ship upgrade points (W-SHIP) — decided
+## Ship upgrade points (W-SHIP) — revised by the user (2026-10-08)
 
-Upgrade points are earned by:
+> **User requirement (verbatim):** «Игрок должен иметь возможность покупать
+> корабль и улучшать его за отдельные очки которые можно получить только при
+> плавоние в сражениях с пиратами (с ними сражается отряд+пушки коробля по
+> кораблю пиратов) и с морскими монрами (с ними сражается только корабль). А
+> также улучшать корабль можно только в портах и это занимает игровое время»
 
-- **+1 per hero level** (ship grows with its captain);
-- **+1 per cleared sea encounter** (pirates / sea monsters) — a capped trickle;
-- **+2 for discovering a new island** (exploration reward);
-- **+1 for each completed harbour quest** tied to a shipwright.
+Ship upgrade points come **only from sea battles** — nothing else. This
+**supersedes** the earlier list ("+1 per hero level / +2 per new island / +1 per
+harbour quest"), which is removed: those no longer grant ship points.
+
+- **Pirates** — a boarding fight: the **party fights the crew** while the ship's
+  **cannons pound the pirate ship**. The party taking the deck clears the
+  encounter; the guns soften the pirate hull.
+- **Sea monsters** — the ship fights **alone**: only the hull and the guns are in
+  play, the party is not involved.
+- Each cleared encounter pays a small, capped number of points (tune in W-SEA).
 
 Spent on: hull HP, cannon damage, extra cannon slots, reload speed, cargo/crew.
+
+**Upgrades happen only in a port, and cost in-game time.** The shipyard is a
+**timed action** on the same clock as travel/voyage (~10 min real time per
+in-game hour; `MINUTE_MS = 10_000`), not an instant click — while the work runs,
+the party waits at the port. Confirm the per-upgrade time cost.
 
 ## Classes (W-SHIP / W-SEA) — both kinds
 
@@ -151,7 +167,9 @@ What this settled:
 2. **Map art** — confirmed: generate procedural SVG in the current engraving
    style. *(W-MAP-GLOBAL)*
 3. **"New game"** — confirmed: routes to the existing hero-creation page. *(W-MENU)*
-4. **Ship upgrade points** — decided above; confirm the numbers. *(W-SHIP)*
+4. **Ship upgrade points** — source fixed above: **only** sea battles
+   (pirates / sea monsters). Confirm the per-win point values and the
+   **in-game time cost** of an upgrade at the port. *(W-SHIP / W-SEA)*
 5. **Papers on the ship** — confirmed: free-form notes + event log + auto lore
    notes. Need the lore "learned" hook (which discoveries set a flag). *(W-SEA)*
 
