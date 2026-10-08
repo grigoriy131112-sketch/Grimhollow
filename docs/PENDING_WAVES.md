@@ -51,7 +51,7 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 | **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | not started |
 | **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) + **sea lanes with their voyage time** | `client/src/GlobalMap.jsx`, `client/src/mapProjection.js` | — | **in this PR** |
 | **W-MAP-CONT** | Per-continent map (regions + locations) shown when the hero is on it | `client/src/ContinentMap.jsx` | W-MAP-GLOBAL | **in this PR** |
-| **W-SHIP** | Ship: buy in port for gold, **10 levels**, **upgrade tree gated by level + timed port shipyard**, classes (heroes & guns), ship waits in port. Points are earned in W-SEA battles, not elsewhere | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
+| **W-SHIP** | Ship: buy in port for gold, **10 levels x 3 branches** (hull / guns / class guns, each level unlocking one of each) + **timed port shipyard**, classes (heroes & guns), ship waits in port. Points are earned in W-SEA battles, not elsewhere | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
 | **W-SEA** | Sea crossing: **pirates** (party + guns vs pirate ship) and **sea monsters** (ship alone), non-repeating islands (Fortune), **ship combat**, party talk + papers on board, and the ship **points** that W-SHIP spends | `server/src/game/naval.js`, `services/voyage.js`, `routes/voyage.js`, `client/src/pages/Voyage.jsx` | W-SHIP, W-MAP-GLOBAL | not started |
 
 Order: `W-MENU → W-CODEX/W-SHELL → W-AUDIO → W-MAP-GLOBAL → W-MAP-CONT →
@@ -110,44 +110,75 @@ harbour quest"), which is removed: those no longer grant ship points.
   play, the party is not involved. **6-10 points** per win (scaled by the
   monster's danger, so a bigger beast pays more).
 
-Spent at the port shipyard on the components listed under **The ship: 10
-levels** below (hull, cannon damage, extra cannon slots, reload speed,
-range, cargo, crew, sails).
+Spent at the port shipyard on the components in the **three branches** below
+(hull pieces, gun pieces, class guns).
 
-### The ship: 10 levels, and what each level unlocks (agent-decided)
+### The ship: 10 levels, three branches (agent-decided)
 
-The ship has **10 levels**. A level does **not** hand you free upgrades — it
-**unlocks** them. Every component has its own level, and a component can only be
-raised up to the **current ship level**; a new component (or an extra cannon
-slot) only appears at the ship level shown below, and everything unlocked at a
-lower level stays available forever.
+The ship has **10 levels**. Each level unlocks **three things at once — one per
+branch**: the **hull** (the ship itself), the **guns** (damage / reload / count),
+and the **class weapons** (special guns only some classes can man, each with its
+own ability). A component is raised up to the **current ship level**; everything
+unlocked earlier stays available forever.
 
-| Ship lvl | Unlocks | Component cap |
-|---------:|---------|:-------------:|
-| 1 | Hull, sails, and **1 cannon slot** | 1 |
-| 2 | **Cargo hold** | 1 |
-| 3 | **2nd cannon slot** | 2 |
-| 4 | **Crew** (boarding strength) | 2 |
-| 5 | Reinforced hull | 3 |
-| 6 | **3rd cannon slot** | 3 |
-| 7 | **Reload speed** | 3 |
-| 8 | **4th cannon slot** | 4 |
-| 9 | **Range** | 4 |
-| 10 | **Flagship** (every cap +1) | 5 |
+**Branch A — Корпус (the ship itself)**
 
-**Points (spent at the shipyard).** A component's level `n` costs `base * n`
-points, the same scale as the party tree — so each further level of a component
-costs more than the last. Bases: hull 3, cannon 3, slots 4, reload 3, range 3,
-cargo 2, crew 2, sails 2. A fully maxed ship costs a lot on purpose; W-SEA tunes
-the income (pirates +5, monsters 6-10) against it.
+| Lvl | Unlocks | Effect |
+|----:|---------|--------|
+| 1 | Обшивка | hull HP |
+| 2 | Паруса | sail speed / evade |
+| 3 | Трюм | cargo for crossings |
+| 4 | Команда | boarding strength |
+| 5 | Укреплённый корпус | +hull, less flooding |
+| 6 | Киль | resist being boarded |
+| 7 | Насосы | recover from flooding |
+| 8 | Руль | escape / disengage |
+| 9 | Таран | ramming on the boarding approach |
+| 10 | Флагман | every hull cap +1 |
+
+**Branch B — Пушки (guns: damage, reload, count)**
+
+| Lvl | Unlocks | Effect |
+|----:|---------|--------|
+| 1 | Заряд | cannon damage |
+| 2 | Перезарядка | reload speed |
+| 3 | Второй борт | 2nd gun slot |
+| 4 | Картечь | anti-crew shot |
+| 5 | Тяжёлые ядра | heavier damage |
+| 6 | Третий борт | 3rd gun slot |
+| 7 | Наводка | accuracy |
+| 8 | Четвёртый борт | 4th gun slot |
+| 9 | Дальность | range (reaches monsters sooner) |
+| 10 | Батарея | every gun cap +1 |
+
+**Branch C — Оружие классов (class guns, each with its own ability)**
+
+A class gun may only be manned by the classes listed. It mounts in a gun slot
+(from branch B); its ability is used in the sea battle. `key` stays Latin.
+
+| Lvl | Gun (`key`) | Classes | Ability |
+|----:|-------------|---------|---------|
+| 1 | Кулеврина `culverin` | ranger, rogue | Прицельный залп — long, precise |
+| 2 | Карронада `carronade` | fighter, barbarian | Бортовой залп — heavy, close |
+| 3 | Мортира `mortar` | wizard, sorcerer | Навесный огонь — area |
+| 4 | Гарпун `harpoon` | ranger, druid | Гарпунный трос — pull / slow a monster |
+| 5 | Мистический жезл `arcane_rod` | wizard, warlock, sorcerer | Разряд — chain damage |
+| 6 | Святая пушка `holy_cannon` | cleric, paladin | Кара — smite the enemy ship |
+| 7 | Певчая мортира `chant_mortar` | bard | Вдохновляющий залп — buff the party |
+| 8 | Костяной требушет `bone_trebuchet` | warlock | Залп костей — fear / debuff crew |
+| 9 | Звериный гарпун `beast_harpoon` | druid, barbarian | Рывок зверя — charge |
+| 10 | Драконий огнемёт `dragon_lance` | any class | Драконье пламя — flagship gun |
+
+**Points.** A component's level `n` costs `base * n` points (the same scale as
+the party tree, so each level costs more). Bases: hull pieces 3, gun pieces 3,
+class guns 5 (the special ones are dearer), slots 4, cargo 2, crew 2, sails 2.
 
 **Time (the shipyard works on the game clock).** A component's level `n` takes
-`HOURS_BASE * n` **in-game hours** on the dock (`HOURS_BASE = 1`; the heavy
-pieces — hull, slots — use 1.5-2). While the work runs the party waits at the
-port. **Hired dock hands** can do the same job for **gold** in **half the time**.
-Reference: 1 in-game hour ≈ 10 real minutes (`MINUTE_MS = 10_000`), so a
-level-1 piece is ~10 real minutes and a level-5 piece is ~50 real minutes at
-base speed.
+`HOURS_BASE * n` **in-game hours** on the dock (`HOURS_BASE = 1`; heavy pieces —
+hull, slots, class guns — use 1.5-2). While the work runs the party waits at the
+port. **Hired dock hands** do the same job for **gold** in **half the time**.
+Reference: 1 in-game hour ≈ 10 real minutes (`MINUTE_MS = 10_000`), so a level-1
+piece is ~10 real minutes and a level-5 piece is ~50 real minutes at base speed.
 
 Example: raising the hull from 1 to 2 = `3 * 2 = 6` points and `1 * 2 = 2` in-game
 hours (~20 real minutes), or ~10 real minutes with dock hands.
@@ -158,10 +189,12 @@ while the work runs; hired dock hands trade gold for half the time).
 
 ## Classes (W-SHIP / W-SEA) — both kinds
 
-- **Weapon classes** (guns): `culverin`, `carronade`, `mortar`, `harpoon` —
-  each with its own damage/arc/reload profile.
-- **Hero classes**: reuse the existing hero classes; each class mans guns with a
-  small bonus (e.g. a warrior reloads slower but hits harder).
+- **Class guns (branch C)** are the "weapon classes": ten guns, one unlocked per
+  ship level, each usable only by the classes listed in the table above and each
+  with its own sea-battle ability (`culverin` … `dragon_lance`).
+- **Hero classes**: reuse the existing 12 hero classes; a gun may only be manned
+  by the classes its row allows, so the party composition decides which guns you
+  can actually fire.
 
 ## Sea travel on the global map (W-MAP-GLOBAL, done in this PR)
 
