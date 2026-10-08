@@ -246,12 +246,14 @@ long detail in the daily logs.
   points come **only from sea battles** — pirates (party + guns vs the pirate
   ship) pay **+5**, sea monsters (the ship fights **alone**) pay **6-10** (by
   danger). The old "+1/hero level, +2/island, +1/harbour quest" is dead.
-  The ship has **10 levels** (the old "level 1 only" is dropped); each level
-  **unlocks** components and everything lower stays available. Upgrades happen
-  **only in a port and cost in-game time** (a timed dock on the travel clock;
-  hired hands trade gold for half the time). Full per-level unlock table and the
-  `base * n` points/time scale are in `docs/PENDING_WAVES.md`; nothing built (no
-  `погнали` yet).
+  The ship has **10 levels**, and each level unlocks **three things at once —
+  one per branch**: **hull** (the ship), **guns** (damage/reload/slot count), and
+  **class guns** (10 special guns, one per level, each mannable only by listed
+  hero classes and each with its own sea ability; `key` stays Latin). Everything
+  lower stays available. Upgrades happen **only in a port and cost in-game time**
+  (a timed dock on the travel clock; hired hands trade gold for half the time).
+  Full tables and the `base * n` points/time scale are in `docs/PENDING_WAVES.md`;
+  nothing built (no `погнали` yet).
 - **Journal in the inventory (user, re-confirmed 2026-10-08):** remove the top
   text nav and add a **journal/«дневник»** to the character's inventory (book
   tab separate from item slots: Лор / Карта мира / Настройки / Создатели). This
