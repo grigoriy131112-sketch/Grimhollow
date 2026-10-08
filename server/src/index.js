@@ -27,6 +27,7 @@ import continentRoutes from './routes/continents.js';
 import questRoutes from './routes/quests.js';
 import campaignRoutes from './routes/campaign.js';
 import clanRoutes from './routes/clan.js';
+import shipRoutes from './routes/ship.js';
 
 export function createApp() {
   const app = express();
@@ -50,6 +51,7 @@ export function createApp() {
   app.use('/api/quests', questRoutes);
   app.use('/api/campaign', campaignRoutes);
   app.use('/api/clan', clanRoutes);
+  app.use('/api/ship', shipRoutes);
 
   // Serve the built SPA when present (production / work-host preview).
   const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');

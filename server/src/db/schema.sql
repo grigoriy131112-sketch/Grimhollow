@@ -437,3 +437,47 @@ CREATE TABLE IF NOT EXISTS clan_catalog (
   sort_order  INTEGER NOT NULL DEFAULT 0,
   UNIQUE (kind, key)
 );
+
+-- The hero's ship (Wave W-SHIP). One ship per character; it is bought in a port
+-- for gold and waits for the hero there. `level` is 1..MAX_SHIP_LEVEL; `points`
+-- are unspent ship upgrade points, earned only in sea battles (W-SEA).
+CREATE TABLE IF NOT EXISTS ships (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  character_id  INTEGER NOT NULL UNIQUE REFERENCES characters(id) ON DELETE CASCADE,
+  name          TEXT NOT NULL DEFAULT 'Корабль',
+  class_key     TEXT NOT NULL DEFAULT 'sloop',
+  level         INTEGER NOT NULL DEFAULT 1,
+  home_port_id  INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+  points        INTEGER NOT NULL DEFAULT 0,
+  bought_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- One forged component of a ship; `key` is a game/ship.js upgrade key and
+-- `level` is how many times it has been raised.
+CREATE TABLE IF NOT EXISTS ship_upgrades (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  ship_id   INTEGER NOT NULL REFERENCES ships(id) ON DELETE CASCADE,
+  key       TEXT NOT NULL,
+  level     INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (ship_id, key)
+);
+
+-- A timed job at the dock: a component level-up or the ship's own level-up.
+-- `state` is the travel-clock shape ({ walkedMs, segmentStart }) as JSON, so the
+-- dock runs on the same real clock as a road; the job lands when it is due.
+CREATE TABLE IF NOT EXISTS ship_works (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  ship_id        INTEGER NOT NULL REFERENCES ships(id) ON DELETE CASCADE,
+  kind           TEXT NOT NULL,                  -- component | level
+  upgrade_key    TEXT,
+  to_level       INTEGER NOT NULL,
+  minutes        INTEGER NOT NULL,
+  hired          INTEGER NOT NULL DEFAULT 0,
+  paid_points    INTEGER NOT NULL DEFAULT 0,
+  paid_gold      INTEGER NOT NULL DEFAULT 0,
+  state          TEXT NOT NULL DEFAULT '{}',
+  status         TEXT NOT NULL DEFAULT 'active', -- active | done
+  started_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);

@@ -8,6 +8,7 @@ import PartyPage from './pages/Party.jsx';
 import RecruitPage from './pages/Recruit.jsx';
 import TravelPage from './pages/Travel.jsx';
 import UpgradesPage from './pages/Upgrades.jsx';
+import ShipyardPage from './pages/Shipyard.jsx';
 import ResurrectionPage from './pages/Resurrection.jsx';
 import SettingsPage from './pages/Settings.jsx';
 import InventoryPage from './pages/Inventory.jsx';
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/world/locations/:id" element={<LocationPage />} />
           <Route path="/travel/:id" element={<TravelPage />} />
           <Route path="/upgrades/:leaderId" element={<UpgradesPage />} />
+          <Route path="/shipyard/:characterId" element={<ShipyardPage />} />
           <Route path="/resurrection/:leaderId" element={<ResurrectionPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/inventory/:id" element={<InventoryPage />} />

@@ -626,3 +626,43 @@ marker and, since Wave 11, shows every place openly.
 - Tests: `server/test/upgrades.test.js` covers the parent chain, the rank cap,
   spending, the roster cap, the win payout and that the bonuses reach a real
   battle's combatants.
+
+## The ship: buy, level and the port shipyard (Wave W-SHIP)
+
+A hero buys a **ship** in a port and raises it there. The whole design is pure
+rules in `server/src/game/ship.js`; the service and tables store it.
+
+- **One ship per hero, bought only in a port for gold** (`SHIP_PRICE`). It stays
+  in the port and waits — the ship never travels with the party. Ports are the
+  `CROSSING_GATES` in `game/continent_travel.js`; the service checks
+  `characters.location_id` against that list, so an inland hero is refused.
+- **10 levels x 3 branches x 2 upgrades = 60.** Each ship level unlocks **six
+  upgrades, two per branch**: **Корпус** (the ship: hull/sails/crew), **Пушки**
+  (damage/reload/slot count) and **Оружие классов** (20 special guns, two per
+  level, each mannable only by the hero classes listed on it and each with its
+  own sea-battle ability). A level must have all six forged before the ship can
+  rise; `canLevelUp` / `levelComplete` enforce this. Keys stay Latin
+  (`hull_planking`, `gun_charge`, `culverin`), names are Russian.
+- **Cost and time grow with the level**: a component's level `n` costs
+  `base * n` points and takes `HOURS_BASE * n` in-game hours, times a per-piece
+  `heavy` factor. `componentCap(shipLevel, forged)` caps a component at the
+  ship's level, and the flagship (`hull_flagship`) and battery (`gun_battery`)
+  each raise every cap by one.
+- **Points come only from sea battles** (W-SEA): `awardShipPoints(characterId, n)`
+  is the hook; the rule is `POINTS_PER_PIRATE_WIN = 5` and
+  `POINTS_PER_MONSTER_WIN = { min: 6, max: 10 }`. No other source.
+- **The dock runs on the real clock, like a road.** A job stores
+  `{ startMs }` in `ship_works.state` and lands when
+  `now - startMs >= minutes * MS_PER_MINUTE` (`MS_PER_MINUTE` from
+  `game/travel.js`); `resolveWork()` applies it on read, so there is no click
+  that moves time. One job at a time. **Hired dock hands** pay gold
+  (`DOCK_HAND_GOLD * level`) to halve the time.
+- **API** `routes/ship.js`: `GET /api/ship/:characterId` (tree + `work`),
+  `POST .../buy`, `POST .../upgrade` (`{ key }` or `{ levelUp: true }`, `hired`),
+  `POST .../points` (W-SEA's payout). UI is `pages/Shipyard.jsx`
+  (`/shipyard/:characterId`), linked from the party strip; it ticks the dock
+  countdown every second and reloads when the job lands.
+- Tables `ships`, `ship_upgrades`, `ship_works` are additive `CREATE TABLE IF
+  NOT EXISTS` in `schema.sql` (no `migrate()` edit needed). W-SEA still owns the
+  sea battles, pirates, monsters and islands; W-SHIP only exposes the ship and
+  the payout rule.

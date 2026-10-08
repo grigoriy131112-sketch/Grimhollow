@@ -490,3 +490,11 @@ ul.stats span { color: var(--muted); }
 .settlement-actions { list-style: none; padding: 0; margin: 0; }
 .settlement-actions li { padding: 0.25rem 0; border-bottom: 1px dashed var(--line); }
 .settlement-actions li:last-child { border-bottom: none; }
+
+/* --- Shipyard (Wave W-SHIP) --- */
+.shipyard { display: flex; flex-direction: column; gap: 0.8rem; }
+.ship-strip { display: flex; flex-wrap: wrap; gap: 0.9rem; align-items: center; }
+.ship-branch { margin-top: 0.6rem; }
+.upg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.6rem; }
+.warn-tag { color: #d8a24a; font-weight: 600; }
+.ship-hire { margin-top: 0.4rem; }

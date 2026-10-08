@@ -47,7 +47,7 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 | **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | not started |
 | **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) | `client/src/GlobalMap.jsx`, art | — | not started |
 | **W-MAP-CONT** | Per-continent map (regions + locations) shown when the hero is on it | `client/src/ContinentMap.jsx` | W-MAP-GLOBAL | not started |
-| **W-SHIP** | Ship: buy in port for gold, L1, upgrade points, classes (heroes & guns), ship waits in port | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
+| **W-SHIP** | Ship: buy in port for gold, **10 levels x 3 branches x 2 upgrades (60)**, **timed port shipyard**, classes (heroes & guns), ship waits in port. Points come only from sea battles (W-SEA) | `server/src/game/ship.js`, `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | **in this PR** (`wave/w-ship`) |
 | **W-SEA** | Sea crossing: pirates, non-repeating islands (Fortune), sea monsters, **ship combat**, party talk + papers on board | `server/src/game/naval.js`, `services/voyage.js`, `routes/voyage.js`, `client/src/pages/Voyage.jsx` | W-SHIP, W-MAP-GLOBAL | not started |
 
 Order: `W-MENU → W-AUDIO → W-MAP-GLOBAL → W-MAP-CONT → W-SHIP → W-SEA`.
@@ -103,6 +103,28 @@ Spent on: hull HP, cannon damage, extra cannon slots, reload speed, cargo/crew.
   each with its own damage/arc/reload profile.
 - **Hero classes**: reuse the existing hero classes; each class mans guns with a
   small bonus (e.g. a warrior reloads slower but hits harder).
+
+## W-SHIP — built in `wave/w-ship`
+
+The ship wave is implemented (the full per-level design lives in the W-MAP
+branch's `docs/PENDING_WAVES.md`, "The ship: 10 levels, three branches"):
+
+- **Buy in a port for gold** (`SHIP_PRICE = 500`); one ship per hero; it stays
+  in the port and waits. `ships` / `ship_upgrades` / `ship_works` tables.
+- **10 levels x 3 branches x 2 upgrades = 60**, unlocked one level at a time
+  (a level opens six; every level needs all six forged before the next). The
+  three branches are **Корпус**, **Пушки** and **Оружие классов** (20 class
+  guns, each mannable only by listed hero classes, each with its own ability).
+- **Points only from sea battles** (`awardShipPoints`): W-SEA pays **+5** for
+  pirates and **6-10** for sea monsters. W-SHIP exposes the hook and the rule.
+- **Upgrades happen only in a port and take in-game time**: the dock runs on the
+  same real clock as a road (`MS_PER_MINUTE`), one job at a time; **hired dock
+  hands** pay gold to halve the time. `GET/POST /api/ship/:characterId`.
+- **UI:** `pages/Shipyard.jsx` (`/shipyard/:characterId`), linked from the party
+  strip; it shows the level, points, the three branches and the dock countdown.
+
+W-SEA still owns the sea battles themselves (pirates, monsters, islands, the
+papers) and calls `awardShipPoints`.
 
 ## Open questions
 

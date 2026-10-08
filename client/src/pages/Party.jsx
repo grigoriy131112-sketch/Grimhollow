@@ -122,6 +122,7 @@ export default function PartyPage() {
         </div>
         <Link className="btn" to={`/party/${leaderId}/recruit`}>Набрать отряд</Link>
         <Link className="btn ghost" to={`/upgrades/${leaderId}`} title="Очки отряда: дерево усилений">✦ Очки отряда{points != null ? `: ${points}` : ''}</Link>
+        <Link className="btn ghost" to={`/shipyard/${leaderId}`} title="Верфь: купить корабль и улучшить его в порту">⛵ Верфь</Link>
         <Link className="btn ghost" to={`/resurrection/${leaderId}`} title="Ритуал воскрешения: вернуть павшего из царства мёртвых">🕯 Ритуал{fallen > 0 ? ` · павших ${fallen}` : ''}</Link>
       </div>
 
