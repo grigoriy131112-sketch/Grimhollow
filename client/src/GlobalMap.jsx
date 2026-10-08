@@ -10,15 +10,16 @@ import { dangerColor, wobbleLine, rngFrom, hash } from './mapInk.js';
 export default function GlobalMap({ map, onOpen }) {
   const ports = useMemo(() => map.locations.filter((l) => l.isPort), [map]);
 
-  // The sea lanes between the ports, bowed away from the straight line so they
-  // read as voyages over water rather than roads across land.
+  // The sea lanes between the ports. The server sends the sailing line itself —
+  // a path bent around the land — so the map draws the water route rather than a
+  // straight line over the coast, and the crossing screen reads the same route.
   const lanes = useMemo(() => (map.voyages || []).map((v) => {
-    const dx = v.toX - v.fromX; const dy = v.toY - v.fromY;
-    const len = Math.hypot(dx, dy) || 1;
-    const cx = (v.fromX + v.toX) / 2 + (-dy / len) * 46;
-    const cy = (v.fromY + v.toY) / 2 + (dx / len) * 46;
+    const pts = v.path && v.path.length >= 2
+      ? v.path
+      : [[v.fromX, v.fromY], [v.toX, v.toY]];
+    const mid = pts[Math.floor(pts.length / 2)];
     const rng = rngFrom(hash(`sea-${v.key}`));
-    return { ...v, cx, cy, d: wobbleLine([[v.fromX, v.fromY], [cx, cy], [v.toX, v.toY]], rng, 12) };
+    return { ...v, midX: mid[0], midY: mid[1], d: wobbleLine(pts, rng, 5) };
   }), [map]);
 
   // A port label is drawn to the side with room: if another port sits close on
@@ -49,7 +50,7 @@ export default function GlobalMap({ map, onOpen }) {
           <g key={`sea-${l.key}`}>
             <path d={l.d} fill="none" stroke="#0a0a0d" strokeWidth={4} opacity={0.6} strokeLinecap="round" />
             <path className="sea-lane" d={l.d} fill="none" />
-            <text x={l.cx} y={l.cy - 6} className="sea-lane-time" textAnchor="middle">{l.days} дн</text>
+            <text x={l.midX} y={l.midY - 6} className="sea-lane-time" textAnchor="middle">{l.days} дн</text>
           </g>
         ))}
 

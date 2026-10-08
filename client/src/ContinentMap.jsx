@@ -152,6 +152,7 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation, o
               <g className="party-marker" transform={`translate(${marker.x},${marker.y})`}>
                 <circle r={12} className={`party-pulse ${marker.paused ? 'paused' : ''}`} />
                 <path d="M-6,-6 L6,6 M6,-6 L-6,6" className="party-x" />
+                <text y={-20} className="party-here-label" textAnchor="middle">Вы здесь</text>
               </g>
             )}
 
@@ -177,13 +178,16 @@ export default function ContinentMap({ map, continent, onBack, onOpenLocation, o
       </div>
 
       <div className="map-detail card">
-        {marker && (
+        {character?.travel && (
           <div className="party-road card">
             <span className="muted small">Отряд в пути</span>
             <div className="actions">
               <button type="button" onClick={onBack}>← К глобальной карте</button>
             </div>
           </div>
+        )}
+        {character && !marker && (
+          <p className="muted small">Отряд сейчас на другом континенте — здесь видна только карта этого края.</p>
         )}
         {!selected && (
           <p className="muted">

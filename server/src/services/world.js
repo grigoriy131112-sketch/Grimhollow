@@ -1,6 +1,7 @@
 import { getDb } from '../db/index.js';
 import { MS_PER_MINUTE, elapsedWalkMs, hasArrived } from '../game/travel.js';
 import { CROSSING_GATES, CROSSINGS } from '../game/continent_travel.js';
+import { seaRoute } from '../game/world_geo.js';
 
 // Per-continent tallies, so the atlas shows each land's own numbers instead of
 // one global total. Ports are the places that open a crossing to another land.
@@ -46,6 +47,8 @@ function seaLanes(locations) {
       fromName: route.from, toName: route.to,
       days: route.days, gold: route.gold, danger: route.danger,
       fromX: from.map_x, fromY: from.map_y, toX: to.map_x, toY: to.map_y,
+      // The sailing line, following open water so it never crosses the land.
+      path: seaRoute([from.map_x, from.map_y], [to.map_x, to.map_y]),
     };
   }).filter(Boolean);
 }

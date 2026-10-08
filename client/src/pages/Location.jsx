@@ -90,6 +90,12 @@ export default function LocationPage() {
   if (error && !location) return <div className="error">{error}</div>;
   if (!location) return <div className="muted center">Загрузка…</div>;
 
+  // Where the party actually stands. Roads lead out of a place, but the party
+  // may only set out from where it is — the server enforces this, and the page
+  // says so instead of offering a journey it will refuse.
+  const hero = characters.find((c) => String(c.id) === heroId) || null;
+  const here = hero ? hero.locationId === Number(id) : false;
+
   return (
     <div>
       <Link to="/world" className="muted">← Карта мира</Link>
@@ -106,6 +112,14 @@ export default function LocationPage() {
       </div>
 
       {error && <div className="error">{error}</div>}
+
+      {hero && (
+        <p className={`muted small ${here ? 'good-tag' : 'warn-tag'}`}>
+          {here
+            ? `${hero.name}: отряд стоит здесь.`
+            : `${hero.name} сейчас в другом месте — из этого места можно только осмотреться, но не выйти.`}
+        </p>
+      )}
 
       {found && (
         <div className="card">
@@ -135,7 +149,8 @@ export default function LocationPage() {
                 </span>
                 <button
                   type="button"
-                  disabled={sailing || (c.affordable ? !c.affordable.ok : false)}
+                  disabled={!here || sailing || (c.affordable ? !c.affordable.ok : false)}
+                  title={here ? '' : 'Отряд не здесь'}
                   onClick={() => sailTo(c)}
                 >
                   Отплыть
@@ -143,6 +158,7 @@ export default function LocationPage() {
               </li>
             ))}
           </ul>
+          {!here && <p className="muted small">Отряд не в этом порту — корабли уходят только оттуда, где он стоит.</p>}
 
           {voyage && (
             <div className="road-arrived">
@@ -207,10 +223,11 @@ export default function LocationPage() {
                   <b>{c.toName}</b>
                   {c.minutes != null && <span className="muted small"> · {c.minutes} мин</span>}
                 </span>
-                <button type="button" onClick={() => travelTo(c.toId)}>В путь</button>
+                <button type="button" disabled={!here} title={here ? '' : 'Отряд не здесь'} onClick={() => travelTo(c.toId)}>В путь</button>
               </li>
             ))}
           </ul>
+          {!here && <p className="muted small">Отряд не здесь — «В путь» станет доступно, когда он вернётся.</p>}
         </div>
 
         <div className="card">

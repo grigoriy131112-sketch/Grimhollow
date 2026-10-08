@@ -296,3 +296,27 @@ test('the map carries the sea lanes between ports, with their voyage time in day
   assert.equal(hub.toName, 'Ледяной причал');
 });
 
+test('a sea lane sails over water, never cutting across the land', () => {
+  seedWorld();
+  seedSettlements();
+  seedContinents();
+  const map = getMap();
+  // '1' in the shared mask is land; the lane must not sample any of it between
+  // its endpoints. Endpoints (the ports) sit on the coast by design, so they are
+  // excluded and only the drawn line between them is checked.
+  const isLand = (x, y) => {
+    const col = Math.min(LAND_MASK_COLS - 1, Math.max(0, Math.floor((x / 1000) * LAND_MASK_COLS)));
+    const row = Math.min(LAND_MASK_ROWS - 1, Math.max(0, Math.floor((y / 640) * LAND_MASK_ROWS)));
+    return LAND_MASK[row][col] === '1';
+  };
+  for (const v of map.voyages) {
+    assert.ok(Array.isArray(v.path) && v.path.length >= 2, `${v.key} ships its sailing line`);
+    assert.deepEqual(v.path[0], [v.fromX, v.fromY], `${v.key} lane starts at its port`);
+    assert.deepEqual(v.path[v.path.length - 1], [v.toX, v.toY], `${v.key} lane ends at its port`);
+    // Check the interior waypoints — they carry the route — not the two ports.
+    for (const [x, y] of v.path.slice(1, -1)) {
+      assert.ok(!isLand(x, y), `${v.key} route point (${x | 0},${y | 0}) is on land`);
+    }
+  }
+});
+

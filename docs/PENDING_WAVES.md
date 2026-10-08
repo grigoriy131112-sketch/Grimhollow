@@ -118,6 +118,13 @@ What this settled:
   its **voyage time in days** (from `CROSSINGS`). The lanes come from
   `GET /api/world/map` as `voyages[]`, not hand-drawn in the client, so the map
   and the crossing screen read one source.
+- **A lane sails over water, it does not cut across the land.** The server bends
+  each lane around the coast: `seaRoute()` in `game/world_geo.js` runs a BFS over
+  the same land/sea grid the plate yields (`world-mask.json`), snaps each port to
+  the nearest sea cell, and simplifies the walk into a handful of waypoints; the
+  `path` is shipped in `voyages[]` and drawn directly. The client's old
+  arc-through-the-land rule is gone. A test samples every interior waypoint and
+  fails if any lands on '1'.
 - A **crossing now lands the party at the far port** (`startCrossing` calls
   `recordVisit(characterId, toId)`), and
   `GET /api/continents/locations/:id/crossings` is wired to a **«Морской путь»**
@@ -127,6 +134,12 @@ What this settled:
   the port can be entered, obeyed by `startTravel` and mirrored on
   `ContinentMap.jsx`. So "from the port move to locations joined by a road" is the
   existing road system, not a new one.
+- **The map and the place page both say where the party actually is.** The
+  continent chart rings the party's spot and labels it «Вы здесь»; the place page
+  marks the current place green and disables **«В путь»** / **«Отплыть»** with a
+  note when the party is elsewhere. The server already refused a journey from a
+  place the party does not stand in (`Отряд не находится здесь`), so this only
+  stops the UI from offering a trip it would reject.
 - The separate `W-SEA` wave still owns pirates, non-repeating islands (Fortune),
   sea monsters, ship combat and the papers; this PR only adds **paths + time** and
   the arrival-at-the-port move.

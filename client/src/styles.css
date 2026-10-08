@@ -266,6 +266,7 @@ ul.stats span { color: var(--muted); }
 .results-block { margin: 0.6rem 0; }
 .dead-tag { color: #e07f7f; font-weight: 600; }
 .good-tag { color: #7fc98a; font-weight: 600; }
+.warn-tag { color: #d8a24a; font-weight: 600; }
 
 
 /* ================= Wave 4: atlas, map, scenes ================= */
@@ -402,6 +403,7 @@ ul.stats span { color: var(--muted); }
 .sea-lane-swatch { display: inline-block; width: 22px; height: 0; border-top: 2px dashed #6fa0b8; }
 .party-pulse { stroke: #b32a2a; }
 .party-x { stroke: #b32a2a; }
+.party-here-label { fill: #e7d9ab; stroke: #050509; stroke-width: 4px; paint-order: stroke; font-size: 11px; font-family: 'Cinzel', serif; }
 .cmap-region-name { fill: #b9a97e; stroke: #050509; stroke-width: 4px; }
 .cmap-port-mark { fill: #b32a2a; stroke: #050509; stroke-width: 1.2; }
 
