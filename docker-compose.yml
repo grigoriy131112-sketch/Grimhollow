@@ -1,7 +1,10 @@
 services:
   grimhollow:
+    # Pulls the image published by .github/workflows/publish.yml, so `docker
+    # compose up` needs no local build and no sandbox. To build from this
+    # checkout instead, run:  docker compose up --build
+    image: ghcr.io/grigoriy131112-sketch/grimhollow:latest
     build: .
-    image: grimhollow:latest
     ports:
       - "${PORT:-3001}:3001"
     environment:

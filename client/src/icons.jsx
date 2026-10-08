@@ -65,6 +65,29 @@ const SCENE_LANDMARKS = {
   sunken_chapel: 'church',
   bone_field: 'dinosaur_bones', // ribs on the plain
   black_spire: 'guarded_tower',
+  // Мордрат additions
+  glass_mire: 'quicksand',
+  widows_wood: 'dead_wood',
+  // Морозная Колыбель
+  glass_shoal: 'sea',
+  quiet_rift: 'cave_entrance',
+  barrow_path: 'tombstone',
+  ice_graveyard: 'graveyard',
+  // Кор-Ашан
+  glassworks: 'ruins',
+  shard_ford: 'desert',
+  stained_well: 'cave_entrance',
+  forgotten_glass: 'castle_ruins',
+  // Вольные Гавани
+  wet_pier: 'harbor',
+  nameless_bay: 'sea',
+  sunken_lighthouse: 'lighthouse',
+  mute_shoal: 'sinking_ship',
+  // Зелёный Предел
+  mangrove_tide: 'reeds',
+  breathing_shore: 'sea',
+  root_pass: 'forest',
+  crown_nest: 'forest',
 };
 const BIOME_LANDMARKS = {
   waste: 'mountains', marsh: 'swamp', forest: 'forest', coast: 'sea', bonefield: 'graveyard',

@@ -13,6 +13,9 @@ export default function LocationPage() {
   const [heroId, setHeroId] = useState('');
   const [npcs, setNpcs] = useState([]);
   const [talking, setTalking] = useState(null);
+  const [crossings, setCrossings] = useState([]);
+  const [voyage, setVoyage] = useState(null);
+  const [sailing, setSailing] = useState(false);
   const [error, setError] = useState('');
   const [found, setFound] = useState(null);
 
@@ -24,6 +27,14 @@ export default function LocationPage() {
       if (list.length) setHeroId(String(list[0].id));
     }).catch(() => {});
   }, [id]);
+
+  // A port gate also opens sea lanes to another continent; load them once a
+  // hero is known, so the fares can say whether the party can pay.
+  useEffect(() => {
+    setVoyage(null);
+    api.getCrossings(Number(id), heroId ? Number(heroId) : undefined)
+      .then(setCrossings).catch(() => setCrossings([]));
+  }, [id, heroId]);
 
   // Standing here marks the place on the map; the drowned chapel yields the
   // key the resurrection ritual needs on the first visit.
@@ -59,8 +70,31 @@ export default function LocationPage() {
     } catch (err) { setError(err.message); }
   };
 
+  // Sail a sea lane to another continent. The voyage is resolved at once (fare,
+  // toll, what the water did) and the hero lands at the far port; a battle on
+  // the water is seeded there, so the fight screen takes over.
+  const sailTo = async (route) => {
+    if (!heroId) return setError('Сначала создайте героя.');
+    setError(''); setSailing(true);
+    try {
+      const res = await api.startCrossing({
+        characterId: Number(heroId), fromId: Number(id), toId: route.toId,
+      });
+      setVoyage(res);
+      setCrossings((prev) => prev.map((c) => (c.key === route.key ? { ...c, affordable: null } : c)));
+      if (res.battleId) navigate(`/battles/${res.battleId}`);
+    } catch (err) { setError(err.message); }
+    finally { setSailing(false); }
+  };
+
   if (error && !location) return <div className="error">{error}</div>;
   if (!location) return <div className="muted center">Загрузка…</div>;
+
+  // Where the party actually stands. Roads lead out of a place, but the party
+  // may only set out from where it is — the server enforces this, and the page
+  // says so instead of offering a journey it will refuse.
+  const hero = characters.find((c) => String(c.id) === heroId) || null;
+  const here = hero ? hero.locationId === Number(id) : false;
 
   return (
     <div>
@@ -79,10 +113,64 @@ export default function LocationPage() {
 
       {error && <div className="error">{error}</div>}
 
+      {hero && (
+        <p className={`muted small ${here ? 'good-tag' : 'warn-tag'}`}>
+          {here
+            ? `${hero.name}: отряд стоит здесь.`
+            : `${hero.name} сейчас в другом месте — из этого места можно только осмотреться, но не выйти.`}
+        </p>
+      )}
+
       {found && (
         <div className="card">
           <p className="good-tag">🔑 Найдено: «{found.name}»</p>
           <p className="muted small">{found.description}</p>
+        </div>
+      )}
+
+      {crossings.length > 0 && (
+        <div className="card">
+          <h2>Морской путь</h2>
+          <p className="muted small">
+            Из этого порта уходят корабли на другой континент. Переход длится дни, стоит золота
+            и иногда — груза; море решает исход само.
+          </p>
+          <ul className="stats">
+            {crossings.map((c) => (
+              <li key={c.key}>
+                <span>
+                  <b>{c.to}</b>
+                  <span className="muted small"> · {c.toContinent} · {c.days} дн · {c.gold} зол.</span>
+                  <div className="muted small">
+                    {c.dangerLabel}
+                    {c.item ? ` · нужен груз: ${c.item.label} ×${c.item.qty}` : ''}
+                    {c.affordable && !c.affordable.ok ? ' · не хватает припасов' : ''}
+                  </div>
+                </span>
+                <button
+                  type="button"
+                  disabled={!here || sailing || (c.affordable ? !c.affordable.ok : false)}
+                  title={here ? '' : 'Отряд не здесь'}
+                  onClick={() => sailTo(c)}
+                >
+                  Отплыть
+                </button>
+              </li>
+            ))}
+          </ul>
+          {!here && <p className="muted small">Отряд не в этом порту — корабли уходят только оттуда, где он стоит.</p>}
+
+          {voyage && (
+            <div className="road-arrived">
+              <p className="muted small">{voyage.crossing.from} → {voyage.crossing.to} · {voyage.crossing.days} дн</p>
+              <p className="road-outcome">{voyage.outcome.text}</p>
+              <div className="actions">
+                <button type="button" onClick={() => navigate(`/world/locations/${voyage.arrivedAt}`)}>
+                  Сойти на берег
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -135,10 +223,11 @@ export default function LocationPage() {
                   <b>{c.toName}</b>
                   {c.minutes != null && <span className="muted small"> · {c.minutes} мин</span>}
                 </span>
-                <button type="button" onClick={() => travelTo(c.toId)}>В путь</button>
+                <button type="button" disabled={!here} title={here ? '' : 'Отряд не здесь'} onClick={() => travelTo(c.toId)}>В путь</button>
               </li>
             ))}
           </ul>
+          {!here && <p className="muted small">Отряд не здесь — «В путь» станет доступно, когда он вернётся.</p>}
         </div>
 
         <div className="card">

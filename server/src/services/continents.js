@@ -8,6 +8,7 @@ import { getDb } from '../db/index.js';
 import { getCharacter } from './characters.js';
 import { takeItem, hasItem } from './items.js';
 import { startBattle } from './battles.js';
+import { recordVisit } from './world.js';
 import {
   CROSSINGS, CROSSING_GATES, routeFor, crossingView, canAfford, resolveCrossing as resolveRules,
 } from '../game/continent_travel.js';
@@ -145,6 +146,16 @@ export function startCrossing({ characterId, fromId, toId, now = Date.now() }) {
   const route = routeFor(from.name, to.name);
   if (!route) throw new Error('Между этими берегами нет пути');
 
+  // The party can only sail from the port it actually stands in, exactly as a
+  // road can only be walked from where the party is. A never-placed hero begins
+  // its voyage at the origin port.
+  const here = getDb().prepare('SELECT location_id FROM characters WHERE id = ?').get(characterId)?.location_id;
+  if (here == null) {
+    recordVisit(characterId, fromId);
+  } else if (here !== fromId) {
+    throw new Error('Отряд не находится здесь');
+  }
+
   const afford = canAfford(route, { gold: character.gold, hasItem: (k, q) => hasItem(characterId, k, q) });
   if (!afford.ok) {
     const short = afford.missing.map((m) => (m.kind === 'gold' ? `${m.need - m.have} золота` : m.label)).join(', ');
@@ -170,10 +181,17 @@ export function startCrossing({ characterId, fromId, toId, now = Date.now() }) {
     applyOutcome(characterId, outcome);
   }
 
+  // The voyage lands the party at the far port, whether or not trouble was met;
+  // a battle fought on the water is seeded at the destination, so the hero is
+  // already standing there. Without this the crossing charged the fare and
+  // resolved the sea but left the party on the old shore.
+  recordVisit(characterId, toId);
+
   return {
     crossing: crossingView(route, { from: from.name, to: to.name }),
     outcome: finalOutcome,
     battleId: battle?.id ?? null,
+    arrivedAt: toId,
     character: getCharacter(characterId),
   };
 }

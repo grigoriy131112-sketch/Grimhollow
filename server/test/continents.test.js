@@ -9,7 +9,7 @@ import {
   listContinents, getContinent, listGates, crossingsFor, startCrossing, resolveCrossing,
 } from '../src/services/continents.js';
 import { createCharacter, getCharacter } from '../src/services/characters.js';
-import { getMap, getLocation } from '../src/services/world.js';
+import { getMap, getLocation, recordVisit, characterExploration } from '../src/services/world.js';
 import { grantItem, hasItem } from '../src/services/items.js';
 import {
   CROSSINGS, CROSSING_GATES, MINUTES_PER_DAY, MIN_DAYS, MAX_DAYS,
@@ -48,7 +48,7 @@ test('the four new continents are seeded beside Мордрат, each with region
     assert.ok(/[А-Яа-яЁё]/.test(c.description), `${name} has a Russian description`);
     assert.ok(c.regions.length >= 2, `${name} has at least two regions`);
     const locations = c.regions.flatMap((r) => r.locations);
-    assert.ok(locations.length >= 3 && locations.length <= 4, `${name} has 3-4 locations`);
+    assert.ok(locations.length >= 4, `${name} has several locations spread across it`);
     for (const l of locations) {
       assert.ok(/[А-Яа-яЁё]/.test(l.name), `${l.name} has a Russian name`);
       assert.ok(/[А-Яа-яЁё]/.test(l.description), `${l.name} has a Russian description`);
@@ -76,16 +76,37 @@ test('every new location sits on the drawn land, not out at sea', () => {
   }
 });
 
-test('existing Мордрат locations are neither renamed nor moved', () => {
+test('every continent\'s places are spread across its land, not clustered', () => {
   seed();
   const map = getMap();
+  for (const continent of listContinents()) {
+    const own = map.locations.filter((l) => l.continentName === continent.name);
+    assert.ok(own.length >= 6, `${continent.name} has enough places to spread out`);
+    const xs = own.map((l) => l.x);
+    const ys = own.map((l) => l.y);
+    const w = Math.max(...xs) - Math.min(...xs);
+    const h = Math.max(...ys) - Math.min(...ys);
+    const [long, short] = w >= h ? [w, h] : [h, w];
+    assert.ok(long >= 40, `${continent.name} places reach across the land (span ${long})`);
+    assert.ok(short >= 15, `${continent.name} places are not strung on one line (span ${short})`);
+  }
+});
+
+test('existing Мордрат locations keep their authored coordinates', () => {
+  seed();
+  const map = getMap();
+  // The world is drawn from the generated plate now
+  // (client/public/art/maps/world-chart.svg), so these are the canonical points
+  // cut onto that plate by tools/place_map_locations.mjs; the land test below
+  // checks them against the same mask, and this guards that re-seeding never
+  // drifts them.
   const anchors = {
-    'Перекрёсток висельников': [470, 300],
-    'Сумеречная гавань': [610, 72],
-    'Затонувшая часовня': [472, 547],
-    'Чёрный шпиль': [315, 405],
-    'Гримхольд': [520, 150],
-    'Соляной Брод': [420, 220],
+    'Перекрёсток висельников': [500, 278],
+    'Сумеречная гавань': [528, 300],
+    'Затонувшая часовня': [484, 348],
+    'Чёрный шпиль': [584, 218],
+    'Гримхольд': [552, 203],
+    'Соляной Брод': [434, 344],
   };
   for (const [name, [x, y]] of Object.entries(anchors)) {
     const l = map.locations.find((m) => m.name === name);
@@ -263,6 +284,50 @@ test('a party without the fare cannot sail', () => {
     /Не хватает/,
   );
   assert.equal(getCharacter(hero.id).gold, 0, 'no gold is taken from a failed attempt');
+});
+
+
+test('sailing lands the party at the far port', () => {
+  seed();
+  const from = getDb().prepare('SELECT id FROM locations WHERE name = ?').get('Сумеречная гавань');
+  const to = getDb().prepare('SELECT id FROM locations WHERE name = ?').get('Порт Солёного Стекла');
+  const route = routeFor('Сумеречная гавань', 'Порт Солёного Стекла');
+  const hero = createCharacter({ name: `Пассажир ${Math.floor(Math.random() * 1e6)}`, class: 'fighter' });
+  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(route.gold + 10, hero.id);
+  grantItem(hero.id, route.item.key, route.item.qty);
+
+  // Stand at the gate so the map agrees with the crossing.
+  recordVisit(hero.id, from.id);
+
+  const res = startCrossing({ characterId: hero.id, fromId: from.id, toId: to.id });
+  assert.equal(res.arrivedAt, to.id, 'the crossing reports where it landed');
+  // Whether the sea was calm or threw a fight, the hero now stands at the far
+  // port; a battle is seeded there, so the map and the fight both point at it.
+  assert.equal(characterExploration(hero.id).locationId, to.id, 'the party moved to the far port');
+  const map = getMap(hero.id);
+  assert.equal(map.character.locationId, to.id, 'the map places the party at the port');
+});
+
+test('a crossing can only be started from the port the party stands in', () => {
+  seed();
+  const hub = getDb().prepare('SELECT id FROM locations WHERE name = ?').get('Сумеречная гавань');
+  const other = getDb().prepare('SELECT id FROM locations WHERE name = ?').get('Ледяной причал');
+  const route = routeFor('Сумеречная гавань', 'Ледяной причал');
+  const hero = createCharacter({ name: `Скиталец ${Math.floor(Math.random() * 1e6)}`, class: 'fighter' });
+  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(route.gold + 10, hero.id);
+  grantItem(hero.id, route.item.key, route.item.qty);
+
+  // The hero stands at the far port, so sailing *from* the hub is refused.
+  recordVisit(hero.id, other.id);
+  assert.throws(
+    () => startCrossing({ characterId: hero.id, fromId: hub.id, toId: other.id }),
+    /не находится здесь/,
+  );
+
+  // Standing at the hub, the voyage is allowed.
+  recordVisit(hero.id, hub.id);
+  const res = startCrossing({ characterId: hero.id, fromId: hub.id, toId: other.id });
+  assert.equal(res.arrivedAt, other.id);
 });
 
 test('a crossing only runs between two gates', () => {

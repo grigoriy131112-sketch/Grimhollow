@@ -28,6 +28,13 @@ const between = (rng, lo, hi) => lo + Math.floor(rng() * (hi - lo + 1));
 export const MIN_TRAVEL = 15;
 export const MAX_TRAVEL = 50;
 
+// How many map pixels a minute of walking covers. The world was redrawn as one
+// compact generated plate, so its places sit roughly a quarter as far apart on
+// the 1000x640 sheet as the old hand-placed points did; the scale shrank with
+// them. Without this, every road's raw time fell under the floor and the whole
+// map read "15 мин".
+export const PX_PER_MINUTE = 2;
+
 // Roads through a marsh or up a mountain are slower than open country. The
 // multipliers are small so a route stays inside the 15–50 band once clamped.
 const TERRAIN_FACTOR = {
@@ -43,7 +50,7 @@ export function travelMinutes({ from, to }) {
   const dist = Math.hypot(from.x - to.x, from.y - to.y);
   const factorOf = (loc) => TERRAIN_FACTOR[loc?.biome] ?? 1;
   const terrain = (factorOf(from) + factorOf(to)) / 2;
-  const raw = (dist / 12.5) * terrain;
+  const raw = (dist / PX_PER_MINUTE) * terrain;
   return Math.max(MIN_TRAVEL, Math.min(MAX_TRAVEL, Math.round(raw)));
 }
 

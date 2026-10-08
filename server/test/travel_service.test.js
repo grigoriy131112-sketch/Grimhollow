@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { getDb, closeDb } from '../src/db/index.js';
 import { seedWorld } from '../src/db/seed.js';
 import { createCharacter, getCharacter } from '../src/services/characters.js';
-import { getMap } from '../src/services/world.js';
+import { getMap, getLocation, recordVisit } from '../src/services/world.js';
 import { startTravel, getTravelView, chooseTravel } from '../src/services/travel.js';
 import { MS_PER_MINUTE } from '../src/game/travel.js';
 
@@ -51,6 +51,53 @@ test('a trip cannot start between places that are not neighbours', () => {
   ) && l.id !== a.id);
   const leader = leaderWith();
   assert.throws(() => startTravel({ characterId: leader.id, fromId: a.id, toId: b.id, now: 0 }), /нет дороги/);
+});
+
+test('a trip can only set out from where the party stands', () => {
+  const { from, to } = dangerousRoad();
+  const map = getMap();
+  const leader = leaderWith();
+  const elsewhere = map.locations.find((l) => l.id !== from.id && l.id !== to.id);
+  recordVisit(leader.id, elsewhere.id); // the party is somewhere else entirely
+  assert.throws(
+    () => startTravel({ characterId: leader.id, fromId: from.id, toId: to.id, now: 0 }),
+    /не находится здесь/,
+    'naming a far place as the origin is refused',
+  );
+  // Walk to the origin, then the very same road opens.
+  recordVisit(leader.id, from.id);
+  const trip = startTravel({ characterId: leader.id, fromId: from.id, toId: to.id, now: 0 });
+  assert.equal(trip.from.id, from.id);
+});
+
+test('arriving at the drowned chapel yields the ritual key', () => {
+  seedWorld();
+  const map = getMap();
+  const chapel = map.locations.find((l) => l.name === 'Затонувшая часовня');
+  const neighbour = map.locations.find((l) => map.connections.some(
+    (c) => (c.from === chapel.id && c.to === l.id) || (c.to === chapel.id && c.from === l.id),
+  ));
+  const leader = leaderWith();
+  recordVisit(leader.id, neighbour.id);
+  const t0 = 9_000;
+  const trip = startTravel({ characterId: leader.id, fromId: neighbour.id, toId: chapel.id, now: t0 });
+  let now = t0;
+  for (let guard = 0; guard < 20; guard += 1) {
+    const view = getTravelView(trip.id, now);
+    if (!view || view.arrived) break;
+    if (view.encounter) {
+      const res = chooseTravel(trip.id, 'ignore', now);
+      now = res.travel.arrived ? now : now + 1;
+      continue;
+    }
+    now += trip.minutes * MS_PER_MINUTE;
+  }
+  const done = getTravelView(trip.id, now);
+  assert.equal(done.arrived, true, 'the party reached the chapel');
+  const key = getDb().prepare(
+    'SELECT qty FROM character_items WHERE character_id = ? AND item_key = ?',
+  ).get(leader.id, 'shepherd_key');
+  assert.ok(key && key.qty >= 1, 'the first arrival grants the key');
 });
 
 test('a character cannot be on two roads at once', () => {

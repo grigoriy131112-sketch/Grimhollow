@@ -92,6 +92,24 @@ its database from `DB_PATH`, so no host-specific code is needed; mount a volume
 at `/data` to keep the world. Prefer Fly (or any host with a real volume) when
 persistence matters — Render's free plan has an ephemeral disk.
 
+`docker compose up` pulls the published GHCR image (no local build, no sandbox);
+use `docker compose up --build` to build from the checkout instead. The image is
+verified end-to-end: built locally, run with a volume, a hero created through the
+API survives a container restart, and the published manifest pulls anonymously on
+both `amd64` and `arm64`.
+
+The `Dockerfile` takes an optional `NODE_BASE` build arg (default
+`node:24-bookworm-slim`) purely so a host whose IP is rate-limited by Docker Hub
+can point the build at a mirror, e.g.
+`docker build --build-arg NODE_BASE=public.ecr.aws/docker/library/node:24-bookworm-slim .`
+— CI and normal deploys need no override.
+
+**Independence is a property of the image, not the sandbox.** The app is
+stateless apart from SQLite on `/data`, has no sandbox-specific code, and needs no
+network (the LLM layer is optional and off by default). A sandbox pause/restart
+cannot take a deployed instance down; it only stops the *developer preview* on
+ports `12000`/`12001`.
+
 ## Game design rules (locked)
 
 - Combat is **diceless**: an ability shows an honest hit % (accuracy vs evasion)
@@ -242,18 +260,57 @@ always the floor: with no model reachable, the template beat answers.
   lives in `server/src/data/` and is gitignored.
 - `server/src/index.js` also serves `client/dist` (SPA fallback) so the whole app
   is reachable from one port in preview.
-- **Preview "Bad Gateway" = nothing is listening on the work-host port** (12000).
-  `scripts/serve.sh` is the fix: it builds if needed and starts the server
+- **Preview "Bad Gateway" = nothing is listening on the work-host port.** The
+  work-host exposes **two** URLs (ports `12000` and `12001`), so the server
+  listens on both: `resolveListenPorts()` (`server/src/ports.js`) returns `PORT`
+  plus `PORT_ALT`, and `PORT_ALT` defaults to `12001` whenever `PORT` is the
+  `12000` preview port (set `PORT_ALT=0` to disable). A busy extra port logs and
+  is skipped, never crashing the primary. `scripts/serve.sh` is the fix: it
+  builds if needed and starts the server
   detached (`setsid nohup`, `--grimhollow` argv marker) on `PORT`, is idempotent,
   and with `--watch` restarts it after a crash. Never leave the server as a child
   of the shell that started it, and never run two copies (the second fails with
   `EADDRINUSE` and pollutes the log).
 - **The preview self-heals.** `scripts/serve.sh` (no args) ensures the server is
   up *and* starts one resident watcher; the watcher polls `/api/health` every 5s
-  and restarts the server within ~5s if it dies. `.openhands/hooks.json` runs that
-  command on `session_start` and `user_prompt_submit`, so a fresh conversation
-  brings the preview back with no manual step. `scripts/serve.sh --stop` stops
+  and restarts the server within ~5s if it dies. `scripts/serve.sh --stop` stops
   both the server and the watcher.
+- **A stale client bundle is its own failure mode, and `serve.sh` now heals it.**
+  `client/dist` is gitignored, so after a sandbox pause/resume the volume can keep
+  an OLD bundle while the server happily serves it: the API answers 200 but the
+  page "falls over" (or looks wrong) because the JS predates HEAD. The build used
+  to run only when `dist/index.html` was *missing*, which a restored volume never
+  is. `serve.sh` now stamps the built bundle with the commit it came from
+  (`client/dist/.build-stamp` = `git rev-parse HEAD:client`) and rebuilds when the
+  stamp no longer matches, the stamp is missing, or a client source is newer than
+  the built index. The watcher checks the same condition each pass, so a bundle
+  that goes stale under a **surviving** server is also rebuilt and restarted.
+- **What this can and cannot fix across a chat reload.** A sandbox pause/resume
+  wipes the resident watcher; nothing in-sandbox survives. The reliable recovery
+  is the hook (`session_start` / `user_prompt_submit`), which restarts the server
+  *and* the watcher on the next conversation event — but hooks are frozen at
+  conversation creation (next bullet), so only conversations created after
+  `.openhands/hooks.json` exists get it. For an already-running conversation that
+  predates the hook, the preview stays down until someone runs
+  `bash scripts/serve.sh --watch` (or sends a message in a hook-enabled
+  conversation). There is no SDK hook at resume time, so "the site never drops on
+  chat reload" cannot be guaranteed from inside the sandbox alone.
+- **Hooks are frozen at conversation creation, not read live.** A conversation
+  captures `.openhands/hooks.json` into `meta.json`'s `hook_config` when it is
+  created; editing the file later never affects an already-running conversation.
+  Verified: the long-lived conversation `ff1ce2f0…` has `"hook_config": null`
+  because it was created *before* `hooks.json` existed, so `session_start`/
+  `user_prompt_submit` never fire there and the preview does not come back after a
+  runtime restart. `user_prompt_submit` only helps conversations created after the
+  hook file exists. To enable hooks for this repo going forward, the hook file must
+  be present when the conversation is created (i.e. committed/loaded at creation
+  time); restarting an existing conversation does not pick it up.
+- **In-session recovery is the watcher, not the hook.** Because the hook does not
+  cover a pre-existing conversation, the resident watcher started by
+  `scripts/serve.sh` is what keeps the preview up: kill the server and it restarts
+  within ~5s (verified: killed PID, both ports answered 200 again). After a
+  *runtime* restart, though, nothing runs the watcher automatically — start it
+  once with `bash scripts/serve.sh` (it is idempotent and returns in ~25ms).
 - **Do not blame the hook matcher.** `"matcher": "*"` on a lifecycle hook *does*
   fire — verified: a `SessionStart` test hook with matcher `"*"` ran and exited 0
   (`HookExecutionEvent` with `success: true`). The real failure is the hook
@@ -276,6 +333,20 @@ always the floor: with no model reachable, the template beat answers.
   does not reap children, so a short-lived `flock` that loses the lock would pile
   up as a zombie. `start_watcher` now skips spawning when a watcher is already
   resident (`pgrep`), with `flock` as the second guard.
+- **A repo move breaks an absolute hook path — that was the real "404 page not
+  found".** This sandbox keeps the checkout at `/workspace/project/Grimhollow`,
+  but `hooks.json` (and the frozen copy in the conversation's `meta.json`) used
+  the older absolute path `/workspace/project/scripts/serve.sh`. The hook then
+  failed every run (`bash: …: No such file or directory` in
+  `/tmp/grimhollow-hook.log`), so the preview never came up on its own and the
+  runtime proxy answered `404 page not found`; only a manual `serve.sh` kept it
+  alive. Two fixes: `serve.sh` now resolves its own location through
+  `readlink -f "${BASH_SOURCE[0]}"` so a symlink still finds the real repo, the
+  hook command uses `"$PWD/scripts/serve.sh"` instead of a hard-coded path, and a
+  compatibility symlink `/workspace/project/scripts → Grimhollow/scripts` rescues
+  already-frozen conversations whose `meta.json` still names the old path. When
+  the port is empty, remember to check `/tmp/grimhollow-hook.log` for the path
+  error before blaming anything else.
 
 ## Party combat (Wave 3C)
 
@@ -389,6 +460,14 @@ Roads are journeys, not teleports. `GET /api/world/map` and
 - **Minutes are derived, never authored.** `game/travel.js#travelMinutes` scales
   the drawn map distance by the average of both endpoints' terrain factors, so a
   longer road always takes longer and a road takes the same time either way.
+
+  The scale is `PX_PER_MINUTE` (2 px per game minute). When the world was
+  redrawn as one compact plate the coordinates shrank about fourfold; the
+  old divisor left every road clamped to the 15-minute floor (every road on
+  the map showed the same minutes). Any future change to the coordinate scale
+  must re-calibrate `PX_PER_MINUTE`; `server/test/world_map.test.js` fails if
+  road times collapse to one value.
+
   `seedWorld()` recomputes them into `connections.minutes` (including on old
   databases, via `backfillTravel`). Changing the map geometry therefore changes
   travel times on the next seed — do not hand-write minutes into `seed.js`.
@@ -463,26 +542,79 @@ marker and, since Wave 11, shows every place openly.
   `progress` from the travel clock; the client places the dot on the same
   quadratic Bézier the roads use (`(a.x+b.x)/2, (a.y+b.y)/2 - 30`). It must match
   the drawn curve or the dot drifts off the road.
-- **The atlas is a genuine antique chart with a vector overlay (Wave 10).**
-  `WorldMap.jsx` no longer draws terrain. The base is a plain 18th-century
-  survey of the island of Boero (Jakob van der Schley / Pieter de Hondt, c. 1753),
-  public domain, served from `client/public/art/maps/isle-antique.jpg` and tiled via an SVG
-  `<pattern id="antiqueMap">`. On top we keep only the game layer: hand-wobbled
-  **roads** (`wobbleLine`) with a pale `HALO` underlay so ink reads over the dark
-  engraving, **inked seals** with the licensed landmark icon, labels and the
-  party cross. Do not reintroduce our own relief, washes or `seaHatch` —
-  they competed with the engraving and muddied it.
+- **The chart is one generated plate now (Wave W-MAP rework).** The world is a
+  single fantasy map generated with Azgaar's Fantasy Map Generator
+  (https://azgaar.github.io/Fantasy-Map-Generator/), `client/public/art/maps/world-chart.svg`,
+  reduced to its coastlines and recoloured to the house style in code by
+  `tools/gen_world_map.mjs`. `client/src/worldMapArt.jsx` (`WorldChart`,
+  `Vignette`) draws the plate once on the global map. **Each continent has its
+  own chart** — `tools/gen_continent_maps.mjs` cuts that continent's island(s)
+  (and their satellite islets) out of the plate into
+  `client/public/art/maps/continent-<slug>.svg`, framed to the same 1000x640
+  sheet but zoomed so the land fills it; nothing else is drawn, so a continent
+  reads clearly under its own seals. The file is recorded as `map` on the
+  continent entry in `client/src/world-geo.json`. So a continent map and the
+  global map share one style and one coastline, but a continent map shows only
+  that continent. Do not reintroduce per-continent base images, framed plates or
+  a second raster; re-run `node tools/gen_continent_maps.mjs` after changing the
+  plate.
+- **A continent chart magnifies the land, so seals go through its frame.**
+  `tools/gen_continent_maps.mjs` scales the continent to fill the 1000x640
+  sheet, so a seal drawn at its raw world `x`/`y` would bunch toward the middle
+  instead of following the coast. The generator records the world->chart frame
+  (`scale`, `tx`, `ty`) on the continent entry in `world-geo.json`, and
+  `ContinentMap.jsx` maps every seal, road and the party dot through
+  `chart = scale * world + (tx, ty)`. The global map (`WorldMap.jsx`) and the
+  `GlobalMap` ports are already in chart space and draw `x`/`y` directly.
+  Re-run `node tools/gen_continent_maps.mjs` after changing the plate so the
+  frames stay current; `server/test/world_map.test.js` checks that every
+  continent has a frame and that its places spread across the chart.
+- **Ports on the global map are clickable gates.** Clicking a port opens its own
+  continent, the same target as clicking the island.
+- **The party can only set out from where it stands, to a neighbouring place.**
+  `startTravel()` in `services/travel.js` refuses a `fromId` the character is not
+  at (`–û—Ç—Ä—è–¥ –Ω–µ –Ω–∞—Ö–æ–¥–∏—Ç—Å—è –∑–¥–µ—Å—å`) and a `fromId`/`toId` pair with no road, so a
+  client cannot name a far origin and teleport. Opening a place is **not**
+  travel: `POST /world/locations/:id/visit` only marks it seen
+  (`recordVisited`), it never moves the party. Only `finish()` (a completed road)
+  calls `recordVisit()`, which sets `characters.location_id` and can yield the
+  drowned chapel's ritual key. `ContinentMap.jsx` mirrors the rule: only the
+  current place and its road-neighbours are openable, the rest are dimmed, and
+  clicking a neighbour sets out for it.
+- **Geometry is one source of truth.** `client/public/art/maps/world-chart.svg`
+  is the picture; the very same pixels are thresholded into
+  `server/test-support/world-mask.json` by `tools/gen_world_map.mjs`, and
+  `server/src/game/world_geo.js` reads that grid to answer `isLand`. So the
+  picture and the "every location stands on land" test can never drift apart.
+  Change the chart only by re-running `node tools/gen_world_map.mjs <source.svg>`;
+  if you move a location onto water, the land test fails immediately.
 - **Locations stand on land, and by theme.** Every `map_x`/`map_y` is chosen to
   sit on the drawn landmass with a few pixels of margin, so no seal floats out
   over the sea. Place by biome: a `coast` port or tide-caves belongs in a bay
   near the water, a `forest` in the wooded interior, a `marsh` in the low wet
-  ground, `bonefield`/`waste` inland. `server/test/world_map.test.js` guards this
-  against the sampled land mask (`server/test-support/land-mask.js`, derived from
-  the Boero engraving): if you move a location onto water or swap the base map,
-  that test fails and the mask must be regenerated.
-- **Edge labels lean inward.** Near the chart border (`x > 860`, `x < 90`,
-  `y < 70`, `y > 580`) `WorldMap.jsx` shifts the label toward the middle and
-  anchors it start/end so it never spills past the map edge.
+  ground,   `bonefield`/`waste` inland. `server/test/world_map.test.js` guards this.
+  When you re-place a location, regenerate the mask and run `npm test`.
+- **Re-placing a broken layout.** `tools/place_map_locations.mjs` rewrites the
+  seed `x`/`y` in place: it keeps every authored point that already sits on its
+  own continent's land (and, for ports, on its shore), and moves only the ones
+  that fell in the sea or on the wrong island — to the nearest valid cell of the
+  named continent. Ports are the `CROSSING_GATES` in
+  `server/src/game/continent_travel.js`. A running DB keeps the old points until
+  you apply them: `DB_PATH=server/src/data/grimhollow.sqlite node
+  tools/apply_coords.mjs` then restart (or `bash scripts/serve.sh`), and
+  `backfillTravel()` re-times every road. Run `npm test` afterwards.
+- **Seeds are additive, so a live DB gains later places.** `seedWorld()` and
+  `seedContinents()` skip wholly-seeded databases, and each backfills what is
+  missing rather than reseeding: `backfillLocations()` inserts –ú–æ—Ä–¥—Ä–∞—Ç places and
+  their roads by name, `seedContinents()` inserts any new locations/roads into an
+  already-seeded continent. So a wave can spread a continent out (add places,
+  move coords, add roads) and a restart of `serve.sh` picks it up with no
+  destructive reseed; never `rm` the DB to make a change land. Each continent
+  keeps its places spread across its land — `server/test/continents.test.js`
+  guards the span so they cannot cluster again.
+- **Edge labels lean inward.** Near the chart border (`x > 900`, `x < 100`,
+  `y < 60`, `y > 590`) the map components shift the label toward the middle and
+  anchor it start/end so it never spills past the map edge.
 - **Places are inked seals with a drawn pictogram** — actually now the licensed
   icon inside the seal (re-skinned through `SCENE_LANDMARKS` in `icons.jsx`:
   `hollow` → `quicksand`, `bone_field` → `dinosaur_bones`, `sunken_chapel` →
@@ -491,12 +623,42 @@ marker and, since Wave 11, shows every place openly.
 - **The party is an inked cross** (`.party-x`), pulsing while it walks. Keep the
   chart calm: no scattered icons or "stamps" — an earlier attempt read as visual
   noise.
-- **All of it stays vector — with two deliberate raster exceptions.** The map and
-  icons are vector; the paper is a **CC0** texture (`textures/parchment.jpg`) and
-  the base map is the **public-domain** Boero engraving above. Both are
-  credited in `client/public/art/CREDITS.txt`. If you add art, keep it CC BY 3.0
-  SVG from game-icons.net and credit the `<author>/<icon>` pair; do not add
-  further rasters.
+- **All of it stays vector — with one deliberate raster exception.** The icons
+  are vector; the world chart is the one generated SVG plate
+  (`maps/world-chart.svg`, coastlines from Azgaar's generator recoloured in
+  code), and the paper behind the older atlas chrome is a **CC0** texture
+  (`textures/parchment.jpg`). Icons are CC BY 3.0 SVG from game-icons.net; credit
+  the `<author>/<icon>` pair. Do not add any other rasters to the map.
+- **One drawing, three views (Wave W-MAP rework).** `GlobalMap.jsx` shows the
+  whole world (the five lands, the named seas, the ports) and is the entry point
+  to a continent; `ContinentMap.jsx` zooms the same chart to one continent's
+  `rect`; `WorldMap.jsx` (the "–ê—Ç–ª–∞—Å" tab) shows the whole world with every place
+  inked on it. All three import `WorldChart`/`Vignette` from
+  `client/src/worldMapArt.jsx` and the continent rects from `world-geo.json`, so
+  they can never disagree about the coast. Continent art is keyed by name in that
+  file (`CONTINENTS`), not by an image map — there is no `continentArt.js`.
+- **The global map draws the sea lanes over water, and a crossing lands you at
+  the port.** `GET /api/world/map` carries `voyages[]` — one entry per `CROSSINGS`
+  route, built by `seaLanes()` in `services/world.js` (gate coords + `days` + fare
+  + danger + a `path`). The `path` comes from `seaRoute()` in `game/world_geo.js`,
+  which walks the land/sea grid (`world-mask.json`) from the nearest sea cell of
+  one port to the other and simplifies it, so **a lane bends around the coast
+  instead of cutting across the land**; `GlobalMap.jsx` draws that path and labels
+  it in **days** (a road is minutes). Do not draw a straight or bowed-over-land
+  line in the client. Sailing resolves at once in
+  `services/continents.js#startCrossing`, which **calls `recordVisit(characterId,
+  toId)`** so the party actually reaches the far port — without it the fare was
+  charged but the hero stayed on the old shore. The location page shows a
+  **«Морской путь»** card (`GET /api/continents/locations/:id/crossings`, with
+  `affordable`) and an «Отплыть» button; from the port the normal road rules
+  apply. **Do not author voyage times in the client** — they come from `CROSSINGS`.
+- **The map and the place page say where the party really is, and only offer
+  moves it can make.** The continent chart rings and labels the party's spot
+  («Вы здесь»); the place page shows the hero's position and **disables «В путь» /
+  «Отплыть»** when the party is not there (the server already rejects such a trip
+  with `Отряд не находится здесь`). A journey always starts from
+  `characters.location_id`, so a page for a place the party does not stand in must
+  never look like a departure point.
 - **The list view mirrors the map.** `pages/World.jsx` also lists every place
   openly, so the two tabs never disagree.
 
