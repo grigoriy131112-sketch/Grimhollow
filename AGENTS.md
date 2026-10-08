@@ -257,6 +257,26 @@ always the floor: with no model reachable, the template beat answers.
   up *and* starts one resident watcher; the watcher polls `/api/health` every 5s
   and restarts the server within ~5s if it dies. `scripts/serve.sh --stop` stops
   both the server and the watcher.
+- **A stale client bundle is its own failure mode, and `serve.sh` now heals it.**
+  `client/dist` is gitignored, so after a sandbox pause/resume the volume can keep
+  an OLD bundle while the server happily serves it: the API answers 200 but the
+  page "falls over" (or looks wrong) because the JS predates HEAD. The build used
+  to run only when `dist/index.html` was *missing*, which a restored volume never
+  is. `serve.sh` now stamps the built bundle with the commit it came from
+  (`client/dist/.build-stamp` = `git rev-parse HEAD:client`) and rebuilds when the
+  stamp no longer matches, the stamp is missing, or a client source is newer than
+  the built index. The watcher checks the same condition each pass, so a bundle
+  that goes stale under a **surviving** server is also rebuilt and restarted.
+- **What this can and cannot fix across a chat reload.** A sandbox pause/resume
+  wipes the resident watcher; nothing in-sandbox survives. The reliable recovery
+  is the hook (`session_start` / `user_prompt_submit`), which restarts the server
+  *and* the watcher on the next conversation event — but hooks are frozen at
+  conversation creation (next bullet), so only conversations created after
+  `.openhands/hooks.json` exists get it. For an already-running conversation that
+  predates the hook, the preview stays down until someone runs
+  `bash scripts/serve.sh --watch` (or sends a message in a hook-enabled
+  conversation). There is no SDK hook at resume time, so "the site never drops on
+  chat reload" cannot be guaranteed from inside the sandbox alone.
 - **Hooks are frozen at conversation creation, not read live.** A conversation
   captures `.openhands/hooks.json` into `meta.json`'s `hook_config` when it is
   created; editing the file later never affects an already-running conversation.

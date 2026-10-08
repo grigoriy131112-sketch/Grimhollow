@@ -101,10 +101,17 @@ long detail in the daily logs.
 ## Gotchas
 
 - **After a sandbox pause/resume, rebuild before chasing a "site error".** A
-  stale `client/dist` was served once the runtime came back (server up, all APIs
-  200, but the client bundle predated HEAD). The fix is `npm run build` then
-  `bash scripts/serve.sh` (idempotent restart). Confirm `client/dist` matches
-  HEAD before hunting a source bug — the SPA can render and still look "broken".
+  stale `client/dist` (gitignored) is served once the runtime comes back: server
+  up, all APIs 200, but the client bundle predates HEAD and the page "falls over".
+  `scripts/serve.sh` now stamps the bundle (`client/dist/.build-stamp` =
+  `git rev-parse HEAD:client`) and rebuilds when it is stale/missing/older than a
+  client source — both in `ensure()` and in the resident `--watch` loop. Manual
+  remedy is still `npm run build` then `bash scripts/serve.sh`.
+- **A chat reload cannot be made fully drop-proof from inside the sandbox.** A
+  pause/resume wipes the resident watcher; the only auto-recovery is the
+  `session_start`/`user_prompt_submit` hook, which is frozen at conversation
+  creation and does not fire for conversations older than `.openhands/hooks.json`
+  (no SDK resume hook exists). See AGENTS.md for the honest limits.
 - `docs/lore/` did not exist before G1; the editor cannot create a file in a
   missing directory ‚Äî `mkdir -p docs/lore` first.
 - `getLocation()` returns DB rows (`map_x`/`map_y`); the travel engine wants
