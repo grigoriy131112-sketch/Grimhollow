@@ -308,6 +308,28 @@ test('sailing lands the party at the far port', () => {
   assert.equal(map.character.locationId, to.id, 'the map places the party at the port');
 });
 
+test('a crossing can only be started from the port the party stands in', () => {
+  seed();
+  const hub = getDb().prepare('SELECT id FROM locations WHERE name = ?').get('Сумеречная гавань');
+  const other = getDb().prepare('SELECT id FROM locations WHERE name = ?').get('Ледяной причал');
+  const route = routeFor('Сумеречная гавань', 'Ледяной причал');
+  const hero = createCharacter({ name: `Скиталец ${Math.floor(Math.random() * 1e6)}`, class: 'fighter' });
+  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(route.gold + 10, hero.id);
+  grantItem(hero.id, route.item.key, route.item.qty);
+
+  // The hero stands at the far port, so sailing *from* the hub is refused.
+  recordVisit(hero.id, other.id);
+  assert.throws(
+    () => startCrossing({ characterId: hero.id, fromId: hub.id, toId: other.id }),
+    /не находится здесь/,
+  );
+
+  // Standing at the hub, the voyage is allowed.
+  recordVisit(hero.id, hub.id);
+  const res = startCrossing({ characterId: hero.id, fromId: hub.id, toId: other.id });
+  assert.equal(res.arrivedAt, other.id);
+});
+
 test('a crossing only runs between two gates', () => {
   seed();
   const hub = getDb().prepare('SELECT id FROM locations WHERE name = ?').get('Сумеречная гавань');
