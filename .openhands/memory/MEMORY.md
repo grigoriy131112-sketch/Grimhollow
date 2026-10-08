@@ -66,7 +66,7 @@ long detail in the daily logs.
   for conversations created before `.openhands/hooks.json` existed — hooks are
   captured at creation and never re-read. The resident watcher, not the hook, is
   what keeps the preview up in-session.
-- **Test baseline on 2026-10-08 is 287 pass / 0 fail** (Node 24.21) — older
+- **Test baseline on 2026-10-08 is 291 pass / 0 fail** (Node 24.21) — older
   numbers (186/227/251/267) are stale. See the Workflow note below: trust the run.
 
 ## Workflow
@@ -77,7 +77,7 @@ long detail in the daily logs.
   `server/src/db/schema.sql`, `game/dialogue.js`).
 - Tests run serially (`--test-concurrency=1`) because they share one SQLite file.
   The live count moves with every wave — always trust the run, not this file
-  (historical: 186 → 227 → 251 → 267 → 287; 287 on `wave/w-map`, 2026-10-08).
+  (historical: 186 → 227 → 251 → 267 → 287 → 291; 291 on `wave/w-map`, 2026-10-08).
 - **`npm install` is needed before the server will boot** in a fresh sandbox ‚Äî
   otherwise `node server/src/index.js` dies with `ERR_MODULE_NOT_FOUND: express`.
 - Git identity is preconfigured as `openhands` / `openhands@all-hands.dev`.
@@ -213,12 +213,15 @@ long detail in the daily logs.
 - **Preview hardening:** `server/src/ports.js` serves both work-host ports
   (`PORT` + `PORT_ALT`, default 12001 when PORT=12000); `index.js` binds both, a
   busy extra port is skipped. Branch also merges `wave/w-menu`.
-- Test baseline on this branch, Node 24.21: **290 pass / 0 fail** (was 251 before
+- Test baseline on this branch, Node 24.21: **291 pass / 0 fail** (was 251 before
   W-MAP/w-menu work; sea travel + origin gate added 3).
 - **Sea travel (added 2026-10-08 on `wave/w-map`):** the global map draws the
   `CROSSINGS` lanes (from `seaLanes()` in `services/world.js`, exposed as
-  `GET /api/world/map` -> `voyages[]`, time in **days**); `GlobalMap.jsx` bows
-  each lane with `wobbleLine`/`rngFrom`. `services/continents.js#startCrossing`
+  `GET /api/world/map` -> `voyages[]`, time in **days**). **A lane sails over
+  water:** `seaRoute()` in `game/world_geo.js` BFS-walks the land/sea grid
+  (`world-mask.json`) from the nearest sea cell of one port to the other and
+  ships the simplified `path`; `GlobalMap.jsx` draws that path (no arc-through-
+  land). `services/continents.js#startCrossing`
   now **`recordVisit(characterId, toId)`** so a cross lands the party at the far
   port (before, the fare was charged but the party stayed put), and it **refuses
   an origin the party is not standing in** (`Отряд не находится здесь`), like
