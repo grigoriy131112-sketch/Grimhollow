@@ -8,7 +8,7 @@
 # Port comes from PORT (default 12000, the work-host preview port).
 set -u
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 PORT="${PORT:-12000}"
 LOGFILE="${LOGFILE:-/tmp/grimhollow.log}"
 WATCHLOG="${WATCHLOG:-/tmp/grimhollow-watch.log}"
