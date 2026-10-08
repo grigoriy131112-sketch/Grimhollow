@@ -92,6 +92,24 @@ its database from `DB_PATH`, so no host-specific code is needed; mount a volume
 at `/data` to keep the world. Prefer Fly (or any host with a real volume) when
 persistence matters — Render's free plan has an ephemeral disk.
 
+`docker compose up` pulls the published GHCR image (no local build, no sandbox);
+use `docker compose up --build` to build from the checkout instead. The image is
+verified end-to-end: built locally, run with a volume, a hero created through the
+API survives a container restart, and the published manifest pulls anonymously on
+both `amd64` and `arm64`.
+
+The `Dockerfile` takes an optional `NODE_BASE` build arg (default
+`node:24-bookworm-slim`) purely so a host whose IP is rate-limited by Docker Hub
+can point the build at a mirror, e.g.
+`docker build --build-arg NODE_BASE=public.ecr.aws/docker/library/node:24-bookworm-slim .`
+— CI and normal deploys need no override.
+
+**Independence is a property of the image, not the sandbox.** The app is
+stateless apart from SQLite on `/data`, has no sandbox-specific code, and needs no
+network (the LLM layer is optional and off by default). A sandbox pause/restart
+cannot take a deployed instance down; it only stops the *developer preview* on
+ports `12000`/`12001`.
+
 ## Game design rules (locked)
 
 - Combat is **diceless**: an ability shows an honest hit % (accuracy vs evasion)
