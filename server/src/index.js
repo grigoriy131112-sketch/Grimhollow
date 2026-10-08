@@ -28,6 +28,8 @@ import questRoutes from './routes/quests.js';
 import campaignRoutes from './routes/campaign.js';
 import clanRoutes from './routes/clan.js';
 import shipRoutes from './routes/ship.js';
+import loreRoutes from './routes/lore.js';
+import { resolveListenPorts } from './ports.js';
 
 export function createApp() {
   const app = express();
@@ -52,6 +54,7 @@ export function createApp() {
   app.use('/api/campaign', campaignRoutes);
   app.use('/api/clan', clanRoutes);
   app.use('/api/ship', shipRoutes);
+  app.use('/api/lore', loreRoutes);
 
   // Serve the built SPA when present (production / work-host preview).
   const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
@@ -78,6 +81,13 @@ if (isMain) {
   seedMonstersExtra();
   seedQuests();
   seedClan();
-  const port = Number(process.env.PORT || 3001);
-  createApp().listen(port, () => console.log(`Grimhollow server listening on http://localhost:${port}`));
+  const app = createApp();
+  // Listen on every advertised port so both work-host preview URLs answer on the
+  // same app (see resolveListenPorts).
+  const ports = resolveListenPorts();
+  for (const port of ports) {
+    const server = app.listen(port, () => console.log(`Grimhollow server listening on http://localhost:${port}`));
+    // A busy extra port must never take the primary down with an unhandled error.
+    server.on('error', (err) => console.error(`Grimhollow could not listen on :${port} — ${err.message}`));
+  }
 }

@@ -1,5 +1,22 @@
 import { getDb } from '../db/index.js';
 import { MS_PER_MINUTE, elapsedWalkMs, hasArrived } from '../game/travel.js';
+import { CROSSING_GATES, CROSSINGS } from '../game/continent_travel.js';
+import { seaRoute } from '../game/world_geo.js';
+
+// Per-continent tallies, so the atlas shows each land's own numbers instead of
+// one global total. Ports are the places that open a crossing to another land.
+// Reads the camelCase shape of map.locations, not the raw DB rows.
+function statsOf(locs) {
+  const byDanger = [1, 2, 3, 4, 5].map((d) => locs.filter((l) => l.danger === d).length);
+  return {
+    locations: locs.length,
+    regions: new Set(locs.map((l) => l.regionId)).size,
+    safe: locs.filter((l) => l.isSafe).length,
+    ports: locs.filter((l) => l.isPort).length,
+    monsters: locs.reduce((sum, l) => sum + (l.monsterCount || 0), 0),
+    byDanger,
+  };
+}
 
 export function getWorld() {
   const db = getDb();
@@ -14,6 +31,26 @@ export function getWorld() {
       locations: locations.filter((l) => l.region_id === r.id).map((l) => ({ ...l, is_safe: !!l.is_safe })),
     })),
   }));
+}
+
+// The sea lanes the player can sail: each crossing as an edge between two gates
+// with its voyage length in days. Kept here (not in the client) so the world
+// chart and the crossing screen read the same routes.
+function seaLanes(locations) {
+  const byName = new Map(locations.map((l) => [l.name, l]));
+  return CROSSINGS.map((route) => {
+    const from = byName.get(route.from);
+    const to = byName.get(route.to);
+    if (!from || !to) return null;
+    return {
+      key: route.key, from: from.id, to: to.id,
+      fromName: route.from, toName: route.to,
+      days: route.days, gold: route.gold, danger: route.danger,
+      fromX: from.map_x, fromY: from.map_y, toX: to.map_x, toY: to.map_y,
+      // The sailing line, following open water so it never crosses the land.
+      path: seaRoute([from.map_x, from.map_y], [to.map_x, to.map_y]),
+    };
+  }).filter(Boolean);
 }
 
 // Flat location list with map coordinates, for the interactive map. When a
@@ -34,7 +71,8 @@ export function getMap(characterId) {
       const continent = region ? continents.find((c) => c.id === region.continent_id) : null;
       return {
         id: l.id, name: l.name, description: l.description, danger: l.danger,
-        isSafe: !!l.is_safe, x: l.map_x, y: l.map_y, scene: l.scene, biome: l.biome,
+        isSafe: !!l.is_safe, isPort: CROSSING_GATES.includes(l.name),
+        x: l.map_x, y: l.map_y, scene: l.scene, biome: l.biome,
         regionId: l.region_id, regionName: region?.name, continentName: continent?.name,
         monsterCount: counts.get(l.id) || 0,
       };
@@ -43,7 +81,18 @@ export function getMap(characterId) {
     connections: connections
       .filter((c) => c.from_id < c.to_id)
       .map((c) => ({ from: c.from_id, to: c.to_id, label: c.label, minutes: c.minutes })),
+    // Sea lanes between the port gates. A road is a walk; a lane is a voyage,
+    // so its time is in days, not minutes. Both endpoints are real gates, so
+    // the client can draw them and start a crossing without another lookup.
+    voyages: seaLanes(locations),
   };
+  // Each continent carries its own tallies; the atlas shows one land at a time.
+  map.continents = map.continents.map((c) => {
+    const own = map.locations.filter((l) => l.continentName === c.name);
+    return { ...c, stats: statsOf(own) };
+  });
+  // The global totals use the same shape, so the atlas can swap scopes freely.
+  map.stats = { continents: continents.length, ...statsOf(map.locations) };
   if (characterId) map.character = characterExploration(characterId);
   return map;
 }
@@ -85,10 +134,18 @@ export function characterExploration(characterId) {
 
 // The party has stood here: remember it for the fog of war and mark the spot.
 // Returns whether this was the first time, so callers can hand out a discovery.
+// This also moves the party: use it when the party really arrives somewhere.
 export function recordVisit(characterId, locationId) {
   const db = getDb();
   db.prepare('UPDATE characters SET location_id = ? WHERE id = ?').run(locationId, characterId);
-  const info = db.prepare('INSERT OR IGNORE INTO character_visits (character_id, location_id) VALUES (?, ?)')
+  return recordVisited(characterId, locationId);
+}
+
+// Remember a place the party has seen without moving it there. Opening a place
+// to read about it must never teleport the party, so the client's visit route
+// uses this and only walking a road calls recordVisit.
+export function recordVisited(characterId, locationId) {
+  const info = getDb().prepare('INSERT OR IGNORE INTO character_visits (character_id, location_id) VALUES (?, ?)')
     .run(characterId, locationId);
   return { firstVisit: info.changes > 0 };
 }

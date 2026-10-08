@@ -1,6 +1,11 @@
 # Grimhollow — one image that runs the whole game.
 # Node 24 is required: the server uses the built-in `node:sqlite` module.
-FROM node:24-bookworm-slim AS build
+#
+# NODE_BASE overrides the base image so a mirror can be used (e.g. in a sandbox
+# whose IP is rate-limited by Docker Hub):
+#   docker build --build-arg NODE_BASE=public.ecr.aws/docker/library/node:24-bookworm-slim .
+ARG NODE_BASE=node:24-bookworm-slim
+FROM ${NODE_BASE} AS build
 WORKDIR /app
 
 # Install with the workspace manifests first so layers cache on code changes.
@@ -13,7 +18,7 @@ COPY . .
 RUN npm run build
 
 # --- runtime ---
-FROM node:24-bookworm-slim
+FROM ${NODE_BASE}
 WORKDIR /app
 ENV NODE_ENV=production \
     PORT=3001 \

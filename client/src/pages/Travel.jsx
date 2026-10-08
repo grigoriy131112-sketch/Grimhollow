@@ -102,6 +102,12 @@ export default function TravelPage() {
         {travel.arrived ? (
           <div className="road-arrived">
             <p>Отряд доходит до места.</p>
+            {travel.found && (
+              <div className="card">
+                <p className="good-tag">🔑 Найдено: «{travel.found.name}»</p>
+                <p className="muted small">{travel.found.description}</p>
+              </div>
+            )}
             <div className="actions">
               <button type="button" onClick={() => navigate(`/world/locations/${travel.to.id}`)}>
                 Войти в {travel.to.name}

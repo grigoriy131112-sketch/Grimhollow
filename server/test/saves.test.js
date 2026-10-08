@@ -9,7 +9,7 @@ import { grantItem, listItems } from '../src/services/items.js';
 import { awardPartyPoints, spendUpgrade, getPoints } from '../src/services/upgrades.js';
 import { recordVisit } from '../src/services/world.js';
 import {
-  createSave, listSaves, getSave, loadSave, deleteSave, exportSave, importSave, captureSnapshot,
+  createSave, listSaves, listAllSaves, getSave, loadSave, deleteSave, exportSave, importSave, captureSnapshot,
 } from '../src/services/saves.js';
 
 test.after(() => closeDb());
@@ -117,6 +117,24 @@ test('loading a save fully restores the character state', () => {
   loadSave(save.id);
   assert.equal(getParty(leader.id).size, 1);
   assert.equal(listItems(leader.id).length, 2);
+});
+
+test('saves are listed globally with their hero name and level', () => {
+  const { leader } = richHero();
+  const other = createCharacter({ name: name(), class: 'rogue' });
+  createSave(leader.id, 'A');
+  createSave(other.id, 'B');
+
+  const all = listAllSaves();
+  const mine = all.filter((s) => s.characterId === leader.id || s.characterId === other.id);
+  assert.equal(mine.length, 2);
+  const byName = Object.fromEntries(mine.map((s) => [s.name, s]));
+  assert.equal(byName.A.characterId, leader.id);
+  assert.equal(byName.A.characterName, leader.name);
+  assert.equal(byName.A.level, getCharacter(leader.id).level);
+  assert.equal(byName.B.characterId, other.id);
+  // Newest first.
+  assert.equal(mine[0].name, 'B');
 });
 
 test('saves are listed per character and can be deleted', () => {

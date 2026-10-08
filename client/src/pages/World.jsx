@@ -1,111 +1,130 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { api } from '../api.js';
+import { useMemo, useState } from 'react';
+import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
+import GlobalMap from '../GlobalMap.jsx';
+import ContinentMap from '../ContinentMap.jsx';
 import WorldMap from '../WorldMap.jsx';
-import SceneBackdrop from '../scenes.jsx';
+import { useMapData } from '../useMapData.js';
+import { api } from '../api.js';
+
+// The atlas, in three charts, all in the same generated dark-fantasy style. The
+// global chart shows the whole world — the five lands, the seas and the ports.
+// Opening a land shows that continent's own chart and every place inside it.
+// The chart is the original survey sheet with every place already inked on it.
+// The hero picker decides whose eyes we look through.
+
+const TABS = [
+  { to: '/world', label: 'Весь мир' },
+  { to: '/world/atlas', label: 'Атлас' },
+];
 
 export default function WorldPage() {
-  const [map, setMap] = useState(null);
-  const [characters, setCharacters] = useState([]);
-  const [heroId, setHeroId] = useState('');
-  const [error, setError] = useState('');
-  const [view, setView] = useState('map');
+  const { continentName } = useParams();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { map, characters, heroId, pickHero, error } = useMapData();
+  const [travelError, setTravelError] = useState('');
 
-  useEffect(() => {
-    api.listCharacters().then((list) => {
-      setCharacters(list);
-      setHeroId((prev) => prev || (list.length ? String(list[0].id) : ''));
-    }).catch(() => {});
-  }, []);
+  // Setting out is a real journey: the party may only leave the place it stands
+  // in, for a place a road connects to it. The server enforces the same rule.
+  const setOut = async (toId) => {
+    if (!heroId) { setTravelError('Сначала создайте героя.'); return; }
+    setTravelError('');
+    try {
+      const trip = await api.startTravel({ characterId: Number(heroId), fromId: map.character.locationId, toId: Number(toId) });
+      if (trip.arrived) navigate(`/world/locations/${trip.to.id}`);
+      else navigate(`/travel/${trip.id}`);
+    } catch (err) { setTravelError(err.message); }
+  };
 
-  useEffect(() => {
-    let alive = true;
-    const load = () => api.getMap(heroId ? Number(heroId) : undefined)
-      .then((m) => { if (alive) setMap(m); })
-      .catch((e) => { if (alive) setError(e.message); });
-    load();
-    // The party may be mid-road: keep the marker moving. No hero, no clock.
-    if (!heroId) return () => { alive = false; };
-    const t = setInterval(load, 5000);
-    return () => { alive = false; clearInterval(t); };
-  }, [heroId]);
-
-  const stats = useMemo(() => {
-    if (!map) return null;
-    const byDanger = [1, 2, 3, 4, 5].map((d) => map.locations.filter((l) => l.danger === d).length);
-    const regions = map.continents.flatMap((c) => c.regions.map((r) => r.name));
-    const monsters = map.locations.reduce((sum, l) => sum + l.monsterCount, 0);
-    return { byDanger, regions, monsters, safe: map.locations.filter((l) => l.isSafe).length };
-  }, [map]);
+  const continent = useMemo(
+    () => (map && continentName ? map.continents.find((c) => c.name === continentName) : null),
+    [map, continentName],
+  );
 
   if (error) return <div className="error">{error}</div>;
   if (!map) return <div className="muted center">Загрузка карты…</div>;
 
+  const atlasView = pathname === '/world/atlas';
+  const stats = continent ? continent.stats : map.stats;
+  const histMax = Math.max(1, ...(stats.byDanger || [0]));
+
   return (
     <div>
       <div className="page-head">
-        <h1>Атлас Гримхоула</h1>
+        <h1>{continent ? continent.name : atlasView ? 'Атлас Гримхоула' : 'Весь мир'}</h1>
         {characters.length > 0 && (
-          <select value={heroId} onChange={(e) => setHeroId(e.target.value)} title="Чьими глазами смотреть на карту">
+          <select value={heroId} onChange={(e) => pickHero(e.target.value)} title="Чьими глазами смотреть на карту">
             {characters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         )}
-        <div className="tabs" style={{ margin: 0 }}>
-          <button type="button" className={view === 'map' ? 'active' : ''} onClick={() => setView('map')}>Карта</button>
-          <button type="button" className={view === 'list' ? 'active' : ''} onClick={() => setView('list')}>Список</button>
-        </div>
+        {continent && <button type="button" onClick={() => navigate('/world')}>← Весь мир</button>}
       </div>
 
-      <div className="atlas-stats">
-        <div className="card stat-card"><span className="stat-num">{map.locations.length}</span><span className="muted small">локаций</span></div>
-        <div className="card stat-card"><span className="stat-num">{stats.regions.length}</span><span className="muted small">региона</span></div>
-        <div className="card stat-card"><span className="stat-num">{stats.safe}</span><span className="muted small">безопасных</span></div>
-        <div className="card stat-card"><span className="stat-num">{stats.monsters}</span><span className="muted small">столкновений</span></div>
-      </div>
-
-      <div className="danger-hist card">
-        <div className="legend-title">Распределение опасности</div>
-        <div className="hist">
-          {stats.byDanger.map((n, i) => (
-            <div className="hist-col" key={i}>
-              <div className="hist-bar" style={{ height: `${Math.max(4, n * 22)}px` }} title={`${n} локаций`} />
-              <span className="small muted">{'★'.repeat(i + 1)}</span>
-              <span className="small">{n}</span>
-            </div>
+      {!continent && (
+        <nav className="map-tabs">
+          {TABS.map((t) => (
+            <Link key={t.to} to={t.to} className={`map-tab ${pathname === t.to ? 'active' : ''}`}>{t.label}</Link>
           ))}
-        </div>
-      </div>
+        </nav>
+      )}
 
-      {view === 'map' ? (
-        <WorldMap data={map} />
-      ) : (
-        map.continents.map((continent) => (
-          <section key={continent.id} className="continent">
-            <h2>{continent.name}</h2>
-            <p className="muted">{continent.description}</p>
-            {continent.regions.map((region) => (
-              <div key={region.id} className="region">
-                <h3>{region.name}</h3>
-                <p className="muted small">{region.description}</p>
-                <div className="cards">
-                  {map.locations.filter((l) => l.regionId === region.id).map((loc) => (
-                    <Link key={loc.id} className="card loc-card" to={`/world/locations/${loc.id}`}>
-                      <div className="loc-thumb">
-                        <SceneBackdrop scene={loc.scene} biome={loc.biome} danger={loc.danger} name={loc.name} />
-                      </div>
-                      <div className="hero-top">
-                        <b>{loc.name}</b>
-                        {loc.isSafe && <span className="badge safe">Безопасно</span>}
-                      </div>
-                      <p className="muted small">{loc.description}</p>
-                      <span className="danger-tag">Опасность {'★'.repeat(Math.min(loc.danger, 5))}</span>
-                    </Link>
-                  ))}
+      {!atlasView && (
+        <div className="atlas-stats">
+          <div className="card stat-card"><span className="stat-num">{stats.locations}</span><span className="muted small">локаций</span></div>
+          <div className="card stat-card"><span className="stat-num">{stats.regions}</span><span className="muted small">региона</span></div>
+          <div className="card stat-card"><span className="stat-num">{stats.safe}</span><span className="muted small">безопасных</span></div>
+          <div className="card stat-card"><span className="stat-num">{stats.ports}</span><span className="muted small">портов</span></div>
+          <div className="card stat-card"><span className="stat-num">{stats.monsters}</span><span className="muted small">столкновений</span></div>
+        </div>
+      )}
+
+      {!atlasView && (
+        <div className="danger-hist card">
+          <div className="legend-title">Распределение опасности{continent ? ` — ${continent.name}` : ' — весь мир'}</div>
+          <div className="hist">
+            {(stats.byDanger || []).map((n, i) => (
+              <div className="hist-col" key={i}>
+                <div className="hist-track">
+                  <div className="hist-bar" style={{ height: `${Math.round((n / histMax) * 90)}px` }} title={`${n} локаций`} />
                 </div>
+                <span className="small muted">{'★'.repeat(i + 1)}</span>
+                <span className="small">{n}</span>
               </div>
             ))}
-          </section>
-        ))
+          </div>
+        </div>
+      )}
+
+      {travelError && <div className="error">{travelError}</div>}
+
+      {atlasView ? (
+        <WorldMap data={map} />
+      ) : continent ? (
+        <ContinentMap
+          map={map}
+          continent={continent}
+          onBack={() => navigate('/world')}
+          onOpenLocation={(id) => navigate(`/world/locations/${id}`)}
+          onTravel={setOut}
+        />
+      ) : (
+        <GlobalMap map={map} onOpen={(name) => navigate(`/world/continents/${encodeURIComponent(name)}`)} />
+      )}
+
+      {!continent && !atlasView && (
+        <section className="continent-list">
+          {map.continents.map((c) => (
+            <Link key={c.id} className="card continent-card" to={`/world/continents/${encodeURIComponent(c.name)}`}>
+              <div className="hero-top"><b>{c.name}</b><span className="badge">{c.stats.locations} мест</span></div>
+              <p className="muted small">{c.description}</p>
+              <div className="continent-meta">
+                <span className="muted small">обл.: {c.stats.regions}</span>
+                <span className="muted small">безопасно: {c.stats.safe}</span>
+                <span className="muted small">портов: {c.stats.ports}</span>
+              </div>
+            </Link>
+          ))}
+        </section>
       )}
     </div>
   );

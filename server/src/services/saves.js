@@ -200,6 +200,24 @@ function metaOf(row) {
   };
 }
 
+export function listAllSaves() {
+  return getDb()
+    .prepare(`SELECT s.id, s.character_id, s.name, s.created_at, s.updated_at,
+                     c.name AS character_name, c.level AS character_level
+              FROM saves s JOIN characters c ON c.id = s.character_id
+              ORDER BY s.updated_at DESC, s.id DESC`)
+    .all()
+    .map((row) => ({
+      id: row.id,
+      characterId: row.character_id,
+      name: row.name,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      characterName: row.character_name,
+      level: row.character_level,
+    }));
+}
+
 export function listSaves(characterId) {
   requireCharacter(characterId);
   return getDb()

@@ -37,7 +37,6 @@ export default function SettingsPage() {
   const [characters, setCharacters] = useState([]);
   const [saves, setSaves] = useState([]);
   const [saveName, setSaveName] = useState('');
-  const [replaceOnImport, setReplaceOnImport] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -114,22 +113,6 @@ export default function SettingsPage() {
       URL.revokeObjectURL(url);
       flash('Сохранение выгружено в файл.');
     } catch (err) { setError(err.message); }
-  };
-
-  const importFile = async (file) => {
-    if (!file) return;
-    setBusy(true);
-    try {
-      const parsed = JSON.parse(await file.text());
-      // Accept either a bare snapshot or a whole exported slot.
-      const snapshot = parsed.snapshot || parsed;
-      const characterId = replaceOnImport && leaderId ? leaderId : null;
-      const result = await api.importSave(snapshot, characterId);
-      if (!replaceOnImport) selectLeader(String(result.characterId));
-      api.listCharacters().then(setCharacters);
-      flash(replaceOnImport ? 'Сохранение загружено в героя.' : 'Сохранение добавлено как новый герой.');
-    } catch (err) { setError(err.message); }
-    finally { setBusy(false); }
   };
 
   const selected = characters.find((c) => String(c.id) === leaderId);
@@ -237,29 +220,6 @@ export default function SettingsPage() {
             {saves.length === 0 && <p className="muted">Сохранений пока нет.</p>}
           </div>
         )}
-      </div>
-
-      <div className="card">
-        <h2>Импорт</h2>
-        <p className="muted small">
-          Выберите файл сохранения, выгруженный кнопкой «Скачать». По умолчанию он станет
-          новым героем; отметьте галочку, чтобы вложить его в выбранного героя вместо текущего состояния.
-        </p>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <input
-            type="checkbox"
-            style={{ width: 'auto', margin: 0 }}
-            checked={replaceOnImport}
-            onChange={(e) => setReplaceOnImport(e.target.checked)}
-          />
-          Заменить выбранного героя{selected ? ` (${selected.name})` : ''}
-        </label>
-        <input
-          type="file"
-          accept="application/json,.json"
-          disabled={busy || (replaceOnImport && !selected)}
-          onChange={(e) => importFile(e.target.files?.[0])}
-        />
       </div>
     </div>
   );

@@ -275,3 +275,4 @@ long detail in the daily logs.
 - Points **only from sea battles** (`awardShipPoints`); W-SEA pays +5 pirates /
   6-10 monsters. UI `pages/Shipyard.jsx` (`/shipyard/:characterId`), linked from
   the party strip. `npm test` 282/0 (+15).
+
