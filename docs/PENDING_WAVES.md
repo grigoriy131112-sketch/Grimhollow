@@ -45,13 +45,15 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 | Wave | Goal | New files (owner) | Depends on | Status |
 |------|------|-------------------|------------|--------|
 | **W-MENU** | Start menu hub: Новая игра / Сохранённые игры (continue) / Настройки / Создатели / Лор. Remove save **import**. | `client/src/pages/MainMenu.jsx`, `Creators.jsx`, `Lore.jsx` | — | **PR #13 (in review)** |
+| **W-CODEX / W-SHELL** | Remove the top text nav; add a journal/book to the character's inventory (Лор / Карта мира / Настройки / Создатели), separate from the item slots. Depends on W-MENU being in `main` | `client/src/App.jsx`, `client/src/pages/Inventory.jsx`, new `pages/Codex.jsx` | W-MENU | not started |
 | **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | not started |
 | **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) + **sea lanes with their voyage time** | `client/src/GlobalMap.jsx`, `client/src/mapProjection.js` | — | **in this PR** |
 | **W-MAP-CONT** | Per-continent map (regions + locations) shown when the hero is on it | `client/src/ContinentMap.jsx` | W-MAP-GLOBAL | **in this PR** |
 | **W-SHIP** | Ship: buy in port for gold, L1, **upgrade tree + timed port shipyard**, classes (heroes & guns), ship waits in port. Points are earned in W-SEA battles, not elsewhere | `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | not started |
 | **W-SEA** | Sea crossing: **pirates** (party + guns vs pirate ship) and **sea monsters** (ship alone), non-repeating islands (Fortune), **ship combat**, party talk + papers on board, and the ship **points** that W-SHIP spends | `server/src/game/naval.js`, `services/voyage.js`, `routes/voyage.js`, `client/src/pages/Voyage.jsx` | W-SHIP, W-MAP-GLOBAL | not started |
 
-Order: `W-MENU → W-AUDIO → W-MAP-GLOBAL → W-MAP-CONT → W-SHIP → W-SEA`.
+Order: `W-MENU → W-CODEX/W-SHELL → W-AUDIO → W-MAP-GLOBAL → W-MAP-CONT →
+W-SHIP → W-SEA`.
 (`W-MENU` and `W-MAP-GLOBAL` are independent; shared files — `App.jsx`,
 `index.js`, `schema.sql` — are owned by the orchestrator.)
 
@@ -101,10 +103,10 @@ harbour quest"), which is removed: those no longer grant ship points.
 
 - **Pirates** — a boarding fight: the **party fights the crew** while the ship's
   **cannons pound the pirate ship**. The party taking the deck clears the
-  encounter; the guns soften the pirate hull.
+  encounter; the guns soften the pirate hull. **+5 points** per win.
 - **Sea monsters** — the ship fights **alone**: only the hull and the guns are in
-  play, the party is not involved.
-- Each cleared encounter pays a small, capped number of points (tune in W-SEA).
+  play, the party is not involved. **6-10 points** per win (scaled by the
+  monster's danger, so a bigger beast pays more).
 
 Spent on: hull HP, cannon damage, extra cannon slots, reload speed, cargo/crew.
 
@@ -160,6 +162,25 @@ What this settled:
   sea monsters, ship combat and the papers; this PR only adds **paths + time** and
   the arrival-at-the-port move.
 
+## Shell: no top nav, a journal in the inventory (W-CODEX / W-SHELL)
+
+> **User requirement (verbatim, 2026-10-08):** «хочу убрать шапку сверху и
+> добавить в инвентарь персонажа дневник»
+
+This is the **W-CODEX / W-SHELL** work already agreed earlier (see
+`docs/CHAT_ARCHIVE_MAIN.md`); the user has re-confirmed it.
+
+- **Remove the top text nav** (`Меню · Герои · Мир · Лор · Настройки` in
+  `App.jsx#Nav`) — the title screen stays, only the header bar goes.
+- **Add a journal ("дневник") to the character's inventory**, as a book/tab
+  **separate from the item slots** (`pages/Inventory.jsx`), holding the
+  world-knowledge sections: **Лор**, **Карта мира**, **Настройки**,
+  **Создатели** (the earlier "Кодекс" plan). Reachable globally too, so the
+  player is not forced through the inventory every time.
+- **Note:** W-MENU (`wave/w-menu`, PR #13) is still unmerged, so the header this
+  removes only exists in that branch. This wave must land **after** W-MENU is in
+  `main`, or be built on top of it, or the header will not be there to remove.
+
 ## Open questions
 
 1. **Audio files** — sourcing confirmed CC0-only. Any preference on track length
@@ -167,9 +188,10 @@ What this settled:
 2. **Map art** — confirmed: generate procedural SVG in the current engraving
    style. *(W-MAP-GLOBAL)*
 3. **"New game"** — confirmed: routes to the existing hero-creation page. *(W-MENU)*
-4. **Ship upgrade points** — source fixed above: **only** sea battles
-   (pirates / sea monsters). Confirm the per-win point values and the
-   **in-game time cost** of an upgrade at the port. *(W-SHIP / W-SEA)*
+4. **Ship upgrade points** — settled: source is **only** sea battles;
+   **+5** per pirate win, **6-10** per sea-monster win (by danger). Still
+   to confirm: the **in-game time cost** of an upgrade at the port.
+   *(W-SHIP / W-SEA)*
 5. **Papers on the ship** — confirmed: free-form notes + event log + auto lore
    notes. Need the lore "learned" hook (which discoveries set a flag). *(W-SEA)*
 
