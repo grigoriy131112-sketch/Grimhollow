@@ -277,8 +277,44 @@ long detail in the daily logs.
   (`/api/lore`, `/api/ship`) and both port resolvers survive.
 - **Test baseline on `main`: 312 pass / 0 fail** (was 251 before W-MAP/W-SHIP).
 - Preview: both work-host ports answer 200 (`server/src/ports.js`).
-- **Next wave: W-SEA** (pirates, non-repeating islands/Fortune, sea monsters,
-  ship combat; spends the ship points W-SHIP awards). Then W-CODEX/W-SHELL.
+- **Open PR queue (as of 2026-10-08):** #16 `fix/preview-resilient-requests`
+  (open), #17 `wave/w-codex-shell` (draft), #18 `wave/w-audio` (draft),
+  #19 `wave/w-bughunt` (draft), #20 `wave/w-sea` (draft). Merge one at a time,
+  in order, with `merge_method=merge` (merge-commits, not squash).
+
+## W-BUGHUNT (added on `wave/w-bughunt`, PR #19)
+
+- A cross-wave bug sweep. Four real bugs fixed:
+  1. `travel.js`/`continents.js` heal read `stats.hp` (undefined) → NaN → NULL →
+     a **full heal**. Clamp against `character.stats.maxHp/maxMana/maxStamina`.
+  2. `chooseTravel` dropped the ambush battle id, stranding the party with no
+     rewards/revival.
+  3. `startBattle` could return an already-over fight still marked `'active'`.
+  4. `makeCombatant` did not carry `source.modifiers` (chapel-key fallout), so a
+     pre-battle buff never reached the fight.
+- `server/test/regressions.test.js` seeds `startBattle` RNG to make the old flaky
+  case deterministic.
+- `npm test` on this branch: **318 pass / 0 fail**.
+
+## W-SEA (added on `wave/w-sea`, PR #20)
+
+- The sea: pirates, sea monsters, non-repeating Fortune islands and ship papers.
+- `game/naval.js` (pure, diceless): hull + guns + crew; actions `broadside` /
+  `board` / `ram` (each with hitChance/damage previews); `pirateTier(t)` /
+  `monsterTier(t)` scale enemies; a 120+ island pool (`rollIslands`) that never
+  repeats within a voyage; `rollVoyage({seed,tier,danger})` → 0-2 stops.
+- `services/naval.js` persists `naval_battles` (state JSON, resume mid-fight),
+  settles payouts, and — **the only place** — pays **ship points on a won sea
+  battle** via `awardShipPoints`. A loss is survivable (1 HP, 25% gold). The
+  `voyages` table drives a crossing as a voyage; `ship_papers` holds the player
+  journal + auto log.
+- Routes `/api/naval`; client pages `Voyage` (`/voyage/:characterId`),
+  `SeaBattle` (`/sea/:id`), `Papers` (`/papers/:characterId`). The port's
+  «Отплыть» now sets out on a voyage, not a teleport.
+- Three additive tables in `schema.sql` (`CREATE TABLE IF NOT EXISTS`): no
+  `migrate()` edit needed.
+- `npm test`: **325 pass / 0 fail** (main's 312 + 13 naval). Wave built off
+  `main` (`be5059b`).
 
 ## W-SHIP (added on `wave/w-ship`, PR #15)
 
