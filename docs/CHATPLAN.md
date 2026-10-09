@@ -47,13 +47,15 @@ DONE: G1 lore, G2 items, G3 survival, G4 save/settings, G5 continents,
 Everything except G12 is merged. The offline game is complete.
 ```
 
-**No batch is running.** The next wave is **G12 (online)**, which per the
-directive is last and requires a **new explicit approval** before it starts
-(it re-architects accounts and a shared world).
+**No batch is running.** Everything through G11 is merged; the ✅ shell/UX waves
+(W-MENU, W-CODEX/W-SHELL, W-AUDIO, W-BUGHUNT, W-MAP, W-SHIP, W-SEA, W-THEME,
+W-HERO-TABS) are merged too. The live queue is now the **"unspelled mechanics"**
+work — finishing systems that exist but are not yet consumed by play.
 
-The post-G12 backlog (start menu, audio, two maps, ship, sea crossing) lives in
-**`docs/PENDING_WAVES.md`** — approved-in-principle, not started, each needing its
-own `погнали`. The wave chats' reports are archived in **`docs/CHAT_ARCHIVE.md`**.
+**The roadmap is `docs/PENDING_WAVES.md`** — the single source of truth: shipped
+waves, built-but-not-wired mechanics, and the next queue (W-CLAN-LIVE, W-BESTIARY,
+W-SEA-TALK, W-SEA-BALANCE). Each needs its own `погнали`. The wave chats' reports
+are archived in **`docs/CHAT_ARCHIVE.md`**.
 
 > **Standing rule:** the user adds requirements from his head, often. Every new
 > requirement is written down in `docs/PENDING_WAVES.md` before it is built, and
