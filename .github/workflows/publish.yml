@@ -44,7 +44,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -64,15 +63,24 @@ jobs:
             type=semver,pattern={{version}}
             type=sha
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          build-args: |
-            NODE_BASE=${{ env.NODE_BASE }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      # The daemon's built-in builder, deliberately not buildx: buildx runs in a
+      # container and pulls its buildkit image from Docker Hub, which kept
+      # timing out on the runner. `docker build` pulls nothing from Docker Hub —
+      # the only base image comes from the ECR mirror above.
+      - name: Build
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          args=""
+          while IFS= read -r tag; do
+            [ -n "$tag" ] && args="$args -t $tag"
+          done <<< "$TAGS"
+          docker build --build-arg NODE_BASE="$NODE_BASE" $args .
+
+      - name: Push
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          while IFS= read -r tag; do
+            [ -n "$tag" ] && docker push "$tag"
+          done <<< "$TAGS"
