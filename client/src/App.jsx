@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
+import { installUnlock, bindUiSounds, playMusic, resolveContext, setVolumes } from './audio.js';
+import { loadPrefs, subscribePrefs } from './prefs.js';
 import CharactersPage from './pages/Characters.jsx';
 import CharacterSheetPage from './pages/CharacterSheet.jsx';
 import WorldPage from './pages/World.jsx';
@@ -24,30 +26,64 @@ import ClanPage from './pages/Clan.jsx';
 import MainMenuPage from './pages/MainMenu.jsx';
 import CreatorsPage from './pages/Creators.jsx';
 import LorePage from './pages/Lore.jsx';
+import CodexPage from './pages/Codex.jsx';
 import { api } from './api.js';
 
+// The old text bar (Меню · Герои · Мир · Лор · Настройки) is gone. What is left is
+// a small icon strip in the corner: the Codex («Дневник») holds the lore, the
+// world map, the settings and the credits in one book.
 function Nav() {
   const { pathname } = useLocation();
   if (pathname === '/') return null; // the title screen is full-viewport
   return (
-    <nav className="nav">
-      <div className="brand">☠ Grimhollow</div>
-      <div className="links">
-        <NavLink to="/" end>Меню</NavLink>
-        <NavLink to="/characters">Герои</NavLink>
-        <NavLink to="/world">Мир</NavLink>
-        <NavLink to="/lore">Лор</NavLink>
-        <NavLink to="/settings">Настройки</NavLink>
-        <span className="muted small" style={{ marginLeft: 'auto', opacity: 0.6 }} title="версия сборки">
-          сборка {typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev'}
-        </span>
-      </div>
+    <nav className="nav nav-compact">
+      <NavLink to="/codex" className="nav-ico" title="Дневник">
+        <span aria-hidden="true">☰</span> Дневник
+      </NavLink>
+      <NavLink to="/settings" className="nav-ico" title="Настройки">
+        <span aria-hidden="true">⚙</span> Настройки
+      </NavLink>
+      <NavLink to="/" end className="nav-ico" title="В главное меню">
+        <span aria-hidden="true">☠</span> В меню
+      </NavLink>
+      <span className="muted small build-id" title="версия сборки">
+        сборка {typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev'}
+      </span>
     </nav>
   );
 }
 
+// Route plus the location/settlement a screen hints at decide the music context.
+// Pages call `hintScene({ location | settlement | type })` after they load their
+// data, so the map screen and a place's own screen can differ.
+function useAudioContext() {
+  const { pathname } = useLocation();
+  const [hint, setHint] = useState(null);
+
+  useEffect(() => {
+    setVolumes(loadPrefs());
+    installUnlock();
+    const off = bindUiSounds();
+    const unsubscribe = subscribePrefs(setVolumes);
+    return () => { off(); unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    const onHint = (e) => setHint(e.detail || null);
+    window.addEventListener('grimhollow:scene', onHint);
+    return () => window.removeEventListener('grimhollow:scene', onHint);
+  }, []);
+
+  useEffect(() => { setHint(null); }, [pathname]);
+
+  useEffect(() => {
+    playMusic(resolveContext({ pathname, location: hint && hint.location, settlement: hint && hint.settlement }));
+  }, [pathname, hint]);
+}
+
 export default function App() {
   const { pathname } = useLocation();
+  useAudioContext();
   const [menu, setMenu] = useState({ characters: [], saves: [] });
 
   const refreshMenu = useCallback(
@@ -69,6 +105,7 @@ export default function App() {
           <Route path="/creators" element={<CreatorsPage />} />
           <Route path="/lore" element={<LorePage />} />
           <Route path="/lore/:key" element={<LorePage />} />
+          <Route path="/codex" element={<CodexPage />} />
           <Route path="/characters" element={<CharactersPage />} />
           <Route path="/characters/:id" element={<CharacterSheetPage />} />
           <Route path="/party/:leaderId" element={<PartyPage />} />

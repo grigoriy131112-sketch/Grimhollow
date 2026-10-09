@@ -107,14 +107,27 @@ export function getTravelView(id, now = clock()) {
 function finish(travel, state, now) {
   getDb().prepare("UPDATE travels SET state = ?, arrived = 1, updated_at = datetime('now') WHERE id = ?")
     .run(JSON.stringify(state), travel.id);
-  const { firstVisit } = recordVisit(travel.character_id, travel.to_id);
+  recordVisit(travel.character_id, travel.to_id);
   const arrivedAt = getLocation(travel.to_id);
-  let found = null;
-  if (firstVisit && arrivedAt && arrivedAt.name === RITUAL_SITE) {
-    grantItem(travel.character_id, RITUAL_ITEM, 1);
-    found = { key: RITUAL_ITEM, ...itemInfo(RITUAL_ITEM) };
-  }
+  // Grant on the first *arrival at* the chapel, not the first time it was ever
+  // seen: opening the place from the map calls recordVisited (a mere sighting),
+  // which used to consume the first-visit flag before the party ever walked in,
+  // so the key could never drop. Tracked as a durable unlock, so it is granted
+  // exactly once per hero.
+  const found = grantChapelKey(travel.character_id, arrivedAt);
   return { ...buildView({ ...travel, state, arrived: 1 }, now), found };
+}
+
+// The drowned chapel's discovery item, granted once per hero.
+function grantChapelKey(characterId, location) {
+  if (!location || location.name !== RITUAL_SITE) return null;
+  const db = getDb();
+  const flag = `item:${RITUAL_ITEM}`;
+  const already = db.prepare('INSERT OR IGNORE INTO character_unlocks (character_id, flag, quest_key) VALUES (?, ?, ?)')
+    .run(characterId, flag, `${RITUAL_SITE}:${RITUAL_ITEM}`);
+  if (already.changes === 0) return null; // already found it once
+  grantItem(characterId, RITUAL_ITEM, 1);
+  return { key: RITUAL_ITEM, ...itemInfo(RITUAL_ITEM) };
 }
 
 function buildView(travel, now) {
@@ -169,7 +182,9 @@ export function chooseTravel(id, choice, now = clock()) {
     } catch {
       finalOutcome = { kind: 'nothing', text: 'Дорога пуста — бой не состоялся.' };
     }
-  } else {
+  } else if (outcome.kind === 'gold' || outcome.kind === 'heal' || outcome.kind === 'mana') {
+    // `nothing` is a valid outcome (a quiet road, a dodge) and has nothing to apply;
+    // only the ones with a resource effect are handed to applyOutcome.
     applyOutcome(travel.character_id, outcome);
   }
 
@@ -186,42 +201,54 @@ function commit(travel, state, now) {
 }
 
 // Apply an outcome to the leader and, where it makes sense, the whole party.
+const RESOURCE_OUTCOMES = new Set(['gold', 'heal', 'mana']);
 function applyOutcome(characterId, outcome) {
+  if (!outcome || !RESOURCE_OUTCOMES.has(outcome.kind)) return;
   const db = getDb();
   const character = requireCharacter(characterId);
   const members = activeMembers(characterId).map((m) => getMember(m.id));
 
   if (outcome.kind === 'gold') {
-    const gold = Math.max(0, character.gold + outcome.delta);
+    // Outcomes are computed from a seeded RNG, but guard the arithmetic so a
+    // malformed delta can never store NaN/NULL into the purse.
+    const delta = Math.round(Number(outcome.delta) || 0);
+    const gold = Math.max(0, character.gold + delta);
     db.prepare('UPDATE characters SET gold = ? WHERE id = ?').run(gold, characterId);
     return;
   }
 
   if (outcome.kind === 'heal') {
-    healCharacter(characterId, outcome);
+    const hp = Number(outcome.hp) || 0;
+    const mana = Number(outcome.mana) || 0;
+    const stamina = Number(outcome.stamina) || 0;
+    healCharacter(characterId, { hp, mana, stamina });
     members.forEach((m) => grantMemberXp(m.id, {
-      hp: Math.min(m.stats.maxHp, m.hp + Math.round(outcome.hp / 2)),
-      mana: Math.min(m.stats.maxMana, m.mana + Math.round(outcome.mana / 2)),
-      stamina: Math.min(m.stats.maxStamina, m.stamina + Math.round(outcome.stamina / 2)),
+      hp: Math.min(m.stats.maxHp, m.hp + Math.round(hp / 2)),
+      mana: Math.min(m.stats.maxMana, m.mana + Math.round(mana / 2)),
+      stamina: Math.min(m.stats.maxStamina, m.stamina + Math.round(stamina / 2)),
     }));
     return;
   }
 
   if (outcome.kind === 'mana') {
-    healCharacter(characterId, { mana: outcome.delta });
-    members.forEach((m) => grantMemberXp(m.id, { mana: Math.min(m.stats.maxMana, m.mana + Math.round(outcome.delta / 2)) }));
+    const delta = Number(outcome.delta) || 0;
+    healCharacter(characterId, { mana: delta });
+    members.forEach((m) => grantMemberXp(m.id, { mana: Math.min(m.stats.maxMana, m.mana + Math.round(delta / 2)) }));
   }
 }
 
 function healCharacter(characterId, { hp, mana, stamina }) {
   const db = getDb();
   const c = requireCharacter(characterId);
-  const clamp = (field, delta) => (delta == null ? undefined : Math.min(c.stats[field], c[field] + delta));
+  // Current resources live on the character; their ceilings live in `stats` under
+  // maxHp/maxMana/maxStamina (there is no `stats.hp`). Reading the bare field name
+  // made every clamp NaN, which the DB then stored as NULL — a full heal.
+  const clamp = (value, delta, max) => (delta == null ? undefined : Math.min(max, value + delta));
   db.prepare("UPDATE characters SET hp = ?, mana = ?, stamina = ?, updated_at = datetime('now') WHERE id = ?")
     .run(
-      clamp('hp', hp) ?? c.hp,
-      clamp('mana', mana) ?? c.mana,
-      clamp('stamina', stamina) ?? c.stamina,
+      clamp(c.hp, hp, c.stats.maxHp) ?? c.hp,
+      clamp(c.mana, mana, c.stats.maxMana) ?? c.mana,
+      clamp(c.stamina, stamina, c.stats.maxStamina) ?? c.stamina,
       characterId,
     );
 }

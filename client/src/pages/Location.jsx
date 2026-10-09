@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { monsterIcon, Icon } from '../icons.jsx';
 import SceneBackdrop from '../scenes.jsx';
 import Talk from '../Talk.jsx';
+import { hintScene } from '../audio.js';
 
 export default function LocationPage() {
   const { id } = useParams();
@@ -17,6 +18,8 @@ export default function LocationPage() {
   const [sailing, setSailing] = useState(false);
   const [error, setError] = useState('');
   const [found, setFound] = useState(null);
+
+  useEffect(() => { if (location) hintScene({ location }); }, [location]);
 
   useEffect(() => {
     api.getLocation(id).then(setLocation).catch((e) => setError(e.message));
