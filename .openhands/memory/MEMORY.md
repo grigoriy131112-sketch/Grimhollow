@@ -277,8 +277,67 @@ long detail in the daily logs.
   (`/api/lore`, `/api/ship`) and both port resolvers survive.
 - **Test baseline on `main`: 312 pass / 0 fail** (was 251 before W-MAP/W-SHIP).
 - Preview: both work-host ports answer 200 (`server/src/ports.js`).
-- **Next wave: W-SEA** (pirates, non-repeating islands/Fortune, sea monsters,
-  ship combat; spends the ship points W-SHIP awards). Then W-CODEX/W-SHELL.
+- **Open PR queue (as of 2026-10-08):** #16 `fix/preview-resilient-requests`
+  (open), #17 `wave/w-codex-shell` (draft), #18 `wave/w-audio` (draft),
+  #19 `wave/w-bughunt` (draft), #20 `wave/w-sea` (draft). Merge one at a time,
+  in order, with `merge_method=merge` (merge-commits, not squash).
+
+## W-BUGHUNT (added on `wave/w-bughunt`, PR #19)
+
+- A cross-wave bug sweep. Four real bugs fixed:
+  1. `travel.js`/`continents.js` heal read `stats.hp` (undefined) → NaN → NULL →
+     a **full heal**. Clamp against `character.stats.maxHp/maxMana/maxStamina`.
+  2. `chooseTravel` dropped the ambush battle id, stranding the party with no
+     rewards/revival.
+  3. `startBattle` could return an already-over fight still marked `'active'`.
+  4. `makeCombatant` did not carry `source.modifiers` (chapel-key fallout), so a
+     pre-battle buff never reached the fight.
+- `server/test/regressions.test.js` seeds `startBattle` RNG to make the old flaky
+  case deterministic.
+- `npm test` on this branch: **318 pass / 0 fail**.
+
+## W-SEA (added on `wave/w-sea`, PR #20)
+
+- The sea: pirates, sea monsters, non-repeating Fortune islands and ship papers.
+- `game/naval.js` (pure, diceless): hull + guns + crew; actions `broadside` /
+  `board` / `ram` (each with hitChance/damage previews); `pirateTier(t)` /
+  `monsterTier(t)` scale enemies; a 120+ island pool (`rollIslands`) that never
+  repeats within a voyage; `rollVoyage({seed,tier,danger})` → 0-2 stops.
+- `services/naval.js` persists `naval_battles` (state JSON, resume mid-fight),
+  settles payouts, and — **the only place** — pays **ship points on a won sea
+  battle** via `awardShipPoints`. A loss is survivable (1 HP, 25% gold). The
+  `voyages` table drives a crossing as a voyage; `ship_papers` holds the player
+  journal + auto log.
+- Routes `/api/naval`; client pages `Voyage` (`/voyage/:characterId`),
+  `SeaBattle` (`/sea/:id`), `Papers` (`/papers/:characterId`). The port's
+  «Отплыть» now sets out on a voyage, not a teleport.
+- Three additive tables in `schema.sql` (`CREATE TABLE IF NOT EXISTS`): no
+  `migrate()` edit needed.
+- `npm test`: **325 pass / 0 fail** (main's 312 + 13 naval). Wave built off
+  `main` (`be5059b`).
+
+## Hosting decision (user, 2026-10-08)
+
+- **Do NOT publish/host yet — keep building in the sandbox until the game is
+  finished.** Reason given by the user: they want the whole game done before a
+  public URL exists.
+- Consequence, accepted for now: the work-host preview lives *inside* the
+  sandbox, so it **will** drop whenever the sandbox sleeps (pause on idle) or
+  restarts. `serve.sh` + the watcher + the `session_start`/`user_prompt_submit`
+  hooks only revive it once the sandbox is alive again; nothing inside a sandbox
+  can keep a server up while the sandbox is asleep. This is not a bug to chase.
+- When the time comes to publish, the repo is already prepared:
+  - `Dockerfile`, `docker-compose.yml`, `fly.toml`, `render.yaml` are all on
+    `main`; `.github/workflows/publish.yml` builds a multi-arch image to
+    `ghcr.io/grigoriy131112-sketch/grimhollow:latest` on every push to `main`
+    (tags include `latest`, `main`, `sha-*`). GHCR is *storage*, not a live URL.
+  - **Fly** keeps the world (volume at `/data`) but has no auto-deploy — needs
+    `fly deploy`. **Render** has `autoDeploy: true` but its free disk is
+    ephemeral, so every deploy **wipes the world**.
+  - The sandbox has `docker` + `gh` but **no `flyctl`/`render` and no Fly/Render
+    token**, so an agent cannot deploy without the user supplying a token.
+- The game has **no login**, so any public URL lets anyone play and mutate the
+  world — out of scope until this decision is revisited.
 
 ## W-CODEX/W-SHELL (added on `wave/w-codex-shell`, PR #17)
 

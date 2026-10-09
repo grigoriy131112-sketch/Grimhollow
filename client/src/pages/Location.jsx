@@ -15,7 +15,6 @@ export default function LocationPage() {
   const [npcs, setNpcs] = useState([]);
   const [talking, setTalking] = useState(null);
   const [crossings, setCrossings] = useState([]);
-  const [voyage, setVoyage] = useState(null);
   const [sailing, setSailing] = useState(false);
   const [error, setError] = useState('');
   const [found, setFound] = useState(null);
@@ -34,7 +33,6 @@ export default function LocationPage() {
   // A port gate also opens sea lanes to another continent; load them once a
   // hero is known, so the fares can say whether the party can pay.
   useEffect(() => {
-    setVoyage(null);
     api.getCrossings(Number(id), heroId ? Number(heroId) : undefined)
       .then(setCrossings).catch(() => setCrossings([]));
   }, [id, heroId]);
@@ -73,19 +71,19 @@ export default function LocationPage() {
     } catch (err) { setError(err.message); }
   };
 
-  // Sail a sea lane to another continent. The voyage is resolved at once (fare,
-  // toll, what the water did) and the hero lands at the far port; a battle on
-  // the water is seeded there, so the fight screen takes over.
+  // Sail a sea lane to another continent. W-SEA: the crossing is a voyage — the
+  // fare and toll are charged, the party is placed at the far port, and the sea
+  // then shows its stops (pirates, a monster, a Fortune island) one by one.
   const sailTo = async (route) => {
     if (!heroId) return setError('Сначала создайте героя.');
     setError(''); setSailing(true);
     try {
-      const res = await api.startCrossing({
-        characterId: Number(heroId), fromId: Number(id), toId: route.toId,
+      const voy = await api.startVoyage(Number(heroId), {
+        fromId: Number(id), toId: route.toId,
       });
-      setVoyage(res);
+      setVoyage(voy);
       setCrossings((prev) => prev.map((c) => (c.key === route.key ? { ...c, affordable: null } : c)));
-      if (res.battleId) navigate(`/battles/${res.battleId}`);
+      navigate(`/voyage/${heroId}`);
     } catch (err) { setError(err.message); }
     finally { setSailing(false); }
   };
@@ -162,18 +160,6 @@ export default function LocationPage() {
             ))}
           </ul>
           {!here && <p className="muted small">Отряд не в этом порту — корабли уходят только оттуда, где он стоит.</p>}
-
-          {voyage && (
-            <div className="road-arrived">
-              <p className="muted small">{voyage.crossing.from} → {voyage.crossing.to} · {voyage.crossing.days} дн</p>
-              <p className="road-outcome">{voyage.outcome.text}</p>
-              <div className="actions">
-                <button type="button" onClick={() => navigate(`/world/locations/${voyage.arrivedAt}`)}>
-                  Сойти на берег
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
