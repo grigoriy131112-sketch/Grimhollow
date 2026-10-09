@@ -349,10 +349,20 @@ long detail in the daily logs.
 - Each later branch needed `git merge origin/main` first (union conflicts in
   `styles.css`/`PENDING_WAVES.md`/memory; all union, resolved by keeping both
   sides). Push the merge commit, then `gh pr ready` + `gh pr merge --merge`.
-- **`main` test baseline is now 338 pass / 0 fail.** Preview serves the merged
-  build; `/codex` 200, `/audio/*.ogg` 200, Lore lists 6 docs.
-- Still unstarted: **W-THEME / W-FONT / W-HERO-TABS** (styling), the W-SEA
-  on-board party-talk gap, and **G12 online** (needs a fresh explicit approval).
+- **`main` test baseline is now 345 pass / 0 fail** (after W-CLAN-LIVE, PR #23).
+  Before it: 338 after W-THEME (#21, `d554448`) + W-HERO-TABS (#22, `4998314`).
+  Preview serves the merged build; `/codex` 200, `/audio/*.ogg` 200, Lore lists 6 docs.
+- **Note: the "stale chat brief" was right to distrust itself** — `wave/w-map` and
+  `wave/w-menu` were already merged into `main` long before; do not re-open them.
+- Next unstarted per `docs/PENDING_WAVES.md`: **N4 W-SEA-TALK** (party talk on
+  board, tiny), then **N3 W-BESTIARY**, **N5 W-SEA-BALANCE**; **G12 online**
+  still needs a fresh explicit approval. W-CLAN-LIVE (#23) and W-CLAN-ROSTER
+  (#24, staged on #23) are done, PRs open; not merged without an explicit ask.
+- **Two open PRs, stacked: #23 `wave/w-clan-live` then #24 `wave/w-clan-roster`
+  (base = #23's branch).** Merge #23 first, then retarget #24 to `main`.
+- The preview "ошибка"/"Failed to fetch" stays the **sandbox idle sleep**
+  (`OH_RUNTIME_IDLE_TIMEOUT_SECONDS=1200`): the URL is down while paused and the
+  server must be restarted with `bash scripts/serve.sh` after a runtime wake.
 
 ## W-CODEX/W-SHELL (added on `wave/w-codex-shell`, PR #17)
 

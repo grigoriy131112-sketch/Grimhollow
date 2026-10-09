@@ -160,8 +160,52 @@ function requireLeader(id) {
 
 export function activeMembers(leaderId) {
   return getDb().prepare(
+    "SELECT * FROM party_members WHERE leader_id = ? AND status = 'active' AND assignment = 'party' ORDER BY joined_at, id",
+  ).all(leaderId);
+}
+
+// Everyone the leader has serving, party or clan garrison. Used by the clan
+// screen to offer a recall; the active party stays the source for battle.
+export function servedMembers(leaderId) {
+  return getDb().prepare(
     "SELECT * FROM party_members WHERE leader_id = ? AND status = 'active' ORDER BY joined_at, id",
   ).all(leaderId);
+}
+
+// Move a serving companion between the active party and the clan garrison.
+// `assignment` is the only thing that changes; the sheet, traits and relations
+// all stay with the member, so recall is a move and never a copy.
+export function setAssignment(memberId, assignment) {
+  if (assignment !== 'party' && assignment !== 'clan') throw new Error('Неизвестное назначение');
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM party_members WHERE id = ?').get(memberId);
+  if (!row) throw new Error('Спутник не найден');
+  if (row.status !== 'active') throw new Error('Он не в строю');
+  db.prepare("UPDATE party_members SET assignment = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(assignment, memberId);
+  return getMember(memberId);
+}
+
+// Station a companion in the clan garrison (they leave the marching party, but
+// stay on the clan's books and can be recalled).
+export function stationMember(leaderId, memberId) {
+  const m = getMember(memberId);
+  if (!m || m.leaderId !== leaderId) throw new Error('Этот спутник не в вашем отряде');
+  if (m.assignment === 'clan') return m;
+  return setAssignment(memberId, 'clan');
+}
+
+// Recall a companion from the clan garrison back into the marching party. The
+// party cap still holds -- the clan is a reserve, never a way past «Сбор».
+export function recallMember(leaderId, memberId) {
+  const m = getMember(memberId);
+  if (!m || m.leaderId !== leaderId) throw new Error('Этот спутник не в вашем отряде');
+  if (m.assignment === 'party') return m;
+  const roster = getPartyBonuses(leaderId).roster;
+  if (activeMembers(leaderId).length >= roster) {
+    throw new Error(`Отряд уже полон (${roster}). Укрепите ветвь «Сбор».`);
+  }
+  return setAssignment(memberId, 'party');
 }
 
 export function getMember(id) {
@@ -192,6 +236,7 @@ function deriveMember(row) {
     minus: parseJson(row.minuses, []).map(traitInfo),
     source: row.source,
     status: row.status,
+    assignment: row.assignment || 'party',
     joinedAt: row.joined_at,
   };
 }
