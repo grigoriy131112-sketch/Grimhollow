@@ -339,6 +339,21 @@ long detail in the daily logs.
 - The game has **no login**, so any public URL lets anyone play and mutate the
   world — out of scope until this decision is revisited.
 
+## Merge queue done (2026-10-08) — main = full game
+
+- All five open PRs merged into `main` in order, merge-commits, one at a time:
+  **#16** -> `d9e8944`, **#17** -> `bb62206`, **#18** -> `c557be1`,
+  **#19** -> `3c6322d`, **#20** -> `173e424`. **No open PRs remain.**
+- `gh` is authenticated but needs `GH_TOKEN=$GITHUB_TOKEN` on the command; the
+  bare `gh pr merge` said "run gh auth login".
+- Each later branch needed `git merge origin/main` first (union conflicts in
+  `styles.css`/`PENDING_WAVES.md`/memory; all union, resolved by keeping both
+  sides). Push the merge commit, then `gh pr ready` + `gh pr merge --merge`.
+- **`main` test baseline is now 338 pass / 0 fail.** Preview serves the merged
+  build; `/codex` 200, `/audio/*.ogg` 200, Lore lists 6 docs.
+- Still unstarted: **W-THEME / W-FONT / W-HERO-TABS** (styling), the W-SEA
+  on-board party-talk gap, and **G12 online** (needs a fresh explicit approval).
+
 ## W-CODEX/W-SHELL (added on `wave/w-codex-shell`, PR #17)
 
 - The `wave/w-map`/`wave/w-ship` merge resolved all five union conflicts; W-MENU
