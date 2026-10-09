@@ -185,7 +185,7 @@ export function goldForLevel(level = 1) {
 
 // Roll the spoils: gold by level plus, sometimes, a resource. A titled monster
 // has a chance to guard a fragment of memory. Deterministic from the seed.
-export function rollLoot({ level = 1, titled = false, classKey = null, seed = '' } = {}) {
+export function rollLoot({ level = 1, titled = false, classKey = null, seed = '', guarantee = false } = {}) {
   const l = Math.max(1, Math.min(15, Number(level) || 1));
   const rng = rngFrom((hashString(`loot:${seed}:${l}:${titled ? 't' : 'r'}:${classKey || '-'}`) ^ 0x9e3779b9) >>> 0);
   const variance = 0.85 + rng() * 0.3;
@@ -195,7 +195,7 @@ export function rollLoot({ level = 1, titled = false, classKey = null, seed = ''
 
   const items = [];
   const resourceChance = titled ? 0.9 : 0.5;
-  if (rng() < resourceChance) {
+  if (guarantee || rng() < resourceChance) {
     if (titled && rng() < MEMORY_FRAGMENT_CHANCE) {
       items.push({ key: MEMORY_FRAGMENT, qty: 1, name: MEMORY_FRAGMENT_NAME });
     } else {

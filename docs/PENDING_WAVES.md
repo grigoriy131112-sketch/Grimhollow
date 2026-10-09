@@ -174,6 +174,35 @@ them. W-WIRE finishes the mechanic **additively**:
   (chapters 4-6) and their keepers open the branch flags.
 - Tests: `server/test/wire.test.js` (9); suite **372 pass / 0 fail**.
 
+### 3.1 W-ACTIONS-CRAFT — working settlements, fixed audio, a real forge — ✅ done in `wave/w-actions-craft`
+
+The player could press «Войти» in a settlement but every line under it was
+decoration; the location themes also all played at once; and a smithy existed
+with nothing to forge. This wave makes the settlement actions real, fixes the
+music player, and adds a crafting loop fed by the loot that was already rolled.
+
+- **Buildings do something (Bug A).** A new service (`services/building_actions.js`)
+  and `POST /api/settlements/buildings/:id/action` perform the action: a tavern
+  meal costs gold and eases hunger, rest clears fatigue, the temple heals for a
+  fee, the library yields lore, the guild opens its contract board, an inn rests.
+  `Settlement.jsx` renders a «Сделать» button per action and shows the result.
+- **One track at a time (Bug B).** `client/src/audio.js` no longer leaves an
+  earlier `<audio>` element running: every started element lives in a registry and
+  a new context stops all of them first. The old crossfade could orphan a loop when
+  a `play()` was rejected or interrupted, so themes layered. `shouldSwitchMusic()`
+  is the pure guard, unit-tested in `server/test/audio.test.js`.
+- **Crafting at the smithy.** Recipes (`game/crafting.js`) turn the loot monsters
+  already drop — bone shards, salt lumps, ash flakes, grave moss — plus a little
+  iron and gold into weapons, armour and draughts. `services/crafting.js` spends
+  the materials and fee in one transaction; the smithy shows a live recipe book
+  with affordability. Seven new forged items were added to `game/items.js`.
+- **Loot reaches the forge.** A direct hunt (`kind:'normal'`) never rolled the
+  randomizer table, so the crafting resources never dropped outside a road
+  ambush. Every normal battle now rolls the same table (guaranteeing one resource),
+  stored on the battle row so a reload cannot reroll it.
+- Tests: `server/test/buildings.test.js` (10) + the audio guard (1); suite
+  **383 pass / 0 fail**.
+
 | # | Wave | Goal | Touches |
 |---|------|------|---------|
 | ~~N1~~ | ~~**W-CLAN-LIVE**~~ | ✅ **done** — clan effects + names wired into battle, trade, crossings, rituals, quests | `wave/w-clan-live` |

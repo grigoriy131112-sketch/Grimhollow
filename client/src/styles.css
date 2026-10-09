@@ -584,8 +584,22 @@ ul.stats span { color: var(--muted); }
 .settlement-building-body { margin-top: 0.7rem; border-top: 1px dashed var(--line); padding-top: 0.6rem; }
 .settlement-building-body h3 { margin: 0.5rem 0 0.35rem; font-size: 0.95rem; color: var(--gold-soft); }
 .settlement-actions { list-style: none; padding: 0; margin: 0; }
-.settlement-actions li { padding: 0.25rem 0; border-bottom: 1px dashed var(--line); }
+.settlement-actions li { display: flex; align-items: center; gap: 0.6rem; padding: 0.25rem 0; border-bottom: 1px dashed var(--line); }
+.settlement-actions li > div { flex: 1; }
 .settlement-actions li:last-child { border-bottom: none; }
+.building-result { margin: 0.6rem 0; padding: 0.5rem 0.7rem; border-left: 3px solid var(--gold-soft); background: rgba(0,0,0,0.15); }
+.building-result p { margin: 0.15rem 0; }
+/* The smithy's forge (Wave W-SMITH) */
+.craft-forge { margin-top: 0.7rem; border-top: 1px dashed var(--line); padding-top: 0.5rem; }
+.craft-recipes { list-style: none; padding: 0; margin: 0.4rem 0 0; display: grid; gap: 0.5rem; }
+.craft-recipes li { display: grid; gap: 0.4rem; padding: 0.5rem 0.6rem; border: 1px solid var(--line); border-radius: 6px; }
+.craft-recipes li.craft-locked { opacity: 0.55; }
+.craft-recipe-head { display: flex; align-items: flex-start; gap: 0.5rem; }
+.craft-materials { display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem; font-size: 0.85rem; }
+.craft-materials .icon { vertical-align: -3px; margin-right: 2px; }
+.craft-have { color: #6fae5a; }
+.craft-need { color: #d88a5a; }
+.craft-recipes .btn { justify-self: start; }
 
 /* --- Shipyard (Wave W-SHIP) --- */
 .shipyard { display: flex; flex-direction: column; gap: 0.8rem; }
