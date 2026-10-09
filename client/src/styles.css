@@ -668,3 +668,85 @@ ul.stats span { color: var(--muted); }
   background: linear-gradient(180deg, rgba(58,45,68,0.5), rgba(36,28,44,0.5));
 }
 .journal-link:hover { border-color: var(--gold); color: var(--gold); text-decoration: none; }
+
+/* The Codex as a real book (Wave W-CODEX/W-SHELL, revised). A closed cover, then
+   a two-page spread with a table of contents on the left leaf and the open
+   chapter on the right. Turning a page flips the right leaf. */
+.book-stage {
+  display: flex; justify-content: center; align-items: flex-start;
+  padding: 2rem 1rem 4rem;
+  perspective: 2200px;
+}
+.book-cover {
+  width: min(420px, 80vw); aspect-ratio: 3 / 4; cursor: pointer;
+  border: 1px solid #4a3a20; border-radius: 6px 14px 14px 6px;
+  background:
+    linear-gradient(135deg, rgba(201,162,39,0.10), transparent 55%),
+    linear-gradient(180deg, #241a12 0%, #150f0a 100%);
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(224,192,96,0.18);
+  color: var(--ink); padding: 1.4rem;
+  display: flex; transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.book-cover:hover { transform: translateY(-3px) rotateX(2deg); box-shadow: 0 18px 46px rgba(0,0,0,0.6); }
+.book-cover-frame {
+  flex: 1; border: 1px solid rgba(224,192,96,0.35); border-radius: 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem;
+  padding: 1.5rem; text-align: center;
+}
+.book-cover-mark { font-size: 2.6rem; color: var(--gold-soft); }
+.book-cover-title { font-family: 'Cinzel', serif; font-size: 1.5rem; letter-spacing: 0.06em; color: var(--gold-soft); }
+.book-cover-sub { color: var(--muted); font-size: 0.85rem; }
+.book-cover-hint { margin-top: 1.2rem; color: var(--muted); font-size: 0.78rem; opacity: 0.8; letter-spacing: 0.08em; }
+
+.book { width: min(1100px, 96vw); }
+.book-spread {
+  display: grid; grid-template-columns: minmax(220px, 320px) 1fr;
+  background: linear-gradient(180deg, #efe6d2 0%, #e3d7bd 100%);
+  color: #2a2118; border-radius: 6px;
+  box-shadow: var(--shadow), inset 0 0 40px rgba(90,60,20,0.18);
+  border: 1px solid #b79b6a;
+  min-height: 60vh;
+  position: relative;
+}
+@media (max-width: 760px) { .book-spread { grid-template-columns: 1fr; } }
+
+.book-leaf { padding: 1.4rem 1.6rem; position: relative; }
+.book-leaf-left { border-right: 1px solid rgba(90,60,20,0.35); background: rgba(120,90,40,0.06); }
+.book-leaf-title { font-family: 'Cinzel', serif; color: #5a3f1c; border-bottom: 1px solid rgba(90,60,20,0.3); padding-bottom: 0.4rem; }
+.book-folio { text-align: center; margin-top: 1rem; }
+.book-toc { list-style: none; margin: 0.8rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.book-toc-item {
+  width: 100%; text-align: left; cursor: pointer; display: flex; gap: 0.6rem; align-items: baseline;
+  background: transparent; border: 1px solid transparent; border-radius: 4px;
+  padding: 0.45rem 0.5rem; color: #3a2c1a;
+}
+.book-toc-item:hover { background: rgba(120,90,40,0.10); }
+.book-toc-item.active { background: rgba(120,90,40,0.18); border-color: rgba(90,60,20,0.4); }
+.book-toc-num { font-family: 'Cinzel', serif; color: #8a6a2c; min-width: 1.2rem; }
+.book-toc-label { display: block; font-weight: 600; }
+.book-toc-blurb { display: block; color: #6b573a; }
+
+.book-leaf-right { transform-origin: left center; backface-visibility: hidden; }
+.book-leaf-right.flip-next { animation: pageFlipNext 0.46s ease; }
+.book-leaf-right.flip-prev { animation: pageFlipPrev 0.46s ease; }
+@keyframes pageFlipNext {
+  0% { transform: rotateY(0deg); opacity: 1; }
+  45% { transform: rotateY(-55deg); opacity: 0.35; }
+  100% { transform: rotateY(0deg); opacity: 1; }
+}
+@keyframes pageFlipPrev {
+  0% { transform: rotateY(0deg); opacity: 1; }
+  45% { transform: rotateY(45deg); opacity: 0.35; }
+  100% { transform: rotateY(0deg); opacity: 1; }
+}
+.book-page { margin-top: 0.6rem; }
+.book-controls {
+  display: flex; align-items: center; justify-content: center; gap: 0.8rem; margin-top: 0.9rem;
+}
+.book-turn {
+  cursor: pointer; background: rgba(30,22,36,0.9); color: var(--gold-soft);
+  border: 1px solid var(--line); border-radius: 4px; padding: 0.45rem 0.9rem;
+  font-family: 'Cinzel', serif;
+}
+.book-turn:disabled { opacity: 0.4; cursor: default; }
+.book-turn:hover:not(:disabled) { border-color: var(--gold); }
