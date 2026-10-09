@@ -88,17 +88,19 @@ it to the model — do not rewrite it.**
   memory quests (`services/quests.js`), as `docs/lore/clan.md` says ("набираются
   ритуалами и квестами памяти").
 
-### 2.3 Random encounters / bestiary are unused
+### 2.3 Random encounters / bestiary are unused — **DONE in W-BESTIARY**
 
-- `game/randomizer.js` (bestiary encounters + loot) and
-  `services/encounters.js` (`encounterPool`, `resolveEncounter`, `startEncounter`,
-  `applyLoot`) have **no caller** outside their own module and tests.
-- Road stops come from `game/travel.js`'s own small `ENCOUNTERS` table
-  (`gold`/`heal`/`mana`/`battle`/`nothing`); the bestiary pool is never drawn.
-- There is **no bestiary screen**; `GET /api/world/monsters` is only read by the
-  hero sheet's hunt list.
-- **To finish:** draw road/location encounters from the biome pool via
-  `services/encounters.js`, and add a **bestiary** section to the Codex.
+- Road stops in `game/travel.js` still carry their small `ENCOUNTERS` table
+  (`gold`/`heal`/`mana`/`battle`/`nothing`) for the friendly beats, but a road
+  **ambush now draws its beast from the biome pool**: `chooseTravel` calls
+  `resolveRoadEncounter` (`services/encounters.js`), which rolls the shared
+  bestiary by the road's danger band + biome. The spoils ride on the battle row
+  (`battles.loot`) and pay once on a win.
+- A **bestiary screen** now exists: `GET /api/world/bestiary`
+  (`services/world.js#getBestiary`) groups every monster into the lore's three
+  tiers with its haunts, and `client/src/pages/Bestiary.jsx` is a Codex chapter
+  (Бестиарий) with an on-the-spot hunt. `GET /api/world/monsters` still feeds the
+  sheet's hunt list.
 
 ### 2.4 Party talk on board is missing (W-SEA)
 
@@ -119,7 +121,7 @@ it to the model — do not rewrite it.**
 | # | Wave | Goal | Touches |
 |---|------|------|---------|
 | N1 | **W-CLAN-LIVE** | Wire clan effects + names (2.1, 2.2) into battles, trade, crossings, rituals, campaign | `services/battles.js`, `trade.js`, `travel.js`, `resurrections.js`, `campaign.js`, `quests.js` |
-| N2 | **W-BESTIARY** | Draw encounters from the biome pool (2.3) + a bestiary page in the Codex | `services/travel.js`, `services/encounters.js`, `client/src/pages/Codex.jsx` |
+| N2 | **W-BESTIARY** | ✅ shipped — road ambushes draw from the biome pool; bestiary Codex chapter | `services/travel.js`, `services/encounters.js`, `client/src/pages/Codex.jsx` |
 | N3 | **W-SEA-TALK** | Party talk on board (2.4) | `client/src/pages/Voyage.jsx` |
 | N4 | **W-SEA-BALANCE** | Scale sea enemies (and settle the payout question, 2.5) | `game/ship.js`, `services/naval.js` |
 

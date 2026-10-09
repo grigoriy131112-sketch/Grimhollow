@@ -120,6 +120,7 @@ CREATE TABLE IF NOT EXISTS battles (
   result        TEXT,
   kind          TEXT NOT NULL DEFAULT 'normal',
   revive_member INTEGER,
+  loot          TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );

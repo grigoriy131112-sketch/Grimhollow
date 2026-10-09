@@ -3,7 +3,7 @@ import { getLocation, getMonsterByName } from './world.js';
 import { startBattle } from './battles.js';
 import { grantItem } from './items.js';
 import { itemInfo } from '../game/items.js';
-import { rollEncounter, rollLoot, monsterRow, bandForDanger, poolFor } from '../game/randomizer.js';
+import { rollEncounter, rollLoot, rollRoadEncounter, monsterRow, bandForDanger, poolFor } from '../game/randomizer.js';
 
 // Resolve a random encounter for a place and turn it into a battle plus its
 // spoils (Wave G10). The rules are pure (game/randomizer.js); this service is
@@ -90,6 +90,35 @@ export function startEncounter({ characterId, locationId, seed = 'encounter' } =
     kind: 'encounter',
   });
   return { ...resolved, battle };
+}
+
+// Resolve the beast an overland road stop meets: the road's danger band and
+// biome pick it from the same bestiary pool the hunt screen uses, grounded in
+// the seeded rows so the fight uses the stats the rest of the game sees. Null
+// when the band/biome has nothing to meet (the caller then falls back to a quiet
+// outcome). Deterministic from the road seed and the stop minute.
+export function resolveRoadEncounter({ danger = 1, biome = null, seed = '', minute = 0 } = {}) {
+  const rolled = rollRoadEncounter({ danger, biome, seed: `${seed}:${minute}` });
+  if (!rolled) return null;
+  const stored = getMonsterByName(rolled.monster.name);
+  const monster = stored || { id: null, ...monsterRow(rolled.monster) };
+  const loot = rollLoot({
+    level: monster.level,
+    titled: rolled.titled,
+    classKey: monster.class_key || rolled.monster.classKey,
+    seed: `${seed}:${minute}`,
+  });
+  return {
+    encounter: {
+      id: monster.id,
+      name: monster.name,
+      description: monster.description,
+      level: monster.level,
+      classKey: monster.class_key || rolled.monster.classKey,
+      titled: rolled.titled,
+    },
+    loot,
+  };
 }
 
 // Hand over the spoils of a won encounter: gold plus any items (a resource or a
