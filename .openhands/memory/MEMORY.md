@@ -280,6 +280,25 @@ long detail in the daily logs.
 - **Next wave: W-SEA** (pirates, non-repeating islands/Fortune, sea monsters,
   ship combat; spends the ship points W-SHIP awards). Then W-CODEX/W-SHELL.
 
+## W-CODEX/W-SHELL (added on `wave/w-codex-shell`, PR #17)
+
+- The `wave/w-map`/`wave/w-ship` merge resolved all five union conflicts; W-MENU
+  was folded in, so PR #13 was closed as superseded (already an ancestor of
+  `main`).
+- **The Codex is a real book, not tabs** (user asked for a flipping book): a
+  closed cover → two-leaf spread (table of contents left, chapter right) with a
+  page-turn animation, `‹ Назад / Вперёд ›`, arrow keys and Esc. Same chapters
+  (Лор / Карта мира / Настройки / Создатели), each a thin wrapper over the
+  existing page so there is one implementation per section. A `?tab=` bookmark
+  (from the inventory) opens straight to that chapter.
+- **The Lore page is curated by `LORE_DOCS` in `game/lore_docs.js`** (not a
+  directory scan). User asked to hide **Клан / Квесты / Онлайн / Имена и стиль**
+  from the player-facing Lore — removed from `LORE_DOCS` so they 404 and vanish
+  from the list; the canon `.md` files stay for the waves that reference them
+  (G8 quests, G9 clan, G12 online). There is **no** "Разработчики" lore doc —
+  that is the separate **Создатели** (Creators) tab. `getLore` also requires a
+  server restart (catalogue read at boot) — `serve.sh` alone does not reload it.
+
 ## W-SHIP (added on `wave/w-ship`, PR #15)
 
 - A hero buys a **ship** in a **port** for gold (ports = `CROSSING_GATES` in
