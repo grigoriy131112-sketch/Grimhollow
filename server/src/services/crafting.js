@@ -3,7 +3,7 @@
 // the forged item. One transaction so a failure cannot half-spend a recipe.
 
 import { transaction } from '../db/index.js';
-import { getBuilding } from './settlements.js';
+import { getBuilding, describeItemKey } from './settlements.js';
 import { getCharacter } from './characters.js';
 import { grantItem, listItems } from './items.js';
 import { itemInfo } from '../game/items.js';
@@ -28,7 +28,7 @@ function recipeView(recipe, characterId, inventoryMap, gold) {
     gold: recipe.gold || 0,
     materials: recipe.materials.map((m) => ({
       itemKey: m.itemKey,
-      name: itemInfo(m.itemKey).name,
+      name: describeItemKey(m.itemKey).name,
       need: m.qty,
       have: inventoryMap[m.itemKey] || 0,
     })),
@@ -57,7 +57,7 @@ export function craft(characterId, recipeKey) {
   const { ok, missing, short } = canCraft(recipe, { have: inventoryMap, gold: c.gold });
   if (!ok) {
     const parts = [];
-    if (missing.length) parts.push(`не хватает: ${missing.map((m) => `${itemInfo(m.itemKey).name} (${m.has}/${m.need})`).join(', ')}`);
+    if (missing.length) parts.push(`не хватает: ${missing.map((m) => `${describeItemKey(m.itemKey).name} (${m.has}/${m.need})`).join(', ')}`);
     if (short) parts.push(`нужно ещё ${short} золота`);
     throw new Error(`Не выковать: ${parts.join('; ')}`);
   }

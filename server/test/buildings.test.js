@@ -102,6 +102,11 @@ test('the recipe book reports live affordability', () => {
   const blade = book.recipes.find((r) => r.key === 'forgeblade');
   assert.ok(blade.materials.length >= 2);
   assert.ok(blade.materials.every((m) => m.have === 0), 'materials are read from the bag');
+  // A trade-good material (iron_ore) has no catalogue entry, but must not show a
+  // Latin key to the player.
+  for (const r of book.recipes) {
+    for (const m of r.materials) assert.ok(/[А-Яа-яЁё]/.test(m.name), `${m.itemKey} has a Russian name`);
+  }
 });
 
 test('forging spends materials and gold and grants the item', () => {

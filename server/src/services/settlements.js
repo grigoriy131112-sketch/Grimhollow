@@ -31,6 +31,10 @@ function describeItem(itemKey) {
   return { name: PROVISIONAL_ITEM_NAMES[itemKey] || itemKey, description: '' };
 }
 
+// Public so the crafting service can label a material that is a trade good with
+// no catalogue entry (iron_ore, bone_charm…) instead of showing a Latin key.
+export const describeItemKey = describeItem;
+
 // The actions a building of this type offers. Unknown types resolve to nothing,
 // so a stray row never breaks the screen.
 export function actionsFor(type) {
