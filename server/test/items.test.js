@@ -15,6 +15,7 @@ import {
   addModifier, removeModifiers, tickModifiers, equipmentModifiers, effectiveStats,
   sumModifiers, applyModifiersToSource, modifierKey, normalizeModifier,
 } from '../src/game/modifiers.js';
+import { getMeters, setMeters } from '../src/services/survival.js';
 
 let counter = 0;
 function freshLeader() {
@@ -249,6 +250,28 @@ test('using a consumable is refused when it is not carried or not usable', () =>
   assert.throws(() => useConsumable(leader.id, 'shadow_draught'), /нет в сумке/);
   grantItem(leader.id, 'rusty_sword', 1);
   assert.throws(() => useConsumable(leader.id, 'rusty_sword'), /нельзя использовать/);
+});
+
+test('using food from the inventory also feeds the survival meters', () => {
+  const leader = freshLeader();
+  setMeters(leader.id, { hunger: 90, thirst: 90, fatigue: 0 });
+  grantItem(leader.id, 'bread_loaf', 1);
+
+  const res = useConsumable(leader.id, 'bread_loaf');
+  assert.ok(res.survival, 'the survival path ran');
+  assert.ok(res.survival.fed > 0, 'the loaf fed the hero');
+  assert.ok(getMeters(leader.id).hunger < 90, 'hunger actually dropped after eating');
+  assert.equal(getMeters(leader.id).thirst, 90, 'bread does not slake thirst');
+});
+
+test('using a plain potion does not touch the survival meters', () => {
+  const leader = freshLeader();
+  setMeters(leader.id, { hunger: 70, thirst: 70, fatigue: 0 });
+  grantItem(leader.id, 'bitter_herb', 1);
+
+  const res = useConsumable(leader.id, 'bitter_herb');
+  assert.equal(res.survival, null, 'a herb is not food or drink');
+  assert.deepEqual(getMeters(leader.id), { hunger: 70, thirst: 70, fatigue: 0 });
 });
 
 test('the inventory view reports equipment, buffs and the effective sheet', () => {

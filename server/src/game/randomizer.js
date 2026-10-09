@@ -8,6 +8,7 @@
 // abstractions and gods.
 
 import { hashString } from './travel.js';
+import { itemInfo } from './items.js';
 
 // The additional bestiary (docs/lore/bestiary.md, continuation of seed.js).
 // `biomes` is the affinity used to place a monster in the world, `weight` makes
@@ -63,6 +64,31 @@ export const LOOT_RESOURCES = [
 export const MEMORY_FRAGMENT = 'memory_fragment';
 export const MEMORY_FRAGMENT_NAME = 'Фрагмент памяти';
 const MEMORY_FRAGMENT_CHANCE = 0.35;
+
+// Worn gear a corpse can leave behind, by rarity. A monster drops at most one
+// piece, and only sometimes, so hunting is not a reliable shop: the smithy and
+// the settlement shelves still matter. Kept to the pre-forge catalogue so a
+// hunt never hands out the smithy's own output. Names come from the catalogue
+// (`itemInfo`) so a drop can never drift from the item the player receives.
+const EQUIPMENT_LOOT_KEYS = [
+  'rusty_sword', 'bone_buckler', 'gravedigger_boots', 'worn_leathers',
+  'hunter_bow', 'pallid_gauntlets', 'iron_hauberk', 'moonstone_ring',
+  'wolf_fang_amulet', 'dusk_hood', 'ashen_dagger', 'gravewarden_maul',
+];
+const EQUIPMENT_MIN_LEVEL = {
+  rusty_sword: 1, bone_buckler: 2, gravedigger_boots: 3, worn_leathers: 3,
+  hunter_bow: 5, pallid_gauntlets: 5, iron_hauberk: 6, moonstone_ring: 8,
+  wolf_fang_amulet: 8, dusk_hood: 9, ashen_dagger: 10, gravewarden_maul: 12,
+};
+const EQUIPMENT_WEIGHT = { rusty_sword: 3, bone_buckler: 3, gravedigger_boots: 2, worn_leathers: 3 };
+
+export const EQUIPMENT_LOOT = EQUIPMENT_LOOT_KEYS.map((key) => ({
+  key,
+  name: itemInfo(key).name,
+  weight: EQUIPMENT_WEIGHT[key] || 2,
+  minLevel: EQUIPMENT_MIN_LEVEL[key],
+}));
+const EQUIPMENT_LOOT_CHANCE = 0.16;
 
 // A small bump for the classes that live by the purse or the ledger.
 const LOOT_CLASS_BONUS = { rogue: 0.2, ranger: 0.15, bard: 0.1, warlock: 0.1 };
@@ -202,6 +228,15 @@ export function rollLoot({ level = 1, titled = false, classKey = null, seed = ''
       const res = weightedPick(LOOT_RESOURCES, rng);
       items.push({ key: res.key, qty: 1, name: res.name });
     }
+  }
+
+  // Sometimes the corpse still wears something worth taking. A titled horror is
+  // twice as likely to leave a named piece, and the pool is gated by the
+  // monster's level so a starter rat never coughs up an epic maul.
+  const gearPool = EQUIPMENT_LOOT.filter((e) => e.minLevel <= l);
+  if (gearPool.length && rng() < (titled ? EQUIPMENT_LOOT_CHANCE * 2 : EQUIPMENT_LOOT_CHANCE)) {
+    const gear = weightedPick(gearPool, rng);
+    items.push({ key: gear.key, qty: 1, name: gear.name });
   }
   return { gold, items, memoryFragment: items.some((i) => i.key === MEMORY_FRAGMENT) };
 }

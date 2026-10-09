@@ -12,6 +12,7 @@ import {
   applyModifiersToSource, effectiveStats, modifierSummary, RESOURCE_MAX, RESOURCE_KEYS,
 } from '../game/modifiers.js';
 import { getCharacter } from './characters.js';
+import { consume as consumeSurvival, isSurvivalConsumable } from './survival.js';
 
 export function grantItem(characterId, itemKey, qty = 1) {
   getDb().prepare(
@@ -209,7 +210,15 @@ export function useConsumable(characterId, itemKey) {
     "UPDATE characters SET hp = ?, mana = ?, stamina = ?, updated_at = datetime('now') WHERE id = ?",
   ).run(nextResources.hp, nextResources.mana, nextResources.stamina, characterId);
 
-  return { buffs: listBuffs(characterId), character: getCharacter(characterId), restored };
+  // Food and drink also move the survival meters. Eating a loaf restored stamina
+  // but never touched hunger at all, because only the separate
+  // `/survival/:id/consume` endpoint ran the survival path — using an item from
+  // the inventory left the hero "starving" right after a meal. `consume()`
+  // no-ops for anything that is not food or drink, so this is safe for potions.
+  let survival = null;
+  if (isSurvivalConsumable(itemKey)) survival = consumeSurvival(characterId, itemKey);
+
+  return { buffs: listBuffs(characterId), character: getCharacter(characterId), restored, survival };
 }
 
 // --- effective stats --------------------------------------------------------

@@ -11,8 +11,9 @@
 
 import { getDb, transaction } from '../db/index.js';
 import { getCharacter } from './characters.js';
-import { grantItem } from './items.js';
+import { grantItem, hasItem, takeItem, getEquipment } from './items.js';
 import { getNpcByKey } from './npcs.js';
+import { getLocation } from './world.js';
 import { itemInfo } from '../game/items.js';
 import { levelFromXp, deriveCharacter } from '../game/rules.js';
 import { grantNames } from './clan.js';
@@ -162,6 +163,10 @@ function questView(def, row) {
     rewardText: rewardText(def.reward, def.key),
     requires: def.requires,
     story: isStoryQuest(def),
+    // `deliver` needs the player to hand goods over, so the UI shows a «Отдать»
+    // button instead of the generic "mark a step" one.
+    deliverable: def.objective?.type === 'deliver',
+    deliverItem: def.objective?.type === 'deliver' ? def.objective.item : null,
     state: row ? row.status : 'available',
     progress,
     target: need,
@@ -305,6 +310,80 @@ export function advanceQuest(characterId, event) {
     results.push(result);
   }
   return results;
+}
+
+// Hand a carried item to an NPC. This is the one objective the event stream
+// cannot auto-run: `deliver` must *spend* the goods, so it only fires on an
+// explicit player action (the quest screen) or when the hero talks to the giver
+// with the goods in the bag (`tryDeliver`, called from services/dialogue.js).
+// The item is taken inside the same step that completes the quest, so a reload
+// in between cannot keep the goods and the reward.
+export function deliverQuest(characterId, key) {
+  const character = getCharacter(characterId);
+  if (!character) throw new Error('Персонаж не найден');
+  const active = statusOf(characterId, key);
+  if (!active || active.status !== 'active') throw new Error('Задание не в работе');
+  const row = questRow(key);
+  if (!row) throw new Error('Такого задания нет');
+  const def = rowToDef(row);
+  if (def.objective?.type !== 'deliver') throw new Error('Это задание не о доставке');
+
+  const need = objectiveCount(def.objective);
+  const itemKey = def.objective.item;
+  if (!hasItem(characterId, itemKey, need)) throw new Error('Не хватает предмета для доставки');
+  takeItem(characterId, itemKey, need);
+  const done = completeQuest(characterId, key);
+  return { ...done, delivered: { item: itemKey, qty: need } };
+}
+
+// Best-effort auto-delivery when the hero speaks to the giver. Returns the
+// delivered quests, or [] if none match — safe to call on every conversation.
+// This is what stops the one dead objective type: the player brings the goods to
+// Измора, says hello, and the quest closes without a hidden button.
+export function tryDeliver(characterId, npcKey) {
+  const out = [];
+  const activeRows = getDb().prepare(
+    "SELECT * FROM character_quests WHERE character_id = ? AND status = 'active' ORDER BY id",
+  ).all(characterId);
+  for (const activeRow of activeRows) {
+    const row = questRow(activeRow.quest_key);
+    if (!row) continue;
+    const def = rowToDef(row);
+    const obj = def.objective;
+    if (obj?.type !== 'deliver') continue;
+    if (String(obj.target) !== String(npcKey)) continue;
+    if (!hasItem(characterId, obj.item, objectiveCount(obj))) continue;
+    try { out.push(deliverQuest(characterId, def.key)); } catch { /* keep going */ }
+  }
+  return out;
+}
+
+// The `no_steel` oath: an objective to walk a named wild place without a weapon
+// drawn. It completes when the hero is standing there with the weapon slot
+// empty. Called from conversation, so it is an act of play, not a map glance.
+export function reportNoSteel(characterId, locationName) {
+  if (!locationName) return [];
+  const character = getCharacter(characterId);
+  if (!character) return [];
+  const here = character.locationId ? getLocation(character.locationId) : null;
+  if (!here || here.name !== locationName) return [];
+  if (getEquipment(characterId).weapon) return []; // steel in hand: the oath is not kept
+
+  const out = [];
+  const activeRows = getDb().prepare(
+    "SELECT * FROM character_quests WHERE character_id = ? AND status = 'active' ORDER BY id",
+  ).all(characterId);
+  for (const activeRow of activeRows) {
+    const row = questRow(activeRow.quest_key);
+    if (!row) continue;
+    const def = rowToDef(row);
+    const obj = def.objective;
+    if (obj?.type !== 'no_steel') continue;
+    if (String(obj.target) !== String(locationName)) continue;
+    try { out.push(...advanceQuest(characterId, { type: 'no_steel', target: locationName })); }
+    catch { /* keep going */ }
+  }
+  return out;
 }
 
 // The player reports progress by hand (the "I did it" button): advance one

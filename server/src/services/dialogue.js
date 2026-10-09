@@ -11,7 +11,7 @@ import { getNpc } from './npcs.js';
 import { getMember } from './party.js';
 import { companionTemplate } from '../game/companions.js';
 import { getCharacter } from './characters.js';
-import { advanceQuest } from './quests.js';
+import { advanceQuest, tryDeliver, reportNoSteel } from './quests.js';
 import { rewordReply, answerQuestion } from './llm.js';
 
 const parseJson = (v, fallback) => {
@@ -201,10 +201,20 @@ export async function say(leaderId, kind, refId, text) {
   // "поговорить со Смотрителем шпиля" advances from the conversation itself.
   // Objectives target the NPC's Latin `key` (e.g. spire_warden), not its Russian
   // display name, so the key is what the event must carry.
+  let delivered = [];
   if (kind === 'npc') {
     const npc = getNpc(refId);
     if (npc) {
       try { advanceQuest(leaderId, { type: 'talk', target: npc.key }); }
+      catch { /* quests are best-effort */ }
+      // A `deliver` objective closes when the hero brings the goods to its
+      // giver: speaking to them with the item in the bag hands it over.
+      try { delivered = tryDeliver(leaderId, npc.key); }
+      catch { /* quests are best-effort */ }
+      // A `no_steel` objective ("пройти лес, не подняв оружия") completes when
+      // the hero stands in the named wild place with no weapon equipped. Only
+      // checked on a conversation so it never fires from merely opening a map.
+      try { delivered.push(...reportNoSteel(leaderId, npc.location)); }
       catch { /* quests are best-effort */ }
     }
   }
@@ -218,6 +228,7 @@ export async function say(leaderId, kind, refId, text) {
     reply: finalText,
     llm: llm.source,           // 'local' | 'cloud' | 'template'
     memory: recallMemory(leaderId, kind, refId),
+    quests: delivered,
   };
 }
 

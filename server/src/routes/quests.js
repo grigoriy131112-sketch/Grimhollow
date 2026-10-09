@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
   listQuests, getQuestView, acceptQuest, abandonQuest, reportProgress,
-  advanceQuest, completeQuest, failQuest,
+  advanceQuest, completeQuest, failQuest, deliverQuest,
 } from '../services/quests.js';
 
 const router = Router();
@@ -43,6 +43,16 @@ router.post('/:characterId/progress', (req, res) => {
     const key = req.body?.key;
     if (!key) throw new Error('Нужен key задания');
     res.json(reportProgress(Number(req.params.characterId), String(key), req.body?.amount));
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// Hand the goods to the giver (a `deliver` objective). Spends the items and
+// completes the quest in one step.
+router.post('/:characterId/deliver', (req, res) => {
+  try {
+    const key = req.body?.key;
+    if (!key) throw new Error('Нужен key задания');
+    res.json(deliverQuest(Number(req.params.characterId), String(key)));
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
 

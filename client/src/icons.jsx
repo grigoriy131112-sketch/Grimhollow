@@ -117,6 +117,9 @@ const ITEM_ICONS = {
   mana_lichen: 'mana_lichen', glowcap: 'glowcap',
   shadow_draught: 'shadow_draught', iron_brew: 'iron_brew', wolfsblood: 'wolfsblood', hex_vial: 'hex_vial',
   crow_feather: 'crow_feather', ossuary_heart: 'ossuary_heart', pale_lantern: 'pale_lantern',
+  forgeblade: 'forgeblade', ashen_plate: 'ashen_plate', bone_buckler_forged: 'bone_buckler_forged',
+  grave_moss_salve: 'grave_moss_salve', ember_draught: 'ember_draught',
+  tempered_edge: 'tempered_edge', salted_hide: 'salted_hide',
 };
 
 export const itemIcon = (key) => (key && ITEM_ICONS[key] ? `/art/items/${ITEM_ICONS[key]}.svg` : null);
