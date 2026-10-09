@@ -102,7 +102,7 @@ export const QUEST_DEFS = [
     title: 'Обломки для брокера',
     text: 'Сарн покупает всё, что море вынесет. Три обломка — и он замолвит слово.',
     objective: { type: 'collect', target: 'tide_shard', count: 3 },
-    reward: { gold: 60, xp: 80 },
+    reward: { gold: 60, xp: 80, item: 'tide_shard', itemQty: 3 },
     requires: ['prologue_water'],
   },
   {
@@ -189,6 +189,34 @@ export const QUEST_DEFS = [
     objective: { type: 'talk', target: 'spire_warden', count: 1 },
     reward: { unlock: 'spire_approach' },
     requires: ['bone_records'],
+  },
+  {
+    key: 'frozen_cradle',
+    source: 'library', giver: 'frozen_keeper', chapter: 4,
+    title: 'Иней на имени',
+    text: 'Хранитель холода согласен говорить только с тем, кто прошёл шпиль. Принеси ему три обломка прилива — и он назовёт способ «оттаивания».',
+    objective: { type: 'collect', target: 'tide_shard', count: 3 },
+    reward: { xp: 220, opinion: 5 },
+    requires: ['spire_permission'],
+  },
+  {
+    key: 'bought_memory',
+    source: 'market', giver: 'glass_broker', chapter: 5,
+    title: 'Память на продажу',
+    text: 'Стеклянный брокер из Кор-Ашана торгует чужими днями. Он продаст память о короле — если ему докажут, что герой умеет слушать.',
+    objective: { type: 'talk', target: 'glass_broker', count: 1 },
+    reward: { gold: 80, xp: 240 },
+    requires: ['spire_permission'],
+  },
+  {
+    key: 'forest_ally',
+    source: 'temple', giver: 'forest_mother',
+    chapter: 6,
+    title: 'Лес, который помнит',
+    text: 'Богиня-мать не говорит, а растёт. Её служители примут героя в союз, если он докажет, что несёт память, а не забвение.',
+    objective: { type: 'talk', target: 'forest_mother', count: 1 },
+    reward: { xp: 260, opinion: 5 },
+    requires: ['spire_permission'],
   },
 ];
 

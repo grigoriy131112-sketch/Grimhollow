@@ -35,12 +35,13 @@ function opinionOf(leaderId, npcKey) {
 test('the quest catalogue seeds the prologue and chapters 1-3, once', () => {
   seedAll();
   const keys = getDb().prepare('SELECT key FROM quests ORDER BY sort_order, id').all().map((r) => r.key);
-  assert.equal(keys.length, 14, '12-15 starting quests per docs/lore/campaign.md');
+  assert.equal(keys.length, 17, 'prologue + chapters 1-6 per docs/lore/campaign.md');
   for (const key of [
     'prologue_name', 'prologue_water', 'prologue_first_ally',
     'ferry_debt', 'broker_ledger', 'hermit_bones', 'tide_relic',
     'chapel_song', 'first_revival', 'plague_answer',
     'fog_medicine', 'ash_forest_oath', 'bone_records', 'spire_permission',
+    'frozen_cradle', 'bought_memory', 'forest_ally',
   ]) {
     assert.ok(keys.includes(key), `${key} is seeded`);
   }
@@ -59,7 +60,7 @@ test('the quest catalogue seeds the prologue and chapters 1-3, once', () => {
 
   // Re-seeding never duplicates.
   assert.equal(seedQuests().skipped, true);
-  assert.equal(getDb().prepare('SELECT COUNT(*) AS n FROM quests').get().n, 14);
+  assert.equal(getDb().prepare('SELECT COUNT(*) AS n FROM quests').get().n, 17);
 });
 
 test('accepting, advancing and completing a quest grants its gold and xp', () => {

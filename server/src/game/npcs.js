@@ -82,6 +82,29 @@ export const NPCS = [
     description: 'Единственный, кто добровольно остался у подножия Чёрного шпиля. И остался собой.',
     plus: ['studious', 'brave'], minus: ['coward', 'gloomy'], opinion: 44,
   },
+  // Дальние континенты — three keepers who open the campaign's later chapters
+  // (the continent quests, G8/G11 wiring).
+  {
+    key: 'frozen_keeper', name: 'Хранитель холода', location: 'Ледяной причал', role: 'жрец Морозной Колыбели',
+    gender: 'm',
+    class: 'cleric', portrait: null,
+    description: 'Стоит у кромки льда и замораживает имена тех, кого уже не вернуть.',
+    plus: ['calm', 'pious'], minus: ['stubborn', 'gloomy'], opinion: 46,
+  },
+  {
+    key: 'glass_broker', name: 'Стеклянный брокер', location: 'Порт Солёного Стекла', role: 'торговец памятью',
+    gender: 'm',
+    class: 'rogue', portrait: null,
+    description: 'Продаёт чужую память в оправе из дюнного стекла и сам не помнит своего имени.',
+    plus: ['clever', 'greedy'], minus: ['liar', 'vain'], opinion: 40,
+  },
+  {
+    key: 'forest_mother', name: 'Служительница Матери', location: 'Зелёный причал', role: 'голос Зелёного Предела',
+    gender: 'f',
+    class: 'druid', portrait: null,
+    description: 'Не помнит себя вчерашней: лес помнит за неё — и говорит её устами.',
+    plus: ['kind', 'calm'], minus: ['heretic', 'paranoid'], opinion: 52,
+  },
 ];
 
 export const npcByKey = (key) => NPCS.find((n) => n.key === key) || null;

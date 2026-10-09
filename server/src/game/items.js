@@ -248,6 +248,50 @@ export const ITEMS = {
     type: 'artifact', rarity: 'rare', artifact: true,
     stats: { accuracy: 5, evasion: 2 }, price: 220,
   },
+
+  // --- Trade goods and finds ------------------------------------------------
+  // Bestiary loot (G10) and the tide quest (G8) name these keys; before them the
+  // catalogue had no entry, so the bag could not show what was won. Settlement
+  // shelf keys that the trade service already labels via its own table (torch,
+  // oil_flask, iron_ore, bone_charm, dried_fish) are deliberately not listed here
+  // as the catalogue treats `itemInfo(key).name === key` as "unknown". Each of
+  // these carries a real Russian name. `tide_shard` is the one a quest collects.
+  tide_shard: {
+    key: 'tide_shard',
+    name: 'Обломок прилива',
+    description: 'Осколок, что море вынесло на берег. Брокер из гавани скупает такие.',
+    type: 'resource', rarity: 'uncommon', price: 12,
+  },
+  bone_shard: {
+    key: 'bone_shard',
+    name: 'Костяной обломок',
+    description: 'Обломок кости, оставшийся от чьей-то смерти.',
+    type: 'resource', rarity: 'common', price: 6,
+  },
+  salt_lump: {
+    key: 'salt_lump',
+    name: 'Соляной ком',
+    description: 'Слежавшаяся соль с низин. Товар нехитрый, да нужный.',
+    type: 'resource', rarity: 'common', price: 5,
+  },
+  ash_flake: {
+    key: 'ash_flake',
+    name: 'Хлопья пепла',
+    description: 'Пепел, что не разносит ветер. Собирается горстями.',
+    type: 'resource', rarity: 'common', price: 4,
+  },
+  grave_moss: {
+    key: 'grave_moss',
+    name: 'Могильный мох',
+    description: 'Мох с могил, мягкий и холодный. Годится для настоев.',
+    type: 'resource', rarity: 'uncommon', price: 9,
+  },
+  memory_fragment: {
+    key: 'memory_fragment',
+    name: 'Фрагмент памяти',
+    description: 'Чужая память, застывшая в стекле. Дороже золота для тех, кто помнит.',
+    type: 'artifact', rarity: 'epic', artifact: true, price: 0,
+  },
 };
 
 export const RITUAL_ITEM = 'shepherd_key';

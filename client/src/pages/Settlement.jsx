@@ -77,7 +77,9 @@ function Building({ building }) {
                   </li>
                 ))}
               </ul>
-              <p className="muted small">Торговля откроется в следующей волне.</p>
+              <Link to={`/trade/${building.id}`}>
+                <button type="button" className="btn small">Торговать</button>
+              </Link>
             </div>
           )}
         </div>

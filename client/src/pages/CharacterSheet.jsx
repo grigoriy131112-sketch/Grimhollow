@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { abilityIcon, monsterIcon, Icon } from '../icons.jsx';
 import { statLabel } from '../statLabels.js';
 import HeroTabs from '../HeroTabs.jsx';
+import SurvivalMeters from '../SurvivalMeters.jsx';
 
 export default function CharacterSheetPage() {
   const { id } = useParams();
@@ -11,12 +12,14 @@ export default function CharacterSheetPage() {
   const [character, setCharacter] = useState(null);
   const [monsters, setMonsters] = useState([]);
   const [items, setItems] = useState([]);
+  const [survival, setSurvival] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     api.getCharacter(id).then(setCharacter).catch((e) => setError(e.message));
     api.listMonsters().then(setMonsters).catch(() => {});
     api.getItems(id).then(setItems).catch(() => {});
+    api.getSurvival(id).then(setSurvival).catch(() => {});
   }, [id]);
 
   const startFight = async (monsterId) => {
@@ -53,6 +56,8 @@ export default function CharacterSheetPage() {
           <p className="dead-tag">🪦 Герой пал. Отряд полёг целиком, и вытащить его было некому. Этот герой больше не сражается — создайте нового.</p>
         </div>
       )}
+
+      {survival && <SurvivalMeters view={survival} />}
 
       <div className="grid2">
         <div className="card">

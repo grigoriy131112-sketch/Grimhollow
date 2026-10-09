@@ -8,6 +8,7 @@ const TABS = [
   { key: 'gear', label: 'Снаряжение', to: (id) => `/inventory/${id}` },
   { key: 'party', label: 'Отряд', to: (id) => `/party/${id}` },
   { key: 'quests', label: 'Квесты', to: (id) => `/quests/${id}` },
+  { key: 'campaign', label: 'Кампания', to: (id) => `/campaign/${id}` },
   { key: 'camp', label: 'Лагерь', to: (id) => `/upgrades/${id}` },
   { key: 'clan', label: 'Клан', to: (id) => `/clan/${id}` },
 ];

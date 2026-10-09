@@ -11,6 +11,7 @@ import { getNpc } from './npcs.js';
 import { getMember } from './party.js';
 import { companionTemplate } from '../game/companions.js';
 import { getCharacter } from './characters.js';
+import { advanceQuest } from './quests.js';
 import { rewordReply, answerQuestion } from './llm.js';
 
 const parseJson = (v, fallback) => {
@@ -195,6 +196,18 @@ export async function say(leaderId, kind, refId, text) {
   getDb().prepare(
     "UPDATE dialogue_messages SET text = ? WHERE id = (SELECT id FROM dialogue_messages WHERE leader_id=? AND kind=? AND ref_id=? AND speaker='other' ORDER BY id DESC LIMIT 1)",
   ).run(finalText, leaderId, kind, refId);
+
+  // Talking to a named NPC reports a `talk` quest event, so an objective like
+  // "поговорить со Смотрителем шпиля" advances from the conversation itself.
+  // Objectives target the NPC's Latin `key` (e.g. spire_warden), not its Russian
+  // display name, so the key is what the event must carry.
+  if (kind === 'npc') {
+    const npc = getNpc(refId);
+    if (npc) {
+      try { advanceQuest(leaderId, { type: 'talk', target: npc.key }); }
+      catch { /* quests are best-effort */ }
+    }
+  }
 
   return {
     topic,

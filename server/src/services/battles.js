@@ -15,6 +15,7 @@ import { awardPartyPoints } from './upgrades.js';
 import { applyBonusesToSource, POINTS_PER_WIN, POINTS_PER_LEVEL } from '../game/party_upgrades.js';
 import { grantNames } from './clan.js';
 import { NAMES_PER_RITUAL } from '../db/seed_clan.js';
+import { advanceQuest } from './quests.js';
 
 // Share of gold dropped when a hero is defeated (they survive with 1 HP).
 const DEFEAT_GOLD_PENALTY = 0.25;
@@ -250,6 +251,19 @@ function settle(battle, state, status) {
     loot = applyBattleLoot(battle.id, battle.character_id, battle.loot);
   }
 
+  // Quests: a won fight reports the kill and, for a death-realm ritual, the
+  // revival — the same event stream the quest objectives listen for. Wrapped so
+  // a quest problem can never break settling a battle.
+  const quests = [];
+  if (won) {
+    try {
+      if (monster) quests.push(...advanceQuest(battle.character_id, { type: 'kill', target: monster.name }));
+      if (battle.kind === 'death_realm' && battle.revive_member) {
+        quests.push(...advanceQuest(battle.character_id, { type: 'revive', target: 'companion' }));
+      }
+    } catch { /* quests are best-effort */ }
+  }
+
   return {
     xpGained, goldGained, status,
     leveledUp: leaderResult.leveledUp,
@@ -262,6 +276,7 @@ function settle(battle, state, status) {
     revival,
     loot,
     namesGained,
+    quests,
   };
 }
 
@@ -276,6 +291,10 @@ function applyBattleLoot(battleId, characterId, loot) {
   }
   const items = (loot.items || []).map((it) => {
     grantItem(characterId, it.key, it.qty || 1);
+    // Spoils are also `collect` quest events: a quest that asks for bone shards
+    // or a memory fragment advances as soon as a won fight drops one.
+    try { advanceQuest(characterId, { type: 'collect', target: it.key, item: it.key, count: it.qty || 1 }); }
+    catch { /* best-effort */ }
     return { key: it.key, qty: it.qty || 1, name: it.name || null };
   });
   return { gold: loot.gold || 0, items, memoryFragment: !!loot.memoryFragment };

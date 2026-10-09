@@ -5,6 +5,7 @@ import { getLocation, recordVisit } from './world.js';
 import { startBattle } from './battles.js';
 import { resolveRoadEncounter } from './encounters.js';
 import { grantItem } from './items.js';
+import { advanceQuest } from './quests.js';
 import { RITUAL_ITEM, itemInfo } from '../game/items.js';
 import { RITUAL_SITE } from '../game/revival.js';
 import {
@@ -110,6 +111,11 @@ function finish(travel, state, now) {
     .run(JSON.stringify(state), travel.id);
   recordVisit(travel.character_id, travel.to_id);
   const arrivedAt = getLocation(travel.to_id);
+  // A completed road reports the arrival to the quests service, so a `visit`
+  // objective ("сходить в Сумеречную гавань") advances without the manual button.
+  if (arrivedAt) {
+    try { advanceQuest(travel.character_id, { type: 'visit', target: arrivedAt.name }); } catch { /* best-effort */ }
+  }
   // Grant on the first *arrival at* the chapel, not the first time it was ever
   // seen: opening the place from the map calls recordVisited (a mere sighting),
   // which used to consume the first-visit flag before the party ever walked in,

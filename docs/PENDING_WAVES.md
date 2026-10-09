@@ -147,6 +147,33 @@ them back into the party at any moment. Built as **one system**:
 
 ## 3. Next queue (each needs its own `погнали`)
 
+### 3.0 W-WIRE — wiring the unreachable into play — ✅ done in `wave/w-wire`
+
+The full-game audit found that G6/G7 (settlements + trade), the G8→G9→G11 endgame,
+the survival meters and the campaign screen existed but nothing in play reached
+them. W-WIRE finishes the mechanic **additively**:
+
+- **Endgame reachable.** Completing the chapter quests now grants the clan's
+  `chapter_1..chapter_6` unlocks (the milestones' ordinals — the campaign's own
+  numbers skip 1) plus the campaign flags the clan/finale read as unlocks
+  (`war_truth`, `world_woken`, …). Before, nothing granted `chapter_1`, so the clan
+  (and the finale) could never be founded.
+- **Quests auto-advance in land play.** Won battles report `kill`/`revive`, road
+  arrivals report `visit`, NPC talk reports `talk` (by key), recruiting reports
+  `collect companion`, and loot drops report `collect`. The manual "Отметить шаг"
+  button is no longer the only way to move a quest.
+- **Settlements + trade reachable.** A location with a settlement links into it;
+  a shop/market building links to `/trade/:buildingId` (the stale "next wave" text
+  is gone).
+- **Survival meters visible.** A shared `SurvivalMeters` panel on the location
+  (with a rest button) and the hero sheet.
+- **Campaign screen reachable.** A «Кампания» tab on the hero strip.
+- **Missing content keys.** `tide_shard` (the G8 collect target), the G10 randomizer
+  loot keys, and `memory_fragment` now have catalogue entries; `broker_ledger`
+  rewards 3× `tide_shard` so its objective is closeable. Three new continent quests
+  (chapters 4-6) and their keepers open the branch flags.
+- Tests: `server/test/wire.test.js` (9); suite **372 pass / 0 fail**.
+
 | # | Wave | Goal | Touches |
 |---|------|------|---------|
 | ~~N1~~ | ~~**W-CLAN-LIVE**~~ | ✅ **done** — clan effects + names wired into battle, trade, crossings, rituals, quests | `wave/w-clan-live` |
