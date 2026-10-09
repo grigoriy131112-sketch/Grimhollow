@@ -294,3 +294,23 @@ long detail in the daily logs.
   6-10 monsters. UI `pages/Shipyard.jsx` (`/shipyard/:characterId`), linked from
   the party strip. `npm test` 282/0 (+15).
 
+
+## Preview "ошибка" root cause (2026-10-08) — fix/preview-resilient-requests (PR #16)
+
+- The sandbox **stops after 20 min idle** (`OH_RUNTIME_IDLE_TIMEOUT_SECONDS=1200`).
+  While stopped the preview URL is down; on return the runtime wakes and the
+  server restarts, but a browser request arriving one moment too early fails at
+  the **network level**. `client/src/api.js#request` turned that into the raw
+  **"Failed to fetch"**, which read as "the site is broken again" and cleared
+  only after sending the agent a message (which runs the `serve.sh` hook).
+- Fix: `request()` **retries a GET** up to 4x (400/800/1200 ms) and shows
+  «Сервер просыпается, подождите секунду…»; **writes are never retried**.
+- Verified healthy otherwise: `npm test` 312/0, both ports 200, and the resident
+  watcher restarts the server within ~5 s (killed it and watched it come back).
+- **Hooks do bind to this conversation** (`meta.json` has `user_prompt_submit` +
+  `session_start` with the `serve.sh` command), but they do NOT re-fire on every
+  message here — so the resident watcher is what keeps the preview up in-session,
+  and it must be started once after a runtime restart (`bash scripts/serve.sh`).
+- **Do not run `npm run build` while `serve.sh` may rebuild**: a parallel vite
+  build fails with a non-zero exit though the artifact is fine. Build first,
+  then serve.
