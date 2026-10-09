@@ -112,22 +112,26 @@ them back into the party at any moment. Built as **one system**:
 - **Tests:** `server/test/garrison.test.js` (10) — station/recall, the cap,
   determinism, the idle cap, no double pay, empty garrison, petitions.
 
-### 2.4 Random encounters / bestiary are unused
-- `game/randomizer.js` (bestiary encounters + loot) and
-  `services/encounters.js` (`encounterPool`, `resolveEncounter`, `startEncounter`,
-  `applyLoot`) have **no caller** outside their own module and tests.
-- Road stops come from `game/travel.js`'s own small `ENCOUNTERS` table
-  (`gold`/`heal`/`mana`/`battle`/`nothing`); the bestiary pool is never drawn.
-- There is **no bestiary screen**; `GET /api/world/monsters` is only read by the
-  hero sheet's hunt list.
-- **To finish:** draw road/location encounters from the biome pool via
-  `services/encounters.js`, and add a **bestiary** section to the Codex.
+### 2.4 Random encounters / bestiary — ✅ done in `wave/w-bestiary` (W-BESTIARY)
 
-### 2.5 Party talk on board is missing (W-SEA)
+- Road stops in `game/travel.js` still carry their small `ENCOUNTERS` table
+  (`gold`/`heal`/`mana`/`battle`/`nothing`) for the friendly beats, but a road
+  **ambush now draws its beast from the biome pool**: `chooseTravel` calls
+  `resolveRoadEncounter` (`services/encounters.js`), which rolls the shared
+  bestiary by the road's danger band + biome. The spoils ride on the battle row
+  (`battles.loot`) and pay once on a win.
+- A **bestiary screen** now exists: `GET /api/world/bestiary`
+  (`services/world.js#getBestiary`) groups every monster into the lore's three
+  tiers with its haunts, and `client/src/pages/Bestiary.jsx` is a Codex chapter
+  (Бестиарий) with an on-the-spot hunt. `GET /api/world/monsters` still feeds the
+  sheet's hunt list.
 
-- `Voyage.jsx` links to the papers but does not mount `Talk`. The user asked for
-  **dialogue with the party while sailing** ("можно поговорить с отрядом").
-- **To finish:** mount `Talk` with `kind="companion"` on `Voyage.jsx`.
+### 2.5 Party talk on board — ✅ done in `wave/w-sea-talk`
+
+- `Voyage.jsx` now mounts `Talk` with `kind="companion"` next to the papers link:
+  a «Поговорить с отрядом» card lists the active party and opens the same
+  conversation panel the Party screen uses (same memory, same relations, same
+  local-AI layer). The village/road talk and the sea talk are one system.
 
 ### 2.6 Enemy scaling for sea battles (W-SEA open point)
 
@@ -143,12 +147,13 @@ them back into the party at any moment. Built as **one system**:
 |---|------|------|---------|
 | ~~N1~~ | ~~**W-CLAN-LIVE**~~ | ✅ **done** — clan effects + names wired into battle, trade, crossings, rituals, quests | `wave/w-clan-live` |
 | ~~N2~~ | ~~**W-CLAN-ROSTER**~~ | ✅ **done** — invite companions to the clan, self-petitions, real-clock raid income, recall | `wave/w-clan-roster` |
-| N3 | **W-BESTIARY** | Draw encounters from the biome pool (2.4) + a bestiary page in the Codex | `services/travel.js`, `services/encounters.js`, `client/src/pages/Codex.jsx` |
-| N4 | **W-SEA-TALK** | Party talk on board (2.5) | `client/src/pages/Voyage.jsx` |
+| ~~N3~~ | ~~**W-BESTIARY**~~ | ✅ **done** — ambushes draw from the biome pool; bestiary Codex chapter | `wave/w-bestiary` |
+| ~~N4~~ | ~~**W-SEA-TALK**~~ | ✅ **done** — party talk on board (2.5) | `wave/w-sea-talk` |
 | N5 | **W-SEA-BALANCE** | Scale sea enemies (and settle the payout question, 2.6) | `game/ship.js`, `services/naval.js` |
 
 Recommended order: **N4 → N3 → N5** (N4 is tiny and unblocks a verbatim user
-request; N3 and N5 are larger).
+request; N3 and N5 are larger). **N1–N4 are done**; only **N5 W-SEA-BALANCE**
+remains in the queue.
 
 ---
 

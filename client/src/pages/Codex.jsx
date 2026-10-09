@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import LorePage from './Lore.jsx';
 import WorldPage from './World.jsx';
+import BestiaryPage from './Bestiary.jsx';
 import SettingsPage from './Settings.jsx';
 import CreatorsPage from './Creators.jsx';
 
@@ -16,6 +17,7 @@ import CreatorsPage from './Creators.jsx';
 
 const CHAPTERS = [
   { key: 'lore', label: 'Лор', page: LorePage, blurb: 'Что известно о мире, богах и землях.' },
+  { key: 'bestiary', label: 'Бестиарий', page: BestiaryPage, blurb: 'Всё, что таится на дорогах и в глуши.' },
   { key: 'map', label: 'Карта мира', page: WorldPage, blurb: 'Где стоит отряд и куда ведут дороги.' },
   { key: 'settings', label: 'Настройки', page: SettingsPage, blurb: 'Как устроена эта летопись.' },
   { key: 'creators', label: 'Создатели', page: CreatorsPage, blurb: 'Кто сделал Grimhollow и на чём.' },
@@ -77,7 +79,7 @@ export default function CodexPage() {
           <span className="book-cover-frame">
             <span className="book-cover-mark" aria-hidden="true">☠</span>
             <span className="book-cover-title">Дневник Гримхолла</span>
-            <span className="book-cover-sub">Лор · Карта · Настройки · Создатели</span>
+            <span className="book-cover-sub">Лор · Бестиарий · Карта · Настройки · Создатели</span>
             <span className="book-cover-hint">Нажмите, чтобы открыть</span>
           </span>
         </button>

@@ -98,8 +98,10 @@ test('a ticking garrison pays gold into the leader purse and names into the clan
   const goldBefore = getCharacter(leader.id).gold;
   const namesBefore = getClan(leader.id).clan.names;
 
-  // Force the clock forward without sleeping: the service takes a `now`.
-  const now = Date.now() + 12 * MS_PER_TICK;
+  // Advance from the service's own watermark, not a Date.now() taken before it:
+  // garrisonRow() stamps `last_tick_ms` lazily a few ms later, so measuring from
+  // the earlier instant can floor one tick short.
+  const now = getGarrison(leader.id).lastTickMs + 12 * MS_PER_TICK;
   const report = tickGarrison(leader.id, now);
 
   assert.equal(report.ticks, 12, 'twelve ticks elapsed');

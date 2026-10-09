@@ -259,6 +259,14 @@ export default function BattlePage() {
               )}
             </>
           )}
+          {results?.loot && (results.loot.gold > 0 || results.loot.items?.length > 0) && (
+            <p className="good-tag">
+              🎁 Добыча: {results.loot.gold > 0 ? `${results.loot.gold} золота` : ''}
+              {results.loot.items?.length > 0
+                ? `${results.loot.gold > 0 ? ' · ' : ''}${results.loot.items.map((it) => `${it.name || it.key}${it.qty > 1 ? ` ×${it.qty}` : ''}`).join(', ')}`
+                : ''}
+            </p>
+          )}
           {results?.fallen?.length > 0 && (
             <p className="dead-tag">Павшие навсегда: {results.fallen.map((f) => f.name).join(', ')}. Их можно вернуть лишь ритуалом воскрешения.</p>
           )}

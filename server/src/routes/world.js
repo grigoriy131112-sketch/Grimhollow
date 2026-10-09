@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getWorld, getMap, getLocation, listMonsters, recordVisited } from '../services/world.js';
+import { getWorld, getMap, getLocation, listMonsters, getBestiary, recordVisited } from '../services/world.js';
 import { listItems } from '../services/items.js';
 
 const router = Router();
@@ -10,6 +10,7 @@ router.get('/map', (req, res) => {
   res.json(getMap(characterId));
 });
 router.get('/monsters', (req, res) => res.json(listMonsters()));
+router.get('/bestiary', (req, res) => res.json(getBestiary()));
 router.get('/locations/:id', (req, res) => {
   const loc = getLocation(Number(req.params.id));
   if (!loc) return res.status(404).json({ error: 'Локация не найдена' });

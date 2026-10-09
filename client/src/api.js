@@ -47,6 +47,7 @@ export const api = {
   getLocation: (id) => request('GET', `/world/locations/${id}`),
   getItems: (characterId) => request('GET', `/world/characters/${characterId}/items`),
   listMonsters: () => request('GET', '/world/monsters'),
+  getBestiary: () => request('GET', '/world/bestiary'),
   startBattle: (payload) => request('POST', '/battles', payload),
   getBattle: (id) => request('GET', `/battles/${id}`),
   preview: (id, abilityId, targetKey) =>

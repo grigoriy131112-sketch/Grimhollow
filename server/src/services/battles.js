@@ -42,7 +42,7 @@ function monsterSource(monster) {
   };
 }
 
-export function startBattle({ characterId, monsterId, locationId, kind = 'normal', reviveMember = null, opponent = null }) {
+export function startBattle({ characterId, monsterId, locationId, kind = 'normal', reviveMember = null, opponent = null, loot = null }) {
   const character = getCharacter(characterId);
   if (!character) throw new Error('Персонаж не найден');
   if (character.fate === 'dead') throw new Error('Герой пал — им больше нельзя сражаться');
@@ -77,9 +77,10 @@ export function startBattle({ characterId, monsterId, locationId, kind = 'normal
   });
   const db = getDb();
   const info = db.prepare(
-    `INSERT INTO battles (status, character_id, monster_id, location_id, state, log, kind, revive_member)
-     VALUES ('active', ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(character.id, monster.id, location?.id ?? null, serialize(state), JSON.stringify(events), kind, reviveMember ?? null);
+    `INSERT INTO battles (status, character_id, monster_id, location_id, state, log, kind, revive_member, loot)
+     VALUES ('active', ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(character.id, monster.id, location?.id ?? null, serialize(state), JSON.stringify(events), kind, reviveMember ?? null,
+    loot ? JSON.stringify(loot) : null);
   const battleId = info.lastInsertRowid;
 
   // An enemy faster than the whole party can act before the player's first turn
@@ -97,7 +98,13 @@ export function startBattle({ characterId, monsterId, locationId, kind = 'normal
 export function getBattle(id) {
   const row = getDb().prepare('SELECT * FROM battles WHERE id = ?').get(id);
   if (!row) return null;
-  return { ...row, state: deserialize(row.state), log: deserialize(row.log), active: row.status === 'active' };
+  return {
+    ...row,
+    state: deserialize(row.state),
+    log: deserialize(row.log),
+    loot: row.loot ? JSON.parse(row.loot) : null,
+    active: row.status === 'active',
+  };
 }
 
 export function getBattleView(id) {
@@ -235,6 +242,14 @@ function settle(battle, state, status) {
     }
   }
 
+  // A road ambush carries the spoils its overland encounter rolled when the stop
+  // was answered. Granted only on a win, and only once — the loot is cleared from
+  // the row as it pays, so re-reading a finished battle never pays twice.
+  let loot = null;
+  if (won && battle.loot) {
+    loot = applyBattleLoot(battle.id, battle.character_id, battle.loot);
+  }
+
   return {
     xpGained, goldGained, status,
     leveledUp: leaderResult.leveledUp,
@@ -245,8 +260,25 @@ function settle(battle, state, status) {
     fallen,
     revived,
     revival,
+    loot,
     namesGained,
   };
+}
+
+// The spoils of a won encounter battle: gold plus any item, granted through the
+// same inventory service every other item uses. The stored loot is consumed as
+// it is paid, so settling the same finished battle again cannot duplicate it.
+function applyBattleLoot(battleId, characterId, loot) {
+  getDb().prepare('UPDATE battles SET loot = NULL WHERE id = ?').run(battleId);
+  if (loot.gold) {
+    getDb().prepare("UPDATE characters SET gold = gold + ?, updated_at = datetime('now') WHERE id = ?")
+      .run(loot.gold, characterId);
+  }
+  const items = (loot.items || []).map((it) => {
+    grantItem(characterId, it.key, it.qty || 1);
+    return { key: it.key, qty: it.qty || 1, name: it.name || null };
+  });
+  return { gold: loot.gold || 0, items, memoryFragment: !!loot.memoryFragment };
 }
 
 export function getAbilityPreview(id, abilityId, targetKey) {

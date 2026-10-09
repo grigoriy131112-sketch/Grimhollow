@@ -3,6 +3,7 @@ import { getCharacter } from './characters.js';
 import { activeMembers, getMember, grantMemberXp } from './party.js';
 import { getLocation, recordVisit } from './world.js';
 import { startBattle } from './battles.js';
+import { resolveRoadEncounter } from './encounters.js';
 import { grantItem } from './items.js';
 import { RITUAL_ITEM, itemInfo } from '../game/items.js';
 import { RITUAL_SITE } from '../game/revival.js';
@@ -174,12 +175,31 @@ export function chooseTravel(id, choice, now = clock()) {
 
   let battle = null;
   let finalOutcome = outcome;
+  let loot = null;
   if (outcome.kind === 'battle') {
-    // A road can end somewhere with nothing left to fight; fall back to a quiet
-    // resolution rather than stranding the party on a broken encounter.
-    try {
-      battle = startBattle({ characterId: travel.character_id, locationId: travel.to_id });
-    } catch {
+    // The beast is not drawn from the destination's own hunt list: the road's
+    // danger band and biome pick it from the shared bestiary pool, so a road
+    // ambush can meet a horror neither endpoint would offer. When nothing can be
+    // met (a bare band, a missing spawn) the road stays quiet instead of
+    // stranding the party on a broken encounter.
+    const spawned = resolveRoadEncounter({
+      danger: plan.danger, biome: plan.biome, seed: plan.seed, minute: caught.pending.minute,
+    });
+    if (spawned && spawned.encounter.id) {
+      try {
+        battle = startBattle({
+          characterId: travel.character_id,
+          monsterId: spawned.encounter.id,
+          locationId: travel.to_id,
+          kind: 'encounter',
+          loot: spawned.loot,
+        });
+        loot = spawned.loot;
+        finalOutcome = { ...finalOutcome, monster: spawned.encounter.name };
+      } catch {
+        finalOutcome = { kind: 'nothing', text: 'Дорога пуста — бой не состоялся.' };
+      }
+    } else {
       finalOutcome = { kind: 'nothing', text: 'Дорога пуста — бой не состоялся.' };
     }
   } else if (outcome.kind === 'gold' || outcome.kind === 'heal' || outcome.kind === 'mana') {
@@ -190,7 +210,7 @@ export function chooseTravel(id, choice, now = clock()) {
 
   const answered = { ...caught, cursor: caught.cursor + 1, pending: null, lastOutcome: { choice, ...finalOutcome } };
   const next = resume(answered, now);
-  return { travel: commit(travel, next, now), outcome: finalOutcome, battleId: battle?.id ?? null };
+  return { travel: commit(travel, next, now), outcome: finalOutcome, battleId: battle?.id ?? null, loot };
 }
 
 // Persist the new state, or finish the trip if the far end has been reached.

@@ -122,7 +122,7 @@ export function planTravel({ from, to, seed }) {
     minute,
     encounter: encounterAt({ seed: seedKey, minute, danger, safe }),
   }));
-  return { minutes, danger, safe, seed: seedKey, events };
+  return { minutes, danger, safe, biome: to?.biome || from?.biome || null, seed: seedKey, events };
 }
 
 // --- resolving an encounter ---------------------------------------------------

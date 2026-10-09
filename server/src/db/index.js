@@ -44,6 +44,7 @@ function migrate(d) {
   const battleCols = columns('battles');
   if (!battleCols.includes('kind')) d.exec("ALTER TABLE battles ADD COLUMN kind TEXT NOT NULL DEFAULT 'normal'");
   if (!battleCols.includes('revive_member')) d.exec('ALTER TABLE battles ADD COLUMN revive_member INTEGER');
+  if (!battleCols.includes('loot')) d.exec('ALTER TABLE battles ADD COLUMN loot TEXT');
   const charCols = columns('characters');
   if (!charCols.includes('fate')) d.exec("ALTER TABLE characters ADD COLUMN fate TEXT NOT NULL DEFAULT 'alive'");
   if (!charCols.includes('fate_ref')) d.exec('ALTER TABLE characters ADD COLUMN fate_ref INTEGER');
