@@ -27,7 +27,9 @@ const indexOf = (key) => Math.max(0, CHAPTERS.findIndex((c) => c.key === key));
 export default function CodexPage() {
   const [params, setParams] = useSearchParams();
   const fromUrl = params.get('tab');
-  const [open, setOpen] = useState(false);
+  // A deep link (?tab=...) from the inventory bookmark opens straight to that
+  // chapter; the plain nav entry (no tab) shows the closed cover first.
+  const [open, setOpen] = useState(() => isChapter(fromUrl));
   const [leaf, setLeaf] = useState(() => (isChapter(fromUrl) ? indexOf(fromUrl) : 0));
   const [flip, setFlip] = useState(null);
 
