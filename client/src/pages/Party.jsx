@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { portraitIcon, classColor, Icon } from '../icons.jsx';
 import { statLabel } from '../statLabels.js';
 import Talk from '../Talk.jsx';
+import HeroTabs from '../HeroTabs.jsx';
 
 const REL = (v) => Math.max(0, Math.min(100, v));
 const relTone = (v) => (v < 25 ? 'bad' : v < 50 ? 'warn' : 'good');
@@ -108,6 +109,7 @@ export default function PartyPage() {
   return (
     <div>
       <Link to={`/characters/${leaderId}`} className="muted">← {party.leader.name}</Link>
+      <HeroTabs characterId={party.leader.id} active="party" />
       <div className="page-head">
         <h1>Отряд</h1>
         <span className="badge">{party.size} спутник(ов) · уход при &lt;{party.leaveThreshold}%</span>

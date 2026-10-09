@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { itemIcon, Icon } from '../icons.jsx';
 import { statLabel } from '../statLabels.js';
+import HeroTabs from '../HeroTabs.jsx';
 
 const RARITY_COLORS = {
   common: '#a08a6a', uncommon: '#6fae5a', rare: '#5a8fd8', epic: '#9a5ad8', legendary: '#d9b44a',
@@ -64,6 +65,7 @@ export default function InventoryPage() {
       </div>
 
       {error && <div className="error">{error}</div>}
+      <HeroTabs characterId={character.id} active="gear" />
 
       <div className="card journal-bookmark">
         <h2>Дневник героя</h2>
