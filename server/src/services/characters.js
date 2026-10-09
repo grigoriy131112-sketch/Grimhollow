@@ -2,6 +2,7 @@ import { getDb } from '../db/index.js';
 import { deriveCharacter, validateCharacterInput, levelFromXp } from '../game/rules.js';
 import { getBonuses } from './upgrades.js';
 import { applyBonusesToSource } from '../game/party_upgrades.js';
+import { clanPartyBonuses } from './clan.js';
 
 export function listCharacters() {
   return getDb().prepare('SELECT * FROM characters ORDER BY created_at DESC').all().map(deriveCharacter);
@@ -25,6 +26,18 @@ export function bonusSummary(bonuses) {
   };
 }
 
+// Everything that strengthens the party, folded into one bonus shape: the party
+// tree (Очки отряда) plus the clan (doctrine + holdings). Battle, sheet and party
+// strip all read this, so the numbers a player reads match the numbers they
+// fight with. A hero with no clan contributes nothing extra.
+export function getPartyBonuses(leaderId) {
+  const tree = getBonuses(leaderId);
+  const clan = clanPartyBonuses(leaderId);
+  const mult = { ...(tree.mult || {}) };
+  for (const [k, v] of Object.entries(clan.mult || {})) mult[k] = (mult[k] || 0) + v;
+  return { ...tree, mult };
+}
+
 // A character's sheet with the party tree folded in: base stats plus the
 // leader's bonuses, so what the player reads matches what they fight with.
 // Battles call getCharacter() and apply the bonuses themselves, so they must
@@ -32,7 +45,7 @@ export function bonusSummary(bonuses) {
 export function getCharacterSheet(id) {
   const character = getCharacter(id);
   if (!character) return null;
-  const bonuses = getBonuses(character.id);
+  const bonuses = getPartyBonuses(character.id);
   const boosted = applyBonusesToSource(character, bonuses);
   return {
     ...character,

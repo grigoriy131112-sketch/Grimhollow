@@ -3,7 +3,7 @@ import {
   createBattle, takePlayerAction, previewAction, serialize, deserialize,
   activeCombatant, aliveCombatants, combatantByKey,
 } from '../game/combat.js';
-import { getCharacter, applyBattleRewards } from './characters.js';
+import { getCharacter, applyBattleRewards, getPartyBonuses } from './characters.js';
 import { getMonster, getLocation } from './world.js';
 import { activeMembers, getMember, markDead, grantMemberXp, reviveMember, applyRevivalRelations } from './party.js';
 import { grantItem, activeModifiers } from './items.js';
@@ -11,8 +11,10 @@ import { getMeters } from './survival.js';
 import { revivalDelta, WITNESS_DELTA } from '../game/revival.js';
 import { needModifiersFromMeters } from '../game/survival.js';
 import { RITUAL_ITEM } from '../game/items.js';
-import { getBonuses, awardPartyPoints } from './upgrades.js';
+import { awardPartyPoints } from './upgrades.js';
 import { applyBonusesToSource, POINTS_PER_WIN, POINTS_PER_LEVEL } from '../game/party_upgrades.js';
+import { grantNames } from './clan.js';
+import { NAMES_PER_RITUAL } from '../db/seed_clan.js';
 
 // Share of gold dropped when a hero is defeated (they survive with 1 HP).
 const DEFEAT_GOLD_PENALTY = 0.25;
@@ -56,7 +58,7 @@ export function startBattle({ characterId, monsterId, locationId, kind = 'normal
   // strengthens everyone: stats scale and regeneration deepens. Equipment, active
   // buffs and survival needs also apply, so a hero fights with the sheet the
   // player reads (see getCharacterSheet/getInventory).
-  const bonuses = getBonuses(character.id);
+  const bonuses = getPartyBonuses(character.id);
   const needs = needModifiersFromMeters(getMeters(character.id));
   const selfMods = (id) => [...activeModifiers(id), ...needs];
   const boost = (src) => {
@@ -212,9 +214,11 @@ function settle(battle, state, status) {
   // Death realm: beating the boss calls the bound companion back from the dead.
   // Who they are decides how being pulled back lands, and the living who watched
   // the leader walk into death for a peer warm to them too. The boss drops the
-  // key that opens the next gate, so the ritual is repeatable.
+  // key that opens the next gate, so the ritual is repeatable. A won ritual also
+  // pays the clan in names (docs/lore/clan.md); a hero with no clan earns none.
   let revived = null;
   let revival = null;
+  let namesGained = 0;
   if (won && battle.kind === 'death_realm' && battle.revive_member) {
     const member = getMember(battle.revive_member);
     if (member && member.status === 'dead') {
@@ -225,6 +229,8 @@ function settle(battle, state, status) {
         witnessDelta: WITNESS_DELTA,
       });
       grantItem(battle.character_id, RITUAL_ITEM, 1);
+      grantNames(battle.character_id, NAMES_PER_RITUAL);
+      namesGained = NAMES_PER_RITUAL;
       revived = { id: back.id, name: back.name, level: back.level, hp: back.hp, relation: revival.revived };
     }
   }
@@ -239,6 +245,7 @@ function settle(battle, state, status) {
     fallen,
     revived,
     revival,
+    namesGained,
   };
 }
 
