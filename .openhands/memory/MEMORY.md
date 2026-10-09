@@ -438,3 +438,23 @@ stale chat brief was wrong. `gh` is not authed - use
 - **Do not run `npm run build` while `serve.sh` may rebuild**: a parallel vite
   build fails with a non-zero exit though the artifact is fine. Build first,
   then serve.
+
+## Wave queue & GitHub access (2026-10-08, orchestrator)
+
+- `main` = `298bfe4`. Shipped & merged: W-MAP (**PR #14**), W-SHIP (#15),
+  W-AUDIO (#18), W-CODEX/W-SHELL (#17), W-SEA (#20), W-THEME (#21),
+  W-HERO-TABS (#22). Open drafts: **#23** `wave/w-clan-live`→main, **#24**
+  `wave/w-clan-roster`→`wave/w-clan-live` (stacked on #23), **#25**
+  `wave/w-sea-talk`→main, **#26** `wave/w-bestiary`→main, **#27**
+  `wave/w-sea-balance`→main.
+- Never-stack rule: each new wave branches from **`main`** (not another wave),
+  one PR, opened last (default draft via the `create_pr` tool).
+- **`gh` CLI is not authenticated in this sandbox.** Read GitHub with
+  `curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/…`;
+  refresh pushes with `git remote set-url origin
+  https://${GITHUB_TOKEN}@github.com/grigoriy131112-sketch/Grimhollow.git`.
+- Sea-battle balance (W-SEA-BALANCE, PR #27): enemy tier stats in
+  `game/naval.js` are derived from a **reference ship** (`forgedForLevel` +
+  `effectiveOutput`) rather than a flat table; `seaPoints` scales with the tier
+  for both kinds. `createSeaBattle` takes an injectable `rng` for deterministic
+  tests. Open knob (not built): absolute ship-point grind (~13,000 to flagship).
