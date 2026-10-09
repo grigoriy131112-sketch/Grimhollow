@@ -15,6 +15,20 @@ import { getDb, transaction } from './index.js';
 // is what lets the clan pay for its holdings with both.
 export const GOLD_PER_NAME = 25;
 
+// Names a won death-realm ritual yields the clan (docs/lore/clan.md: names are
+// earned by rituals and memory quests). Applied by services/battles.js on a won
+// `death_realm` battle; a clan that has not been founded simply earns none.
+export const NAMES_PER_RITUAL = 3;
+
+// Quests that are about memory and names (docs/lore/clan.md: names are earned by
+// memory quests). Completing one pays the clan in names. Keys match
+// db/seed_quests.js; the titles are «Книга с чужим именем», «Первое возвращение»,
+// «Песня утонувшей часовни», «Запись о Пепельной войне», «Счёт за воскрешение».
+export const MEMORY_QUEST_KEYS = [
+  'prologue_name', 'first_revival', 'chapel_song', 'bone_records', 'plague_answer',
+];
+export const NAMES_PER_MEMORY_QUEST = 2;
+
 // --- levels and ranks -------------------------------------------------------
 //
 // Levels 1..5: база -> 1 здание -> 2 -> 3 -> флот (docs/lore/clan.md). A

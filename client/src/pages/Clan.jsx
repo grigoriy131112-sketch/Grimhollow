@@ -161,6 +161,9 @@ export default function ClanPage() {
   const [heroId, setHeroId] = useState(leaderId || '');
   const [view, setView] = useState(null);
   const [hireable, setHireable] = useState([]);
+  const [party, setParty] = useState(null);
+  const [garrison, setGarrison] = useState(null);
+  const [petitions, setPetitions] = useState([]);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -177,8 +180,18 @@ export default function ClanPage() {
     try {
       const v = await getJson(`/clan/leader/${id}`);
       setView(v);
-      if (v.clan) setHireable((await getJson(`/clan/leader/${id}/hireable`)).candidates || []);
-      else setHireable([]);
+      if (v.clan) {
+        setHireable((await getJson(`/clan/leader/${id}/hireable`)).candidates || []);
+        const g = await getJson(`/clan/leader/${id}/garrison`);
+        setGarrison(g);
+        setPetitions(g.petitions || []);
+        setParty(await getJson(`/party/${id}`));
+      } else {
+        setHireable([]);
+        setGarrison(null);
+        setPetitions([]);
+        setParty(null);
+      }
     } catch (e) { setError(e.message); }
   };
   useEffect(() => { load(heroId); }, [heroId]);
@@ -323,6 +336,82 @@ export default function ClanPage() {
             ))}
             {hireable.length === 0 && <p className="muted">Некого нанять.</p>}
           </div>
+
+          {garrison && (
+            <>
+              <h2>Гарнизон</h2>
+              <p className="muted small">
+                Кто служит клану, ходит в рейды сам и приносит золото, трофеи и имена.
+                Доход идёт по часам: раз в {Math.round(garrison.msPerTick / 60000)} мин, до {garrison.goldPerTick} 🪙 за бойца.
+                Клан держит {garrison.count} в гарнизоне; взять любого можно в любой миг — но отряд не резиновый, кап «Сбора» держится.
+              </p>
+
+              <h3>В гарнизоне</h3>
+              <div className="cards">
+                {(garrison.members || []).map((m) => (
+                  <div className="card" key={m.id}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <Icon src={m.portrait} alt={m.name} size={30} />
+                      <span style={{ flex: 1 }}>
+                        <b>{m.name}</b>
+                        <div className="muted small">{m.className} · ур. {m.level}</div>
+                      </span>
+                      <button type="button" className="btn small" disabled={busy} onClick={() => run(() => postJson(`/clan/leader/${heroId}/garrison/${m.id}/recall`), `${m.name} возвращается в отряд.`)}>
+                        Взять в отряд
+                      </button>
+                    </div>
+                    <p className="small muted">{m.history}</p>
+                  </div>
+                ))}
+                {garrison.count === 0 && <p className="muted">Гарнизон пуст — отправьте кого-нибудь из отряда.</p>}
+              </div>
+
+              <h3>Из отряда — в клан</h3>
+              <div className="cards">
+                {(party?.members || []).filter((m) => m.assignment === 'party').map((m) => (
+                  <div className="card" key={m.id}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <Icon src={m.portrait} alt={m.name} size={28} />
+                      <span style={{ flex: 1 }}>
+                        <b>{m.name}</b>
+                        <div className="muted small">{m.className} · ур. {m.level}</div>
+                      </span>
+                      <button type="button" className="btn small" disabled={busy} onClick={() => run(() => postJson(`/clan/leader/${heroId}/garrison/${m.id}/station`), `${m.name} отряжён в клан.`)}>
+                        Отрядить в клан
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {(party?.members || []).filter((m) => m.assignment === 'party').length === 0 && (
+                  <p className="muted">В отряде никого нет.</p>
+                )}
+              </div>
+
+              <h3>Сами просятся в клан</h3>
+              <p className="muted small">Приходят по часам, если среди клана есть место. Каждого можно принять или отказать — отказ окончательный.</p>
+              <div className="cards">
+                {petitions.map((p) => (
+                  <div className="card" key={p.id}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <Icon src={p.portrait} alt={p.name} size={28} />
+                      <span style={{ flex: 1 }}>
+                        <b>{p.name}</b>
+                        <div className="muted small">{p.className} · ур. {p.level}</div>
+                      </span>
+                      <button type="button" className="btn small" disabled={busy} onClick={() => run(() => postJson(`/clan/leader/${heroId}/petitions/${p.id}/accept`), `${p.name} принят в клан.`)}>
+                        Принять
+                      </button>
+                      <button type="button" className="btn small ghost" disabled={busy} onClick={() => run(() => postJson(`/clan/leader/${heroId}/petitions/${p.id}/decline`), 'Отказано.')}>
+                        Отказать
+                      </button>
+                    </div>
+                    <p className="small muted">{p.history}</p>
+                  </div>
+                ))}
+                {petitions.length === 0 && <p className="muted">Пока никто не просился.</p>}
+              </div>
+            </>
+          )}
         </>
       )}
     </div>
