@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 import { useCallback, useEffect, useState } from 'react';
+import { installUnlock, bindUiSounds, playMusic, resolveContext, setVolumes } from './audio.js';
+import { loadPrefs, subscribePrefs } from './prefs.js';
 import CharactersPage from './pages/Characters.jsx';
 import CharacterSheetPage from './pages/CharacterSheet.jsx';
 import WorldPage from './pages/World.jsx';
@@ -48,8 +50,37 @@ function Nav() {
   );
 }
 
+// Route plus the location/settlement a screen hints at decide the music context.
+// Pages call `hintScene({ location | settlement | type })` after they load their
+// data, so the map screen and a place's own screen can differ.
+function useAudioContext() {
+  const { pathname } = useLocation();
+  const [hint, setHint] = useState(null);
+
+  useEffect(() => {
+    setVolumes(loadPrefs());
+    installUnlock();
+    const off = bindUiSounds();
+    const unsubscribe = subscribePrefs(setVolumes);
+    return () => { off(); unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
+    const onHint = (e) => setHint(e.detail || null);
+    window.addEventListener('grimhollow:scene', onHint);
+    return () => window.removeEventListener('grimhollow:scene', onHint);
+  }, []);
+
+  useEffect(() => { setHint(null); }, [pathname]);
+
+  useEffect(() => {
+    playMusic(resolveContext({ pathname, location: hint && hint.location, settlement: hint && hint.settlement }));
+  }, [pathname, hint]);
+}
+
 export default function App() {
   const { pathname } = useLocation();
+  useAudioContext();
   const [menu, setMenu] = useState({ characters: [], saves: [] });
 
   const refreshMenu = useCallback(

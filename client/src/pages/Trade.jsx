@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { hintScene } from '../audio.js';
 import { itemIcon, Icon } from '../icons.jsx';
 
 // Trade (Wave G7). The trade API lives under /api/trade (routes/trade.js).
@@ -43,7 +44,7 @@ export default function TradePage() {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = () => getJson(`/trade/offers/${buildingId}`).then(setView).catch((e) => setError(e.message));
+  const load = () => getJson(`/trade/offers/${buildingId}`).then((v) => { setView(v); hintScene({ settlement: { type: v && v.building && v.building.type } }); }).catch((e) => setError(e.message));
   useEffect(() => { load(); }, [buildingId]);
 
   useEffect(() => {

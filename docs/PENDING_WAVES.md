@@ -52,6 +52,8 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 | Wave | Goal | New files (owner) | Depends on | Status |
 |------|------|-------------------|------------|--------|
 | **W-MENU** | Start menu hub: Новая игра / Сохранённые игры (continue) / Настройки / Создатели / Лор. Remove save **import**. | `client/src/pages/MainMenu.jsx`, `Creators.jsx`, `Lore.jsx` | — | **PR #13 (in review)** |
+| **W-CODEX / W-SHELL** | Remove the top text nav; add a journal/book to the character's inventory (Лор / Карта мира / Настройки / Создатели), separate from the item slots. Depends on W-MENU being in `main` | `client/src/App.jsx`, `client/src/pages/Inventory.jsx`, new `pages/Codex.jsx` | W-MENU | not started |
+| **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | **in this PR** (`wave/w-audio`) |
 | **W-CODEX / W-SHELL** | Remove the top text nav; add a journal/book to the character's inventory (Лор / Карта мира / Настройки / Создатели), separate from the item slots. Depends on W-MENU being in `main` | `client/src/App.jsx`, `client/src/pages/Inventory.jsx`, new `pages/Codex.jsx` | W-MENU | **in this PR** (`wave/w-codex-shell`) |
 | **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | not started |
 | **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) | `client/src/GlobalMap.jsx`, art | — | not started |
