@@ -48,6 +48,11 @@ function migrate(d) {
   const charCols = columns('characters');
   if (!charCols.includes('fate')) d.exec("ALTER TABLE characters ADD COLUMN fate TEXT NOT NULL DEFAULT 'alive'");
   if (!charCols.includes('fate_ref')) d.exec('ALTER TABLE characters ADD COLUMN fate_ref INTEGER');
+  const memberCols = columns('party_members');
+  // 'party' = active in the roster; 'clan' = stationed in the clan's garrison.
+  if (!memberCols.includes('assignment')) {
+    d.exec("ALTER TABLE party_members ADD COLUMN assignment TEXT NOT NULL DEFAULT 'party'");
+  }
 }
 
 export function transaction(fn) {

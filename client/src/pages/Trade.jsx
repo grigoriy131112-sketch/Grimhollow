@@ -44,7 +44,7 @@ export default function TradePage() {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = () => getJson(`/trade/offers/${buildingId}`).then((v) => { setView(v); hintScene({ settlement: { type: v && v.building && v.building.type } }); }).catch((e) => setError(e.message));
+  const load = (id = heroId) => getJson(`/trade/offers/${buildingId}${id ? `?characterId=${id}` : ''}`).then((v) => { setView(v); hintScene({ settlement: { type: v && v.building && v.building.type } }); }).catch((e) => setError(e.message));
   useEffect(() => { load(); }, [buildingId]);
 
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function TradePage() {
     if (!id) { setInventory([]); return; }
     getJson(`/items/${id}`).then((inv) => setInventory(inv.items || [])).catch(() => setInventory([]));
   };
-  useEffect(() => { loadInventory(heroId); }, [heroId]);
+  useEffect(() => { loadInventory(heroId); if (heroId) load(heroId); }, [heroId]);
 
   const hero = useMemo(() => characters.find((c) => String(c.id) === String(heroId)) || null, [characters, heroId]);
   const gold = hero ? hero.gold : 0;
@@ -91,7 +91,8 @@ export default function TradePage() {
   if (!view) return <div className="muted center">Загрузка…</div>;
 
   const { building, offers, canTrade, sellRate } = view;
-  const sellPercent = Math.round((sellRate || 0) * 100);
+  const clanTrade = view.clanTradeRate || 0;
+  const sellPercent = Math.round(((sellRate || 0) + clanTrade) * 100);
 
   return (
     <div>
