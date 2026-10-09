@@ -533,3 +533,39 @@ icon named below (<author>/<icon>), same CC BY 3.0 license as the rest.
   crow_feather.svg  <-  lorc/feather.svg
   ossuary_heart.svg  <-  delapouite/heart-armor.svg
   pale_lantern.svg  <-  lorc/lantern.svg
+
+--------------------------------------------------------------------------------
+Audio credits (Wave W-AUDIO)
+
+Every music loop and sound effect is CC0 / public domain, taken from
+OpenGameArt.org. CC0 needs no attribution, but the source is named here so a
+track can always be traced. Files were re-encoded to mono OGG Vorbis and, for
+music, trimmed to a ~72s loop with short fades and loudness-normalised; the
+music engine crossfades between them. One file per game context.
+
+Music:
+  menu.ogg        - haeldb        - "Tragic ambient main menu"    https://opengameart.org/content/tragic-ambient-main-menu
+  world.ogg       - pauliuw       - "The Field Of Dreams"         https://opengameart.org/content/the-field-of-dreams
+  location.ogg    - yd            - "Dungeon Ambience"            https://opengameart.org/content/dungeon-ambience
+  settlement.ogg  - cynicmusic    - "Town Theme RPG"              https://opengameart.org/content/town-theme-rpg
+  battle.ogg      - bonsaiheldin  - "Fast fight / battle music"   https://opengameart.org/content/fast-fight-battle-music
+  sea.ogg         - Cleyton RX    - "Underwater Theme"            https://opengameart.org/content/underwater-theme
+  port.ogg        - randommind    - "Medieval: The Old Tower Inn" https://opengameart.org/content/medieval-the-old-tower-inn
+  tavern.ogg      - mrpoly        - "Menu Music"                  https://opengameart.org/content/menu-music
+  temple.ogg      - tokyogeisha   - "Creepy"                      https://opengameart.org/content/creepy
+  forest.ogg      - haeldb        - "Cave Theme"                  https://opengameart.org/content/cave-theme
+  marsh.ogg       - haeldb        - "Creepy Forest (F)"           https://opengameart.org/content/creepy-forest-f
+  waste.ogg       - yd            - "Desert theme"                https://opengameart.org/content/desert-theme
+  coast.ogg       - kindland      - "Forgoten tomb ambience"      https://opengameart.org/content/forgoten-tomb-ambience
+  bonefield.ogg   - subspaceaudio - "Boss Battle Music"           https://opengameart.org/content/boss-battle-music
+  snow.ogg        - kistol        - "Snowfall"                    https://opengameart.org/content/snowfall
+  campaign.ogg    - Alexander Ehlers - "Free Music Pack"          https://opengameart.org/content/free-music-pack
+
+Sound effects:
+  ui_click.ogg, ui_back.ogg - Kenney      - "51 UI sound effects"  https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks
+  open.ogg                  - Kenney      - "50 RPG sound effects" https://opengameart.org/content/50-rpg-sound-effects
+  splash.ogg                - artisticdude - "RPG Sound Pack"      https://opengameart.org/content/rpg-sound-pack
+  miss.ogg                  - ogrebane    - "Battle Sound Effects" https://opengameart.org/content/battle-sound-effects
+  level_up.ogg              - wobbleboxx  - "Level up, power up, Coin get" https://opengameart.org/content/level-up-power-up-coin-get-13-sounds
+  hit.ogg, crit.ogg, loot.ogg, death.ogg, coin.ogg, cannon.ogg
+                            - Hellfire    - "80 CC0 RPG SFX"       https://opengameart.org/content/80-cc0-rpg-sfx

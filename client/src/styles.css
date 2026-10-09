@@ -636,3 +636,6 @@ ul.stats span { color: var(--muted); }
 .lore-table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; font-size: 0.86rem; }
 .lore-table th, .lore-table td { border: 1px solid var(--line); padding: 0.3rem 0.5rem; text-align: left; }
 .lore-table th { color: var(--gold-soft); }
+
+.slider-row { display: flex; align-items: center; gap: 0.75rem; }
+.slider-row input[type="range"] { flex: 1; max-width: 260px; accent-color: var(--gold); }

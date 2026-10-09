@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { abilityIcon, monsterIcon, classColor, Icon } from '../icons.jsx';
 import SceneBackdrop from '../scenes.jsx';
+import { mapSfx, playSfx } from '../audio.js';
 
 const STAT_RU = { attack: 'атака', defense: 'защита', accuracy: 'точность', evasion: 'уклонение', speed: 'скорость' };
 
@@ -139,6 +140,7 @@ export default function BattlePage() {
       else if (e.type === 'down' && e.target) { map[e.target] = { kind: 'dmg', amount: null }; impact = true; }
     }
     setFeedback(map);
+    mapSfx(events).forEach((s) => playSfx(s));
     if (impact) { setFlash(true); setTimeout(() => setFlash(false), 360); }
     setTimeout(() => setFeedback({}), 1100);
   };
@@ -149,7 +151,16 @@ export default function BattlePage() {
       const view = await api.battleAction(id, action);
       if (view.events) showFeedback(view.events);
       setBattle(view);
-      if (view.rewards) setResults(view.rewards);
+      if (view.rewards) {
+        setResults(view.rewards);
+        if (view.rewards.status === 'won') {
+          playSfx('level_up');
+          if (view.rewards.goldGained) playSfx('coin');
+          if (view.rewards.revived) playSfx('loot');
+        } else if (view.rewards.status === 'lost') {
+          playSfx('death');
+        }
+      }
     } catch (err) { setError(err.message); }
     finally { setBusy(false); }
   };

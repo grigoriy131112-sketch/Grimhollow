@@ -53,7 +53,7 @@ needs its own explicit `погнали` (one wave = one approval = one chat = on
 |------|------|-------------------|------------|--------|
 | **W-MENU** | Start menu hub: Новая игра / Сохранённые игры (continue) / Настройки / Создатели / Лор. Remove save **import**. | `client/src/pages/MainMenu.jsx`, `Creators.jsx`, `Lore.jsx` | — | **PR #13 (in review)** |
 | **W-CODEX / W-SHELL** | Remove the top text nav; add a journal/book to the character's inventory (Лор / Карта мира / Настройки / Создатели), separate from the item slots. Depends on W-MENU being in `main` | `client/src/App.jsx`, `client/src/pages/Inventory.jsx`, new `pages/Codex.jsx` | W-MENU | not started |
-| **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | not started |
+| **W-AUDIO** | Music + SFX engine, real licensed files, volume in settings | `client/src/audio.js`, `client/public/audio/**` | files | **in this PR** (`wave/w-audio`) |
 | **W-MAP-GLOBAL** | Global map: all continents + names of continents and seas + **ports only** (no locations) | `client/src/GlobalMap.jsx`, art | — | not started |
 | **W-MAP-CONT** | Per-continent map (regions + locations) shown when the hero is on it | `client/src/ContinentMap.jsx` | W-MAP-GLOBAL | not started |
 | **W-SHIP** | Ship: buy in port for gold, **10 levels x 3 branches x 2 upgrades (60)**, **timed port shipyard**, classes (heroes & guns), ship waits in port. Points come only from sea battles (W-SEA) | `server/src/game/ship.js`, `server/src/services/ship.js`, `routes/ship.js`, `client/src/pages/Shipyard.jsx` | — | **in this PR** (`wave/w-ship`) |
