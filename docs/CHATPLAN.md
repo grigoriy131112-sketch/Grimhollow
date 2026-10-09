@@ -20,7 +20,7 @@ chat = one branch = one PR. Parallel chats are allowed only when they touch
 | monsters | G10 | **DONE (merged)** — bestiary + encounters + loot | — |
 | clan | G9 | **DONE (merged)** — founding, doctrine, holdings, mercenaries | — |
 | campaign | G11 | **DONE (merged)** — chapter flags + three endings | — |
-| online | G12 | **NOT STARTED** — needs a NEW explicit approval (re-architecting) | — |
+| online | G12 | **CANCELLED** by user decision (2026-10-08: «не онлайн, онлайн не делаем вообще»). Not to be built. | — |
 
 `*` = new file, created by that chat. New files never collide.
 
@@ -49,12 +49,13 @@ Everything except G12 is merged. The offline game is complete.
 
 **No batch is running.** Everything through G11 is merged; the ✅ shell/UX waves
 (W-MENU, W-CODEX/W-SHELL, W-AUDIO, W-BUGHUNT, W-MAP, W-SHIP, W-SEA, W-THEME,
-W-HERO-TABS) are merged too. The live queue is now the **"unspelled mechanics"**
-work — finishing systems that exist but are not yet consumed by play.
+W-HERO-TABS) are merged too, and the "unspelled mechanics" queue (W-CLAN-LIVE,
+W-CLAN-ROSTER, W-BESTIARY, W-SEA-TALK, W-SEA-BALANCE, W-WIRE, W-ACTIONS-CRAFT) is
+**done and merged**. **The roadmap is clear**; **G12 (online) is cancelled** by the
+user. `main` is at **391 pass / 0 fail**.
 
 **The roadmap is `docs/PENDING_WAVES.md`** — the single source of truth: shipped
-waves, built-but-not-wired mechanics, and the next queue (W-CLAN-LIVE, W-BESTIARY,
-W-SEA-TALK, W-SEA-BALANCE). Each needs its own `погнали`. The wave chats' reports
+waves, built-but-not-wired mechanics, and the next queue. The wave chats' reports
 are archived in **`docs/CHAT_ARCHIVE.md`**.
 
 > **Standing rule:** the user adds requirements from his head, often. Every new
