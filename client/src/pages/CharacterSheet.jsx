@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { abilityIcon, monsterIcon, Icon } from '../icons.jsx';
 import { statLabel } from '../statLabels.js';
+import HeroTabs from '../HeroTabs.jsx';
 
 export default function CharacterSheetPage() {
   const { id } = useParams();
@@ -42,9 +43,8 @@ export default function CharacterSheetPage() {
       <div className="page-head">
         <h1>{character.name}</h1>
         <span className="badge">{character.level} уровень · {character.className}</span>
-        <Link className="btn" to={`/party/${character.id}`} style={{ marginLeft: '0.6rem' }}>Отряд</Link>
-        <Link className="btn" to={`/inventory/${character.id}`} style={{ marginLeft: '0.6rem' }}>Снаряжение</Link>
       </div>
+      <HeroTabs characterId={character.id} active="sheet" />
 
       {error && <div className="error">{error}</div>}
 

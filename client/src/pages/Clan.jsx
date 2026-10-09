@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Icon } from '../icons.jsx';
+import HeroTabs from '../HeroTabs.jsx';
 
 // Клан игрока (Wave G9). API живёт под /api/clan (routes/clan.js). api.js —
 // общий файл других волн, поэтому экран держит свой маленький помощник
@@ -205,6 +206,7 @@ export default function ClanPage() {
   return (
     <div>
       <Link to={`/characters/${heroId}`} className="muted">← К герою</Link>
+      <HeroTabs characterId={heroId} active="clan" />
       <div className="page-head">
         <h1>⚑ Клан</h1>
         <span className="badge">{hero ? `${hero.name} · ${hero.gold} 🪙` : 'нет героя'}</span>

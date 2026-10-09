@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { statLabel } from '../statLabels.js';
+import HeroTabs from '../HeroTabs.jsx';
 
 // One node in the tree: its rank, cost and a button to forge the next rank.
 function Node({ node, points, onSpend, busy }) {
@@ -59,6 +60,7 @@ export default function UpgradesPage() {
   return (
     <div>
       <Link to={`/party/${leaderId}`} className="muted">← Отряд</Link>
+      <HeroTabs characterId={leaderId} active="camp" />
       <div className="page-head">
         <h1>Очки отряда</h1>
         <span className="badge" title="Свободные / потраченные / всего">

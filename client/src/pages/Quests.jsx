@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Icon } from '../icons.jsx';
+import HeroTabs from '../HeroTabs.jsx';
 
 // Журнал заданий (Wave G8). API живёт под /api/quests (routes/quests.js).
 // api.js — общий файл других волн, поэтому экран держит свой маленький
@@ -170,6 +171,7 @@ export default function QuestsPage() {
   return (
     <div>
       <Link to={`/characters/${heroId}`} className="muted">← К герою</Link>
+      <HeroTabs characterId={heroId} active="quests" />
       <div className="page-head">
         <h1>📜 Журнал заданий</h1>
         <span className="badge">{hero ? `${hero.name} · ${hero.gold} 🪙` : 'нет героя'}</span>

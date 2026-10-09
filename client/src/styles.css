@@ -652,6 +652,25 @@ ul.stats span { color: var(--muted); }
 .nav-ico.active { color: var(--gold); border-color: var(--line); }
 .nav-compact .build-id { margin-left: 0.6rem; }
 
+/* Hero tabs (Wave W-HERO-TABS) — one spine across every per-hero screen. */
+.hero-tabs {
+  display: flex; flex-wrap: wrap; gap: 0.15rem; margin: 0.6rem 0 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+.hero-tab {
+  position: relative; padding: 0.45rem 0.85rem 0.5rem;
+  font-family: 'Forum', serif; font-size: 0.92rem; letter-spacing: 0.03em;
+  color: var(--muted); border: 1px solid transparent; border-bottom: none;
+  border-radius: 3px 3px 0 0;
+}
+.hero-tab:hover { color: var(--ink); text-decoration: none; }
+.hero-tab.active { color: var(--gold-soft); background: linear-gradient(180deg, rgba(168,52,31,0.10), transparent); }
+.hero-tab.active::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+  background: var(--gold-soft);
+}
+.hero-tab-codex { margin-left: auto; color: var(--gold-soft); opacity: 0.85; }
+
 .codex-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
 .codex-tab {
   font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 1px;
