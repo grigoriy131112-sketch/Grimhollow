@@ -100,11 +100,12 @@ it to the model — do not rewrite it.**
 - **To finish:** draw road/location encounters from the biome pool via
   `services/encounters.js`, and add a **bestiary** section to the Codex.
 
-### 2.4 Party talk on board is missing (W-SEA)
+### 2.4 Party talk on board — ✅ done in `wave/w-sea-talk`
 
-- `Voyage.jsx` links to the papers but does not mount `Talk`. The user asked for
-  **dialogue with the party while sailing** ("можно поговорить с отрядом").
-- **To finish:** mount `Talk` with `kind="companion"` on `Voyage.jsx`.
+- `Voyage.jsx` now mounts `Talk` with `kind="companion"` next to the papers link:
+  a «Поговорить с отрядом» card lists the active party and opens the same
+  conversation panel the Party screen uses (same memory, same relations, same
+  local-AI layer). The village/road talk and the sea talk are one system.
 
 ### 2.5 Enemy scaling for sea battles (W-SEA open point)
 
@@ -120,11 +121,12 @@ it to the model — do not rewrite it.**
 |---|------|------|---------|
 | N1 | **W-CLAN-LIVE** | Wire clan effects + names (2.1, 2.2) into battles, trade, crossings, rituals, campaign | `services/battles.js`, `trade.js`, `travel.js`, `resurrections.js`, `campaign.js`, `quests.js` |
 | N2 | **W-BESTIARY** | Draw encounters from the biome pool (2.3) + a bestiary page in the Codex | `services/travel.js`, `services/encounters.js`, `client/src/pages/Codex.jsx` |
-| N3 | **W-SEA-TALK** | Party talk on board (2.4) | `client/src/pages/Voyage.jsx` |
+| ~~N3~~ | ~~**W-SEA-TALK**~~ | ✅ **done** — party talk on board (2.4) | `wave/w-sea-talk` |
 | N4 | **W-SEA-BALANCE** | Scale sea enemies (and settle the payout question, 2.5) | `game/ship.js`, `services/naval.js` |
 
 Recommended order: **N1 → N3 → N2 → N4** (impact first; N3 is tiny and unblocks a
-verbatim user request; N2 and N4 are larger).
+verbatim user request; N2 and N4 are larger). **N1 and N3 are done**; next up is
+**N2 W-BESTIARY**.
 
 ---
 
