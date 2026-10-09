@@ -280,6 +280,25 @@ long detail in the daily logs.
 - **Next wave: W-SEA** (pirates, non-repeating islands/Fortune, sea monsters,
   ship combat; spends the ship points W-SHIP awards). Then W-CODEX/W-SHELL.
 
+## W-CODEX/W-SHELL (added on `wave/w-codex-shell`, PR #17)
+
+- The `wave/w-map`/`wave/w-ship` merge resolved all five union conflicts; W-MENU
+  was folded in, so PR #13 was closed as superseded (already an ancestor of
+  `main`).
+- **The Codex is a real book, not tabs** (user asked for a flipping book): a
+  closed cover → two-leaf spread (table of contents left, chapter right) with a
+  page-turn animation, `‹ Назад / Вперёд ›`, arrow keys and Esc. Same chapters
+  (Лор / Карта мира / Настройки / Создатели), each a thin wrapper over the
+  existing page so there is one implementation per section. A `?tab=` bookmark
+  (from the inventory) opens straight to that chapter.
+- **The Lore page is curated by `LORE_DOCS` in `game/lore_docs.js`** (not a
+  directory scan). User asked to hide **Клан / Квесты / Онлайн / Имена и стиль**
+  from the player-facing Lore — removed from `LORE_DOCS` so they 404 and vanish
+  from the list; the canon `.md` files stay for the waves that reference them
+  (G8 quests, G9 clan, G12 online). There is **no** "Разработчики" lore doc —
+  that is the separate **Создатели** (Creators) tab. `getLore` also requires a
+  server restart (catalogue read at boot) — `serve.sh` alone does not reload it.
+
 ## W-SHIP (added on `wave/w-ship`, PR #15)
 
 - A hero buys a **ship** in a **port** for gold (ports = `CROSSING_GATES` in
@@ -294,3 +313,23 @@ long detail in the daily logs.
   6-10 monsters. UI `pages/Shipyard.jsx` (`/shipyard/:characterId`), linked from
   the party strip. `npm test` 282/0 (+15).
 
+
+## Preview "ошибка" root cause (2026-10-08) — fix/preview-resilient-requests (PR #16)
+
+- The sandbox **stops after 20 min idle** (`OH_RUNTIME_IDLE_TIMEOUT_SECONDS=1200`).
+  While stopped the preview URL is down; on return the runtime wakes and the
+  server restarts, but a browser request arriving one moment too early fails at
+  the **network level**. `client/src/api.js#request` turned that into the raw
+  **"Failed to fetch"**, which read as "the site is broken again" and cleared
+  only after sending the agent a message (which runs the `serve.sh` hook).
+- Fix: `request()` **retries a GET** up to 4x (400/800/1200 ms) and shows
+  «Сервер просыпается, подождите секунду…»; **writes are never retried**.
+- Verified healthy otherwise: `npm test` 312/0, both ports 200, and the resident
+  watcher restarts the server within ~5 s (killed it and watched it come back).
+- **Hooks do bind to this conversation** (`meta.json` has `user_prompt_submit` +
+  `session_start` with the `serve.sh` command), but they do NOT re-fire on every
+  message here — so the resident watcher is what keeps the preview up in-session,
+  and it must be started once after a runtime restart (`bash scripts/serve.sh`).
+- **Do not run `npm run build` while `serve.sh` may rebuild**: a parallel vite
+  build fails with a non-zero exit though the artifact is fine. Build first,
+  then serve.

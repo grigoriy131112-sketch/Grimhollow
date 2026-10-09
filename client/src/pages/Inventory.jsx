@@ -65,6 +65,20 @@ export default function InventoryPage() {
 
       {error && <div className="error">{error}</div>}
 
+      <div className="card journal-bookmark">
+        <h2>Дневник героя</h2>
+        <p className="muted small">
+          Книга знаний лежит отдельно от ячеек: что герой узнал о мире, где он стоит и как
+          настроена игра.
+        </p>
+        <div className="journal-links">
+          <Link className="journal-link" to="/codex?tab=lore">📖 Лор</Link>
+          <Link className="journal-link" to="/codex?tab=map">🗺 Карта мира</Link>
+          <Link className="journal-link" to="/codex?tab=settings">⚙ Настройки</Link>
+          <Link className="journal-link" to="/codex?tab=creators">🛠 Создатели</Link>
+        </div>
+      </div>
+
       <div className="grid2">
         <div className="card">
           <h2>Ячейки</h2>
