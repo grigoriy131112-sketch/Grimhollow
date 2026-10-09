@@ -636,3 +636,35 @@ ul.stats span { color: var(--muted); }
 .lore-table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; font-size: 0.86rem; }
 .lore-table th, .lore-table td { border: 1px solid var(--line); padding: 0.3rem 0.5rem; text-align: left; }
 .lore-table th { color: var(--gold-soft); }
+
+/* Codex / journal (Wave W-CODEX/W-SHELL) — the text bar is gone; a small icon
+   strip remains, and the Codex book holds Лор / Карта мира / Настройки / Создатели. */
+.nav-compact { justify-content: flex-end; gap: 0.4rem; padding: 0.5rem 1.25rem; }
+.nav-ico {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  color: var(--muted); font-family: 'Cinzel', serif; font-size: 0.8rem;
+  letter-spacing: 0.5px; padding: 0.3rem 0.6rem; border: 1px solid transparent; border-radius: 7px;
+}
+.nav-ico span { opacity: 0.85; }
+.nav-ico:hover { color: var(--gold-soft); border-color: var(--line); text-decoration: none; }
+.nav-ico.active { color: var(--gold); border-color: var(--line); }
+.nav-compact .build-id { margin-left: 0.6rem; }
+
+.codex-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
+.codex-tab {
+  font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 1px;
+  padding: 0.35rem 0.9rem; border: 1px solid var(--line); border-radius: 8px;
+  background: linear-gradient(180deg, #3a2d44, #241c2c); color: var(--muted);
+}
+.codex-tab:hover:not(.active) { color: var(--gold-soft); border-color: var(--gold); }
+.codex-tab.active { color: #0a0a0d; background: rgba(203,182,130,0.9); border-color: #6b5a3a; }
+.codex-page { min-height: 40vh; }
+
+.journal-bookmark { border-left: 3px solid var(--gold); }
+.journal-links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
+.journal-link {
+  border: 1px solid var(--line); border-radius: 8px; padding: 0.35rem 0.8rem;
+  color: var(--gold-soft); font-family: 'Cinzel', serif; font-size: 0.85rem;
+  background: linear-gradient(180deg, rgba(58,45,68,0.5), rgba(36,28,44,0.5));
+}
+.journal-link:hover { border-color: var(--gold); color: var(--gold); text-decoration: none; }
