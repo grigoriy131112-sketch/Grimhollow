@@ -438,3 +438,20 @@ stale chat brief was wrong. `gh` is not authed - use
 - **Do not run `npm run build` while `serve.sh` may rebuild**: a parallel vite
   build fails with a non-zero exit though the artifact is fine. Build first,
   then serve.
+
+## W-BESTIARY (branch wave/w-bestiary, PR #26) — bestiary wired into play
+
+- Roadmap 2.3 ("bestiary unused") finished **additively**:
+  - A road ambush now meets a beast from the biome pool:
+    chooseTravel -> resolveRoadEncounter (services/encounters.js) ->
+    rollRoadEncounter (game/randomizer.js, new pure helper). Deterministic
+    from road seed + stop minute; grounded in a seeded DB row.
+  - Spoils ride on the battle row: **new column `battles.loot`** (schema +
+    db/index.js#migrate); startBattle({loot}) stores it, settle() pays it
+    **once on a win** and clears it (applyBattleLoot).
+  - GET /api/world/bestiary (services/world.js#getBestiary): 3 tiers from
+    DANGER_BANDS, haunts from location_monsters, off-map boss excluded.
+  - client/src/pages/Bestiary.jsx = Codex chapter (hero picker + hunt);
+    Codex.jsx CHAPTERS now 5.
+- Tests: server/test/bestiary.test.js (7). Full suite **345 pass / 0 fail**.
+- Queue 3 left: N1 W-CLAN-LIVE, N4 W-SEA-BALANCE (N2/N3 done).
