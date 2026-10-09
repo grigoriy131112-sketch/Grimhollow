@@ -201,14 +201,23 @@ function applyOutcome(characterId, outcome) {
   const character = getCharacter(characterId);
   if (!character) return;
   if (outcome.kind === 'gold') {
-    const gold = Math.max(0, character.gold + outcome.delta);
+    const delta = Math.round(Number(outcome.delta) || 0);
+    const gold = Math.max(0, character.gold + delta);
     getDb().prepare("UPDATE characters SET gold = ?, updated_at = datetime('now') WHERE id = ?").run(gold, characterId);
     return;
   }
   if (outcome.kind === 'heal') {
-    const clamp = (field, delta) => Math.min(character.stats[field], character[field] + (delta || 0));
+    // The ceilings are maxHp/maxMana/maxStamina; reading `stats[field]` by the
+    // bare resource name produced NaN — which the DB stored as NULL, i.e. a full
+    // heal. Clamp against the real maxima.
+    const clamp = (value, delta, max) => Math.min(max, (value || 0) + (Number(delta) || 0));
     getDb().prepare("UPDATE characters SET hp = ?, mana = ?, stamina = ?, updated_at = datetime('now') WHERE id = ?")
-      .run(clamp('hp', outcome.hp), clamp('mana', outcome.mana), clamp('stamina', outcome.stamina), characterId);
+      .run(
+        clamp(character.hp, outcome.hp, character.stats.maxHp),
+        clamp(character.mana, outcome.mana, character.stats.maxMana),
+        clamp(character.stamina, outcome.stamina, character.stats.maxStamina),
+        characterId,
+      );
   }
 }
 

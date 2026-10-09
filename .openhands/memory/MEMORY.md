@@ -313,6 +313,37 @@ long detail in the daily logs.
   6-10 monsters. UI `pages/Shipyard.jsx` (`/shipyard/:characterId`), linked from
   the party strip. `npm test` 282/0 (+15).
 
+## Audit / bug-hunt (branch `wave/w-bughunt`, off `main`)
+
+A full read-through of server game/services/routes + client pages found four
+real bugs that whole waves depended on but no test covered. All fixed, pinned by
+`server/test/regressions.test.js` (6 tests). On main now, `npm test` = **325/0**.
+
+- **`stats.hp` does not exist.** Current resources are `characters.hp`; ceilings
+  are `stats.maxHp`/`maxMana`/`maxStamina`. Two heal paths clamped with
+  `stats[field]` -> `NaN` -> stored as `NULL` -> a full heal: `services/travel.js`
+  `healCharacter` and `services/continents.js` `applyOutcome`.
+- **A road battle was never settled.** `chooseTravel` started a battle on an
+  ambush but lost the `battle.id`, so the party was stranded and rewards/revival
+  were dropped. Now it returns `battleId` (client `Travel.jsx` already handled it).
+- **A battle could be born already over.** `startBattle` ran the enemy's opening
+  turns via `createBattle`; if they wiped the party the row stayed `'active'` with
+  no player turn - a permanent stuck fight. It now settles immediately when
+  `state.over`.
+- **Equipment/buffs/needs never reached combat.** `combat.js` ignored
+  `source.modifiers`, so the sheet showed gear but the fight did not use it.
+  `makeCombatant` now carries `modifiers`; `modifierSum` folds them into
+  `hitChance`/`effectiveDefense`/`effectiveStat` and into the initial speed order.
+  `startBattle` feeds it `activeModifiers(id)` + `needModifiersFromMeters`.
+- **Chapel key could vanish.** Opening the chapel page calls `recordVisited`
+  (a mere sighting), which consumed `recordVisit().firstVisit`; arriving later
+  granted nothing. The key is now gated on an `item:shepherd_key` unlock and
+  granted once on real arrival.
+
+Gotcha: `wave/w-map` and `wave/w-menu` are **already merged into `main`**; the
+stale chat brief was wrong. `gh` is not authed - use
+`curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/...`.
+
 
 ## Preview "ошибка" root cause (2026-10-08) — fix/preview-resilient-requests (PR #16)
 

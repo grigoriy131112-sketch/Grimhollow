@@ -19,21 +19,30 @@ function statOf(c, stat) {
   return c.base ? c.base[stat] : (c.stats?.[stat] ?? c[stat] ?? 0);
 }
 
+// Base stat plus every persistent modifier from equipment, buffs and needs.
+// Temporary in-combat buffs (c.buffs) are added separately by effectiveStat so a
+// hard floor / ceiling still applies.
+export function modifierSum(c, stat) {
+  if (!Array.isArray(c.modifiers)) return 0;
+  return c.modifiers.reduce((sum, m) => (m.stat === stat ? sum + m.amount : sum), 0);
+}
+
 export function hitChance(attacker, defender, accuracyBonus = 0) {
-  const raw = 50 + (statOf(attacker, 'accuracy') + accuracyBonus) - statOf(defender, 'evasion');
+  const raw = 50 + (statOf(attacker, 'accuracy') + modifierSum(attacker, 'accuracy') + accuracyBonus)
+    - (statOf(defender, 'evasion') + modifierSum(defender, 'evasion'));
   return Math.max(MIN_HIT_CHANCE, Math.min(MAX_HIT_CHANCE, Math.round(raw)));
 }
 
-// Total defense including active buffs and a defending stance.
+// Total defense including active buffs, persistent modifiers and a defending stance.
 export function effectiveDefense(c) {
-  let defense = c.base.defense;
+  let defense = c.base.defense + modifierSum(c, 'defense');
   for (const b of c.buffs) if (b.stat === 'defense') defense += b.amount;
   if (c.defending) defense += DEFENDING_DEFENSE;
   return defense;
 }
 
 export function effectiveStat(c, stat) {
-  let value = c.base[stat] ?? 0;
+  let value = (c.base[stat] ?? 0) + modifierSum(c, stat);
   for (const b of c.buffs) if (b.stat === stat) value += b.amount;
   return value;
 }
@@ -74,6 +83,10 @@ function makeCombatant(source, side, key) {
     regenStamina: source.regenStamina || 0,
     cooldowns: {},
     buffs: [],
+    // Flat modifiers from equipment, active buffs and survival needs. They are
+    // folded in on top of the base stats so a hero fights with what the sheet
+    // shows. Each entry is `{ stat, amount }`.
+    modifiers: Array.isArray(source.modifiers) ? source.modifiers.map((m) => ({ stat: m.stat, amount: m.amount })) : [],
     dots: [],
     defending: false,
   };
@@ -92,8 +105,11 @@ export function createBattle({ player, allies = [], opponents }, rng = Math.rand
   opponents.forEach((o, i) => combatants.push(makeCombatant(o, 'enemy', `e${i + 1}`)));
 
   // Order by speed, descending; ties broken by side (player first), then key.
+  // Persistent modifiers (equipment, needs) count toward speed; in-combat buffs
+  // do not, since the order is fixed once at the start of the fight.
+  const speedOf = (c) => c.base.speed + modifierSum(c, 'speed');
   const order = [...combatants]
-    .sort((a, b) => (b.base.speed - a.base.speed) || (a.side === 'player' ? -1 : 1) || a.key.localeCompare(b.key))
+    .sort((a, b) => (speedOf(b) - speedOf(a)) || (a.side === 'player' ? -1 : 1) || a.key.localeCompare(b.key))
     .map((c) => c.key);
 
   const state = {
