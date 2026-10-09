@@ -106,11 +106,28 @@ it to the model — do not rewrite it.**
   **dialogue with the party while sailing** ("можно поговорить с отрядом").
 - **To finish:** mount `Talk` with `kind="companion"` on `Voyage.jsx`.
 
-### 2.5 Enemy scaling for sea battles (W-SEA open point)
+### 2.5 Enemy scaling for sea battles (W-SEA open point) ✅ shipped (W-SEA-BALANCE)
 
-- Enemies must scale with the ship's level so a 60-upgrade ship still faces a
-  real fight (`game/ship.js`). Whether the **payout** (flat +5 pirates, 6-10
-  monsters) should also scale with the tier is still **open**.
+- Enemies now scale with the ship's level so a maxed ship still faces a real
+  fight. `pirateTier`/`monsterTier` (`game/naval.js`) are sized off a **reference
+  ship** for that tier — the ship a player actually has (`forgedForLevel` in
+  `game/ship.js` folds the unlocked-and-forged upgrades). The old flat table was
+  100%-trivial by level 5; enemy hull is now a multiple of the hero's *effective*
+  per-round output (`effectiveOutput`), and morale/hull scale with depth, so a
+  fight lasts several rounds and the hull takes real damage at every tier. The
+  sea monster's heavy strike fires on its own turn (a `ram` action) so it no
+  longer double-attacks on the round it bites.
+- **Payout settled:** it now scales with the tier for *both* kinds. Because the
+  fight scales, a flat payout would punish every deep voyage for no reason. The
+  user's figures stay the tier-1 anchors (pirates 5, monsters 6-10); `seaPoints`
+  interpolates the monster band across the tiers and scales both by depth, so a
+  monster is always worth a little more than a pirate at equal tier.
+- Balance is guarded by `server/test/naval.test.js` ("a fully built ship meets a
+  real fight at every tier"): a deterministic seeded fight per tier asserts the
+  hull is dented and the fight lasts 3-30 rounds.
+- Still open (separate knob, not this wave): the **absolute** grind length —
+  a fully upgraded ship costs ~13,000 ship points, so the number of wins is a
+  design choice independent of the per-fight balance.
 
 ---
 
@@ -121,7 +138,7 @@ it to the model — do not rewrite it.**
 | N1 | **W-CLAN-LIVE** | Wire clan effects + names (2.1, 2.2) into battles, trade, crossings, rituals, campaign | `services/battles.js`, `trade.js`, `travel.js`, `resurrections.js`, `campaign.js`, `quests.js` |
 | N2 | **W-BESTIARY** | Draw encounters from the biome pool (2.3) + a bestiary page in the Codex | `services/travel.js`, `services/encounters.js`, `client/src/pages/Codex.jsx` |
 | N3 | **W-SEA-TALK** | Party talk on board (2.4) | `client/src/pages/Voyage.jsx` |
-| N4 | **W-SEA-BALANCE** | Scale sea enemies (and settle the payout question, 2.5) | `game/ship.js`, `services/naval.js` |
+| N4 | **W-SEA-BALANCE** | ✅ shipped — sea enemies scale to the ship; payout scales with tier too (2.5) | `game/naval.js`, `game/ship.js` |
 
 Recommended order: **N1 → N3 → N2 → N4** (impact first; N3 is tiny and unblocks a
 verbatim user request; N2 and N4 are larger).

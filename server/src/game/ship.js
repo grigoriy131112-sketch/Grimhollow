@@ -143,6 +143,18 @@ export function nextLevelInfo(upgrade, rank) {
   return { level, cost: costForLevel(upgrade.base, level), minutes: minutesForLevel(level, upgrade.heavy) };
 }
 
+// A component is available once its unlock level is reached, and may then be
+// forged up to the shared `componentCap`. This builds the reference "fully
+// built for its level" ship, so game/naval.js can size enemies against the ship
+// a player actually has at each level (and their power curve tracks the tiers).
+export function forgedForLevel(shipLevel = 1) {
+  const forged = {};
+  for (const [key, u] of Object.entries(upgradesByKey)) {
+    forged[key] = u.level <= shipLevel ? componentCap(shipLevel, forged) : 0;
+  }
+  return forged;
+}
+
 // A level is complete once all six of its upgrades are forged (rank >= 1); the
 // ship may then be raised to the next level.
 export function levelComplete(forged = {}, level) {
