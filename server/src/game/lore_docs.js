@@ -9,14 +9,8 @@ export const LORE_DOCS = [
   { key: 'world', title: 'Мир', file: 'world.md', blurb: 'Устройство мира, царство мёртвых, смерть и память.' },
   { key: 'continents', title: 'Континенты', file: 'continents.md', blurb: 'Пять земель под одним серым небом.' },
   { key: 'cosmology', title: 'Боги и магия', file: 'cosmology.md', blurb: 'Боги, магия и забвение как сила.' },
-  { key: 'factions', title: 'Фракции', file: 'factions.md', blurb: 'Ордена, культы и гильдии, их счёты.' },
   { key: 'campaign', title: 'Сюжет', file: 'campaign.md', blurb: 'Главная линия по главам.' },
-  { key: 'campaign_progress', title: 'Прогресс кампании', file: 'campaign_progress.md', blurb: 'Флаги глав, финал и эпилоги.' },
   { key: 'bestiary', title: 'Бестиарий', file: 'bestiary.md', blurb: 'Монстры, правила спавна и добыча.' },
-  { key: 'quests', title: 'Квесты', file: 'quests.md', blurb: 'Источники, ход и награды.' },
-  { key: 'clan', title: 'Клан', file: 'clan.md', blurb: 'Основание, доктрина и владения.' },
-  { key: 'names', title: 'Имена и стиль', file: 'names.md', blurb: 'Правила имён, чтобы волны звучали как один мир.' },
-  { key: 'online', title: 'Онлайн', file: 'online.md', blurb: 'Общий мир и аккаунты (будущая волна).' },
 ];
 
 const TRANSLIT = {
