@@ -16,6 +16,7 @@ import { applyBonusesToSource, POINTS_PER_WIN, POINTS_PER_LEVEL } from '../game/
 import { grantNames } from './clan.js';
 import { NAMES_PER_RITUAL } from '../db/seed_clan.js';
 import { advanceQuest } from './quests.js';
+import { rollLoot, TITLED_LEVEL } from '../game/randomizer.js';
 
 // Share of gold dropped when a hero is defeated (they survive with 1 HP).
 const DEFEAT_GOLD_PENALTY = 0.25;
@@ -77,6 +78,22 @@ export function startBattle({ characterId, monsterId, locationId, kind = 'normal
     opponents: [monsterSource(monster)],
   });
   const db = getDb();
+  // A direct hunt carries spoils too. Road ambushes get their loot from the
+  // travel plan, but a hero who hunts a monster from a location screen was getting
+  // only gold and XP — the shards, moss, ash and salt the smithy needs never
+  // dropped. Every normal fight now rolls the same loot table (a titled horror may
+  // guard a memory fragment). The roll is stored on the battle row, so a reload
+  // cannot reroll it; the wall-clock seed only keeps one hunt from always being
+  // the same shard.
+  if (!loot && kind === 'normal') {
+    loot = rollLoot({
+      level: monster.level,
+      titled: (monster.level || 1) >= TITLED_LEVEL,
+      classKey: monster.class_key,
+      seed: `hunt:${character.id}:${monster.id}:${Date.now()}`,
+      guarantee: true,
+    });
+  }
   const info = db.prepare(
     `INSERT INTO battles (status, character_id, monster_id, location_id, state, log, kind, revive_member, loot)
      VALUES ('active', ?, ?, ?, ?, ?, ?, ?, ?)`,

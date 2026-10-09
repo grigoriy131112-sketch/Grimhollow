@@ -9,12 +9,13 @@ import { seedMonstersExtra, BESTIARY } from '../src/db/seed_monsters_extra.js';
 import {
   bandForDanger, poolFor, rollEncounter, rollLoot, goldForLevel,
   encounterWeight, isTitled, monsterStats, monsterRewards,
-  TITLED_LEVEL, MAX_TITLED, DANGER_BANDS, MEMORY_FRAGMENT,
+  TITLED_LEVEL, MAX_TITLED, DANGER_BANDS, MEMORY_FRAGMENT, EQUIPMENT_LOOT,
 } from '../src/game/randomizer.js';
 import { CLASS_KEYS } from '../src/game/classes.js';
 import { getLocation } from '../src/services/world.js';
 import { resolveEncounter, encounterPool, startEncounter, applyLoot } from '../src/services/encounters.js';
 import { createCharacter, getCharacter } from '../src/services/characters.js';
+import { ITEMS } from '../src/game/items.js';
 import { hasItem } from '../src/services/items.js';
 
 test.after(() => closeDb());
@@ -191,6 +192,41 @@ test('a titled monster can leave a fragment of memory', () => {
   }
   assert.ok(fragments > 0, 'a titled monster sometimes guards a memory fragment');
   assert.ok(fragments < 200, 'but not every time — it is a chance, not a guarantee');
+});
+
+test('every equipment drop is a real catalogue item with a level gate', () => {
+  for (const drop of EQUIPMENT_LOOT) {
+    assert.ok(ITEMS[drop.key], `${drop.key} exists in the catalogue`);
+    assert.equal(ITEMS[drop.key].name, drop.name, `${drop.key} name matches the catalogue`);
+    assert.ok(drop.minLevel >= 1 && drop.minLevel <= 15, `${drop.key} has a sane level gate`);
+    assert.ok(drop.weight > 0, `${drop.key} has a weight`);
+  }
+});
+
+test('a hunt sometimes leaves a piece of gear, and never above-level gear', () => {
+  let gear = 0;
+  const keys = new Set();
+  for (let i = 0; i < 400; i += 1) {
+    const loot = rollLoot({ level: 3, seed: `gear${i}` });
+    for (const it of loot.items) {
+      const drop = EQUIPMENT_LOOT.find((e) => e.key === it.key);
+      if (drop) {
+        gear += 1;
+        keys.add(it.key);
+        assert.ok(drop.minLevel <= 3, `level-3 monster dropped ${it.key} (min level ${drop.minLevel})`);
+      }
+    }
+  }
+  assert.ok(gear > 0, 'gear drops sometimes');
+  assert.ok(gear < 400, 'but not on every kill');
+
+  // A high-level hunt can draw from the whole pool, including the rare epics.
+  const highKeys = new Set();
+  for (let i = 0; i < 400; i += 1) {
+    const loot = rollLoot({ level: 15, titled: true, seed: `high${i}` });
+    for (const it of loot.items) if (EQUIPMENT_LOOT.some((e) => e.key === it.key)) highKeys.add(it.key);
+  }
+  assert.ok(highKeys.size > keys.size, 'a titled high-level hunt reaches deeper into the pool');
 });
 
 // --- determinism --------------------------------------------------------------

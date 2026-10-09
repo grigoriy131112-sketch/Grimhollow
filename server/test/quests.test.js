@@ -9,9 +9,11 @@ import { seedQuests, QUEST_DEFS, STORY_QUESTS, SIDE_FAIL_OPINION } from '../src/
 import {
   listQuests, getQuestView, acceptQuest, abandonQuest, advanceQuest,
   reportProgress, completeQuest, failQuest, hasUnlock,
+  deliverQuest, tryDeliver, reportNoSteel,
 } from '../src/services/quests.js';
 import { createCharacter, getCharacter } from '../src/services/characters.js';
-import { hasItem } from '../src/services/items.js';
+import { hasItem, grantItem, equipItem, unequipItem } from '../src/services/items.js';
+import { recordVisit, getLocation } from '../src/services/world.js';
 
 test.after(() => closeDb());
 
@@ -179,6 +181,72 @@ test('an opinion reward moves the giver opinion up', () => {
   advanceQuest(hero.id, { type: 'no_steel', target: 'Пепельный лес' });
   assert.equal(getQuestView(hero.id, 'ash_forest_oath').state, 'completed');
   assert.equal(opinionOf(hero.id, 'ash_druid'), base + 5);
+});
+
+test('delivering the goods spends them and closes the quest', () => {
+  seedAll();
+  const hero = leader('Тест Доставка');
+  acceptQuest(hero.id, 'fog_medicine');
+  grantItem(hero.id, 'clean_water', 2);
+
+  const view = getQuestView(hero.id, 'fog_medicine');
+  assert.equal(view.deliverable, true, 'the UI is told this one is a delivery');
+  assert.equal(view.deliverItem, 'clean_water');
+
+  const res = deliverQuest(hero.id, 'fog_medicine');
+  assert.equal(getQuestView(hero.id, 'fog_medicine').state, 'completed');
+  assert.deepEqual(res.delivered, { item: 'clean_water', qty: 2 });
+  assert.equal(hasItem(hero.id, 'clean_water', 1), false, 'both flasks were handed over');
+});
+
+test('delivering short of the goods is refused and keeps what is carried', () => {
+  seedAll();
+  const hero = leader('Тест Недобор');
+  acceptQuest(hero.id, 'fog_medicine');
+  grantItem(hero.id, 'clean_water', 1);
+
+  assert.throws(() => deliverQuest(hero.id, 'fog_medicine'), /Не хватает/);
+  assert.equal(getQuestView(hero.id, 'fog_medicine').state, 'active');
+  assert.equal(hasItem(hero.id, 'clean_water', 1), true, 'the one flask is still in the bag');
+});
+
+test('talking to the giver with the goods in hand closes the delivery', () => {
+  seedAll();
+  const hero = leader('Тест Разговор');
+  acceptQuest(hero.id, 'fog_medicine');
+  assert.deepEqual(tryDeliver(hero.id, 'fog_widow'), [], 'nothing to deliver yet');
+
+  grantItem(hero.id, 'clean_water', 2);
+  const out = tryDeliver(hero.id, 'fog_widow');
+  assert.equal(out.length, 1);
+  assert.equal(out[0].key, 'fog_medicine');
+  assert.equal(getQuestView(hero.id, 'fog_medicine').state, 'completed');
+  assert.equal(hasItem(hero.id, 'clean_water', 1), false);
+});
+
+test('the no-steel oath needs the hero present and empty-handed', () => {
+  seedAll();
+  const hero = leader('Тест Обет');
+  acceptQuest(hero.id, 'ash_forest_oath');
+  const forest = getLocation(getDb().prepare('SELECT id FROM locations WHERE name = ?').get('Пепельный лес').id);
+
+  // Not there yet: the oath does not fire.
+  assert.deepEqual(reportNoSteel(hero.id, forest.name), []);
+  assert.equal(getQuestView(hero.id, 'ash_forest_oath').state, 'active');
+
+  // Standing there, but with a weapon drawn: still not kept.
+  recordVisit(hero.id, forest.id);
+  grantItem(hero.id, 'rusty_sword', 1);
+  equipItem(hero.id, 'rusty_sword');
+  assert.deepEqual(reportNoSteel(hero.id, forest.name), []);
+  assert.equal(getQuestView(hero.id, 'ash_forest_oath').state, 'active');
+
+  // Weapon away in the named place: the oath is kept.
+  unequipItem(hero.id, 'weapon');
+  const out = reportNoSteel(hero.id, forest.name);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].key, 'ash_forest_oath');
+  assert.equal(getQuestView(hero.id, 'ash_forest_oath').state, 'completed');
 });
 
 test('abandoning an active quest returns it to the pool untouched', () => {

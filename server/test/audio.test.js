@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
   MUSIC_CONTEXTS, MUSIC_FILES, SFX_FILES, SFX_FILES as SFX,
-  resolveContext, mapSfx, volumeFromPrefs,
+  resolveContext, mapSfx, volumeFromPrefs, shouldSwitchMusic,
 } from '../../client/src/audio.js';
 
 // The client has no test runner of its own, so the audio engine's pure parts and
@@ -88,4 +88,15 @@ test('volumeFromPrefs honours switches and clamps ranges', () => {
   assert.equal(volumeFromPrefs({ musicVolume: 5 }).musicVolume, 1);
   assert.equal(volumeFromPrefs({ musicVolume: -3 }).musicVolume, 0);
   assert.equal(volumeFromPrefs({ sfxVolume: 0.25 }).sfxVolume, 0.25);
+});
+
+// The music player must never layer tracks: when a new context starts, the old
+// one is stopped. This guards the bug where every location's theme played at
+// once because a previous element was left running.
+test('music switches track on a context change but not on a repeat', () => {
+  assert.equal(shouldSwitchMusic('location', 'location', true), false, 'the same playing track stays');
+  assert.equal(shouldSwitchMusic('tavern', 'location', true), true, 'a new context swaps');
+  assert.equal(shouldSwitchMusic('location', null, false), true, 'the first track starts');
+  assert.equal(shouldSwitchMusic('location', 'location', false), true, 'a paused track restarts');
+  assert.equal(shouldSwitchMusic(null, 'location', true), false, 'no context is a no-op');
 });

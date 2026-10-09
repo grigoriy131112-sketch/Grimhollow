@@ -36,7 +36,7 @@ const sourceIcon = (source) => (SOURCE_ICONS[source] ? `/art/landmarks/${SOURCE_
 
 const STATE_LABELS = { active: 'В работе', completed: 'Выполнено', failed: 'Провалено', available: 'Доступно' };
 
-function QuestCard({ quest, onAccept, onAbandon, onReport, busy }) {
+function QuestCard({ quest, onAccept, onAbandon, onReport, onDeliver, busy }) {
   const [open, setOpen] = useState(false);
   const done = quest.state === 'completed';
   const active = quest.state === 'active';
@@ -83,7 +83,11 @@ function QuestCard({ quest, onAccept, onAbandon, onReport, busy }) {
         )}
         {active && (
           <>
-            <button type="button" className="btn small" disabled={busy} onClick={() => onReport(quest.key)}>Отметить шаг</button>
+            {quest.deliverable ? (
+              <button type="button" className="btn small" disabled={busy} onClick={() => onDeliver(quest.key)}>Отдать предметы</button>
+            ) : (
+              <button type="button" className="btn small" disabled={busy} onClick={() => onReport(quest.key)}>Отметить шаг</button>
+            )}
             <button type="button" className="btn small ghost" disabled={busy} onClick={() => onAbandon(quest.key)}>Отказаться</button>
           </>
         )}
@@ -151,6 +155,10 @@ export default function QuestsPage() {
   const onReport = (key) => run(
     () => postJson(`/quests/${heroId}/progress`, { key }),
     (res) => (res.complete ? `Выполнено: «${res.key}»` : `Отмечено: ${res.progress}/${res.target}`),
+  );
+  const onDeliver = (key) => run(
+    () => postJson(`/quests/${heroId}/deliver`, { key }),
+    (res) => `Отдано: «${res.key}»`,
   );
 
   if (error && !log) return <div className="error">{error}</div>;
@@ -221,6 +229,7 @@ export default function QuestsPage() {
             onAccept={onAccept}
             onAbandon={onAbandon}
             onReport={onReport}
+            onDeliver={onDeliver}
           />
         ))}
         {lists[tab].length === 0 && <p className="muted">Здесь пусто.</p>}

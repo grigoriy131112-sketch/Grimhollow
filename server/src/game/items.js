@@ -249,6 +249,61 @@ export const ITEMS = {
     stats: { accuracy: 5, evasion: 2 }, price: 220,
   },
 
+  // --- Forged at the smithy (Wave W-SMITH) ----------------------------------
+  // The outputs of the crafting recipes. They sit at the top of their slot so a
+  // hero who gathers shards, moss, ash and salt has something worth forging.
+  forgeblade: {
+    key: 'forgeblade',
+    name: 'Выкованный клинок',
+    description: 'Клинок, переплавленный из обломков костей и руды. Держит закалку.',
+    type: 'weapon', slot: 'weapon', rarity: 'rare',
+    stats: { attack: 6, accuracy: 1 }, price: 200,
+  },
+  ashen_plate: {
+    key: 'ashen_plate',
+    name: 'Пепельная броня',
+    description: 'Пластины, сплавленные с пеплом пожарищ. Тяжела, но надёжна.',
+    type: 'armor', slot: 'body', rarity: 'rare',
+    stats: { defense: 8, speed: -1 }, price: 210,
+  },
+  bone_buckler_forged: {
+    key: 'bone_buckler_forged',
+    name: 'Костяной щит',
+    description: 'Щит, склёпанный из крупных костей и соляного камня.',
+    type: 'armor', slot: 'offhand', rarity: 'uncommon',
+    stats: { defense: 4, evasion: 2 }, price: 120,
+  },
+  grave_moss_salve: {
+    key: 'grave_moss_salve',
+    name: 'Мазь из могильного мха',
+    description: 'Густая мазь, затягивающая раны на глазах.',
+    type: 'consumable', rarity: 'uncommon',
+    resource: { resource: 'hp', amount: 45 }, price: 40,
+    buff: { stat: 'defense', amount: 2, turns: 3, kind: 'buff', label: 'Мазь из могильного мха' },
+  },
+  ember_draught: {
+    key: 'ember_draught',
+    name: 'Настой из пепла',
+    description: 'Дымный настой. Проясняет ум и разгоняет кровь.',
+    type: 'consumable', rarity: 'uncommon',
+    resource: { resource: 'mana', amount: 35 }, price: 45,
+    buff: { stat: 'speed', amount: 2, turns: 3, kind: 'buff', label: 'Настой из пепла' },
+  },
+  tempered_edge: {
+    key: 'tempered_edge',
+    name: 'Закалённое лезвие',
+    description: 'Клинок, перекованный на пепле и могильном мхе. Бьёт точнее и больнее.',
+    type: 'weapon', slot: 'weapon', rarity: 'epic',
+    stats: { attack: 8, accuracy: 2 }, price: 380,
+  },
+  salted_hide: {
+    key: 'salted_hide',
+    name: 'Просоленная кожа',
+    description: 'Кожа, вымоченная в соли и пепле. Гнётся, но держит удар.',
+    type: 'armor', slot: 'body', rarity: 'epic',
+    stats: { defense: 10, evasion: 1 }, price: 400,
+  },
+
   // --- Trade goods and finds ------------------------------------------------
   // Bestiary loot (G10) and the tide quest (G8) name these keys; before them the
   // catalogue had no entry, so the bag could not show what was won. Settlement

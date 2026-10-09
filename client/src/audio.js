@@ -100,8 +100,18 @@ export function volumeFromPrefs(prefs) {
   };
 }
 
+// Should playMusic swap tracks? Pure so it can be tested without a browser.
+// Same context while it is still playing is a no-op; anything else swaps.
+export function shouldSwitchMusic(context, activeContext, playing) {
+  if (!context) return false;
+  return !(context === activeContext && playing);
+}
+
 // --- player ------------------------------------------------------------------
-// One long-lived <audio> per layer. Music crossfades between contexts; SFX are
+// One long-lived <audio> per layer. Music never layers: a registry holds every
+// element we started, and starting a new context stops all of them first, so a
+// rejected or interrupted play() can never leave an earlier loop running under
+// the new one (which made every location's theme play at once). SFX are
 // fire-and-forget clones so several can overlap. Nothing throws when audio is
 // unavailable (SSR, an old browser): every entry point is a no-op there.
 let musicEl = null;
@@ -112,10 +122,22 @@ let musicEnabled = true;
 let sfxEnabled = true;
 let unlocked = false;
 let unlockInstalled = false;
-let fadeTimer = null;
+const liveMusic = new Set();
 
 function audioAvailable() {
   return typeof window !== 'undefined' && typeof window.Audio !== 'undefined';
+}
+
+// Silence and forget every music element except `keep`.
+function stopMusic(keep = null) {
+  for (const el of liveMusic) {
+    if (el === keep) continue;
+    try {
+      if (el.__fade) clearInterval(el.__fade);
+      el.pause();
+    } catch { /* ignore */ }
+    liveMusic.delete(el);
+  }
 }
 
 export function setVolumes(prefs) {
@@ -146,46 +168,30 @@ export function installUnlock() {
 
 export function playMusic(context) {
   if (!audioAvailable() || !context || !MUSIC_CONTEXTS.includes(context)) return;
-  if (context === currentContext) return;
+  if (!shouldSwitchMusic(context, currentContext, !!(musicEl && !musicEl.paused))) return;
   currentContext = context;
 
-  const fade = () => {
-    if (musicEl) {
-      const el = musicEl;
-      el.pause();
-      if (el.__fade) clearInterval(el.__fade);
-    }
-    const next = new window.Audio(MUSIC_FILES[context]);
-    next.loop = true;
-    next.volume = 0;
-    next.preload = 'auto';
-    musicEl = next;
-    const goal = musicEnabled ? currentMusicVolume * (CONTEXT_VOLUME[context] ?? 0.7) : 0;
-    next.play().then(() => {
-      if (fadeTimer) clearInterval(fadeTimer);
-      const step = goal / (FADE_MS.in / 50);
-      next.__fade = setInterval(() => {
-        if (next.volume + step >= goal) { next.volume = goal; clearInterval(next.__fade); }
-        else next.volume = Math.min(goal, next.volume + step);
-      }, 50);
-    }).catch(() => { /* waits for the unlock gesture */ });
-  };
+  // Hard stop anything still alive before starting the new loop. This is what
+  // guarantees a single track: earlier elements are never orphaned.
+  stopMusic();
 
-  if (musicEl && !musicEl.paused) {
-    // Fade the old loop down before swapping.
-    const old = musicEl;
-    const goal = 0;
-    const step = old.volume / (FADE_MS.out / 50) || 0.05;
-    if (old.__fade) clearInterval(old.__fade);
-    old.__fade = setInterval(() => {
-      if (old.volume - step <= goal) { old.volume = 0; clearInterval(old.__fade); }
-      else old.volume = Math.max(goal, old.volume - step);
+  const next = new window.Audio(MUSIC_FILES[context]);
+  next.loop = true;
+  next.volume = 0;
+  next.preload = 'auto';
+  liveMusic.add(next);
+  musicEl = next;
+
+  const goal = musicEnabled ? currentMusicVolume * (CONTEXT_VOLUME[context] ?? 0.7) : 0;
+  next.play().then(() => {
+    if (next.__fade) clearInterval(next.__fade);
+    const step = Math.max(goal / (FADE_MS.in / 50), 0.005);
+    next.__fade = setInterval(() => {
+      if (!liveMusic.has(next)) { clearInterval(next.__fade); return; }
+      if (next.volume + step >= goal) { next.volume = goal; clearInterval(next.__fade); }
+      else next.volume = Math.min(goal, next.volume + step);
     }, 50);
-    musicEl = null;
-    setTimeout(fade, FADE_MS.out);
-  } else {
-    fade();
-  }
+  }).catch(() => { /* waits for the unlock gesture */ });
 }
 
 export function playSfx(name) {
