@@ -15,6 +15,8 @@ import { grantItem } from './items.js';
 import { getNpcByKey } from './npcs.js';
 import { itemInfo } from '../game/items.js';
 import { levelFromXp, deriveCharacter } from '../game/rules.js';
+import { grantNames } from './clan.js';
+import { MEMORY_QUEST_KEYS, NAMES_PER_MEMORY_QUEST } from '../db/seed_clan.js';
 import {
   QUEST_SOURCES, OBJECTIVE_TYPES, questByKey, isStoryQuest, SIDE_FAIL_OPINION,
 } from '../db/seed_quests.js';
@@ -96,13 +98,14 @@ function objectiveText(objective) {
   }
 }
 
-function rewardText(reward) {
+function rewardText(reward, questKey = null) {
   const parts = [];
   if (reward.gold) parts.push(`${reward.gold} золота`);
   if (reward.xp) parts.push(`${reward.xp} опыта`);
   if (reward.item) parts.push(`«${itemName(reward.item)}»`);
   if (reward.opinion) parts.push(`мнение ${reward.opinion > 0 ? '+' : ''}${reward.opinion}`);
   if (reward.unlock) parts.push(`доступ: ${UNLOCK_LABELS[reward.unlock] || reward.unlock}`);
+  if (questKey && MEMORY_QUEST_KEYS.includes(questKey)) parts.push(`${NAMES_PER_MEMORY_QUEST} имён`);
   return parts.join(', ');
 }
 
@@ -155,7 +158,7 @@ function questView(def, row) {
     objective: def.objective,
     objectiveText: objectiveText(def.objective),
     reward: def.reward,
-    rewardText: rewardText(def.reward),
+    rewardText: rewardText(def.reward, def.key),
     requires: def.requires,
     story: isStoryQuest(def),
     state: row ? row.status : 'available',
@@ -397,6 +400,12 @@ function grantReward(characterId, def) {
     if (opinion) granted.opinion = opinion;
   }
   if (r.unlock) granted.unlock = addUnlock(characterId, r.unlock, def.key);
+  // A memory quest (Книга с чужим именем, Первое возвращение…) also pays the
+  // clan in names, on top of gold/xp/item. A hero with no clan earns none.
+  if (MEMORY_QUEST_KEYS.includes(def.key)) {
+    grantNames(characterId, NAMES_PER_MEMORY_QUEST);
+    granted.names = NAMES_PER_MEMORY_QUEST;
+  }
   return granted;
 }
 

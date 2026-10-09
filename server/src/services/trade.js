@@ -10,6 +10,7 @@ import { getDb, transaction } from '../db/index.js';
 import { itemInfo } from '../game/items.js';
 import { grantItem, takeItem, hasItem, listItems } from './items.js';
 import { getCharacter } from './characters.js';
+import { clanTradeRate } from './clan.js';
 
 // --- the price rule ---------------------------------------------------------
 //
@@ -19,6 +20,14 @@ import { getCharacter } from './characters.js';
 // unit whose half rounds to zero still sells for zero — the rule is the rule.
 export const SELL_RATE = 0.5;
 export const sellPrice = (price) => Math.max(0, Math.floor((Number(price) || 0) * SELL_RATE));
+
+// A clan's «торговля» bonus (Склад, Молчальники) sweetens both sides: buying
+// costs less, selling pays more, by the same rate. `trade` is 0.08 per Склад
+// tier, 0.1 for Молчальники. 0 (no clan) leaves the base prices untouched.
+export const buyPrice = (price, tradeRate = 0) =>
+  Math.max(1, Math.round((Number(price) || 0) * (1 - (Number(tradeRate) || 0))));
+export const sellPriceFor = (price, tradeRate = 0) =>
+  Math.max(0, Math.floor((Number(price) || 0) * (SELL_RATE + (Number(tradeRate) || 0))));
 
 // --- reconciling G6's provisional keys with the G2 catalogue -----------------
 //
@@ -63,7 +72,7 @@ function shelfName(itemKey) {
   return SHELF_NAMES[itemKey] || itemKey;
 }
 
-function offerView(row) {
+function offerView(row, tradeRate = 0) {
   const itemId = resolveItemKey(row.item_key);
   const info = itemInfo(itemId);
   const known = info.name !== itemId;
@@ -74,8 +83,9 @@ function offerView(row) {
     description: known ? (info.description || '') : '',
     type: info.type,
     rarity: info.rarity,
-    price: row.price,
-    sellPrice: sellPrice(row.price),
+    listPrice: row.price,        // the shelf price before a clan's discount
+    price: buyPrice(row.price, tradeRate),
+    sellPrice: sellPriceFor(row.price, tradeRate),
     quantity: row.quantity,
     endless: row.quantity < 0,
     known,
@@ -106,9 +116,10 @@ function normalizeQty(qty) {
 
 // A building's shelf: what it sells and at what price. Returns null when the
 // building does not exist (the route turns that into a 404).
-export function listOffers(buildingId) {
+export function listOffers(buildingId, characterId = null) {
   const building = buildingRow(buildingId);
   if (!building) return null;
+  const tradeRate = characterId ? clanTradeRate(characterId) : 0;
   return {
     building: {
       id: building.id,
@@ -119,38 +130,42 @@ export function listOffers(buildingId) {
     },
     canTrade: isTradingType(building.type),
     sellRate: SELL_RATE,
-    offers: stockRows(buildingId).map(offerView),
+    clanTradeRate: tradeRate,
+    offers: stockRows(buildingId).map((r) => offerView(r, tradeRate)),
   };
 }
 
 // One offer on a shelf, addressed by its shelf key.
-export function getOffer(buildingId, itemKey) {
+export function getOffer(buildingId, itemKey, characterId = null) {
   const building = buildingRow(buildingId);
   if (!building) return null;
   const row = getDb()
     .prepare('SELECT * FROM settlement_stock WHERE building_id = ? AND item_key = ?')
     .get(buildingId, String(itemKey));
   if (!row) return null;
-  return { building: { id: building.id, name: building.name, type: building.type }, offer: offerView(row) };
+  const tradeRate = characterId ? clanTradeRate(characterId) : 0;
+  return { building: { id: building.id, name: building.name, type: building.type }, offer: offerView(row, tradeRate) };
 }
 
 // Every trading building in a settlement and what each one sells. Returns null
 // when the settlement does not exist.
-export function listSettlementOffers(settlementId) {
+export function listSettlementOffers(settlementId, characterId = null) {
   const settlement = getDb().prepare('SELECT * FROM settlements WHERE id = ?').get(settlementId);
   if (!settlement) return null;
+  const tradeRate = characterId ? clanTradeRate(characterId) : 0;
   const buildings = getDb().prepare(
     "SELECT * FROM settlement_buildings WHERE settlement_id = ? AND type IN ('shop', 'market') ORDER BY sort_order, id",
   ).all(settlementId);
   return {
     settlement: { id: settlement.id, key: settlement.key, name: settlement.name, kind: settlement.kind },
     sellRate: SELL_RATE,
+    clanTradeRate: tradeRate,
     buildings: buildings.map((b) => ({
       id: b.id,
       key: b.key,
       name: b.name,
       type: b.type,
-      offers: stockRows(b.id).map(offerView),
+      offers: stockRows(b.id).map((r) => offerView(r, tradeRate)),
     })),
   };
 }
@@ -177,7 +192,9 @@ export function buy(buildingId, characterId, itemKey, qty = 1) {
     const character = d.prepare('SELECT * FROM characters WHERE id = ?').get(characterId);
     if (!character) throw new Error('Персонаж не найден');
 
-    const total = offer.price * amount;
+    const tradeRate = clanTradeRate(characterId);
+    const unit = buyPrice(offer.price, tradeRate);
+    const total = unit * amount;
     if (character.gold < total) throw new Error('Не хватает золота');
     if (offer.quantity >= 0 && offer.quantity < amount) throw new Error('Столько нет на прилавке');
 
@@ -194,7 +211,7 @@ export function buy(buildingId, characterId, itemKey, qty = 1) {
       itemId: resolveItemKey(offer.item_key),
       name: shelfName(offer.item_key),
       qty: amount,
-      unitPrice: offer.price,
+      unitPrice: unit,
       total,
       gold: getCharacter(characterId).gold,
       quantity: offer.quantity >= 0 ? offer.quantity - amount : -1,
@@ -219,7 +236,7 @@ export function sell(buildingId, characterId, itemKey, qty = 1) {
     const realKey = resolveItemKey(offer.item_key);
     if (!hasItem(characterId, realKey, amount)) throw new Error('Предмета нет в сумке');
 
-    const unit = sellPrice(offer.price);
+    const unit = sellPriceFor(offer.price, clanTradeRate(characterId));
     const total = unit * amount;
     if (!takeItem(characterId, realKey, amount)) throw new Error('Предмета нет в сумке');
 

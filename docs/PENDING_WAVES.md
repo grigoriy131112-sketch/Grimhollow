@@ -64,29 +64,24 @@ These are implemented and unit-tested, but nothing in the running game consumes
 them. This section is the point of the current work: **finish the mechanic, add
 it to the model — do not rewrite it.**
 
-### 2.1 Clan bonuses are computed but never applied
+### 2.1 Clan bonuses — ✅ done in `wave/w-clan-live`
 
-- `services/clan.js#clanEffects()` folds the doctrine + every raised holding into
-  an effect map: `partyAttack`, `partyDefense`, `trade`, `diplomacy`, `stealth`,
-  `crossingDiscount`, `ritualSuccess`, `goldRate`, `magicDiscount`,
-  `templeOpinion`, `forestOpinion`, `choirOpinion`, `thaw`, `madnessRisk`,
-  `fleet`, `activeAbilities`.
-- **No consumer.** It is shown on the clan screen and returned by the API, but no
-  battle, trade, crossing, ritual or campaign code reads it.
-- **To finish:** apply `partyAttack`/`partyDefense` in `services/battles.js`;
-  `trade` in `services/trade.js`; `crossingDiscount` in `services/travel.js` /
-  `services/continents.js`; `ritualSuccess` in `services/resurrections.js`;
-  the opinion/thaw/dark flags in `services/campaign.js` (they already gate the
-  endings via `character_unlocks`).
+- `services/clan.js#clanEffects()` was computed but consumed by nothing. Now
+  `clanPartyBonuses(leaderId)` folds the doctrine + holdings into the party-tree
+  bonus shape, and `characters.js#getPartyBonuses()` merges tree + clan. Battle
+  (`services/battles.js`), the hero sheet and the party strip all read it, so the
+  numbers shown match the numbers fought with.
+- Applied: `partyAttack`/`partyDefense` in battle; `trade` in `services/trade.js`
+  (buy cheaper, sell dearer); `crossingDiscount` in `services/continents.js`
+  (smaller fare). Still open: the opinion/thaw/dark flags in the finale — they
+  already gate the endings through `character_unlocks`, so nothing to wire.
 
-### 2.2 Clan «names» are never earned by play
+### 2.2 Clan «names» — ✅ done in `wave/w-clan-live`
 
-- `grantNames()` exists but is only reachable through `POST /api/clan/.../names`;
-  nothing in play calls it. Today names can only be **bought for gold**
-  (`GOLD_PER_NAME = 25`).
-- **To finish:** award names from rituals (`services/resurrections.js`) and from
-  memory quests (`services/quests.js`), as `docs/lore/clan.md` says ("набираются
-  ритуалами и квестами памяти").
+- `grantNames()` is now called by play: a won death-realm ritual pays
+  `NAMES_PER_RITUAL = 3` (`services/battles.js`), and a memory quest
+  (`MEMORY_QUEST_KEYS`) pays `NAMES_PER_MEMORY_QUEST = 2` (`services/quests.js`).
+  A hero with no clan earns none, without error.
 
 ### 2.3 Random encounters / bestiary are unused
 
@@ -118,13 +113,13 @@ it to the model — do not rewrite it.**
 
 | # | Wave | Goal | Touches |
 |---|------|------|---------|
-| N1 | **W-CLAN-LIVE** | Wire clan effects + names (2.1, 2.2) into battles, trade, crossings, rituals, campaign | `services/battles.js`, `trade.js`, `travel.js`, `resurrections.js`, `campaign.js`, `quests.js` |
+| ~~N1~~ | ~~**W-CLAN-LIVE**~~ | ✅ **done** — clan effects + names wired into battle, trade, crossings, rituals, quests | `wave/w-clan-live` |
 | N2 | **W-BESTIARY** | Draw encounters from the biome pool (2.3) + a bestiary page in the Codex | `services/travel.js`, `services/encounters.js`, `client/src/pages/Codex.jsx` |
 | N3 | **W-SEA-TALK** | Party talk on board (2.4) | `client/src/pages/Voyage.jsx` |
 | N4 | **W-SEA-BALANCE** | Scale sea enemies (and settle the payout question, 2.5) | `game/ship.js`, `services/naval.js` |
 
-Recommended order: **N1 → N3 → N2 → N4** (impact first; N3 is tiny and unblocks a
-verbatim user request; N2 and N4 are larger).
+Recommended order: **N3 → N2 → N4** (N3 is tiny and unblocks a verbatim user
+request; N2 and N4 are larger).
 
 ---
 

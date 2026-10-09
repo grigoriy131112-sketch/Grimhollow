@@ -15,7 +15,7 @@ import {
   acceptanceChance, clampRelation, traitInfo,
   LEAVE_THRESHOLD,
 } from '../game/companions.js';
-import { getBonuses } from './upgrades.js';
+import { getPartyBonuses } from './characters.js';
 import { applyBonusesToSource } from '../game/party_upgrades.js';
 
 const parseJson = (v, fallback) => {
@@ -89,7 +89,7 @@ export function recruit(leaderId, templateKey, { source, goldOffered = 0 } = {},
   if (isRecruited(leaderId, t.key)) throw new Error('Этот спутник уже в отряде');
 
   // The roster is capped; the Мuster branch raises it one rank at a time.
-  const roster = getBonuses(leaderId).roster;
+  const roster = getPartyBonuses(leaderId).roster;
   if (activeMembers(leaderId).length >= roster) {
     throw new Error(`Отряд уже полон (${roster}). Укрепите ветвь «Сбор».`);
   }
@@ -227,7 +227,7 @@ export function getParty(leaderId) {
   // Fold the party tree in for display: leader and every companion show base
   // plus bonus, matching what they fight with. Battles boost from raw sheets,
   // so these enriched views must never be fed back into startBattle().
-  const bonuses = getBonuses(leader.id);
+  const bonuses = getPartyBonuses(leader.id);
   const enriched = withRelations.map((m) => {
     const b = applyBonusesToSource(m, bonuses);
     return { ...m, stats: b.stats, hp: b.hp, mana: b.mana, stamina: b.stamina };

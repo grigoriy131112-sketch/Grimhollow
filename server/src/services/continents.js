@@ -9,6 +9,7 @@ import { getCharacter } from './characters.js';
 import { takeItem, hasItem } from './items.js';
 import { startBattle } from './battles.js';
 import { recordVisit } from './world.js';
+import { clanCrossingRate } from './clan.js';
 import {
   CROSSINGS, CROSSING_GATES, routeFor, crossingView, canAfford, resolveCrossing as resolveRules,
 } from '../game/continent_travel.js';
@@ -93,13 +94,15 @@ export function crossingsFor(locationId, characterId = null) {
   const here = getDb().prepare('SELECT * FROM locations WHERE id = ?').get(locationId);
   if (!here || !CROSSING_GATES.includes(here.name)) return [];
   const character = characterId ? getCharacter(characterId) : null;
+  const discount = characterId ? clanCrossingRate(characterId) : 0;
   const out = [];
   for (const route of CROSSINGS) {
     const farName = route.from === here.name ? route.to : route.to === here.name ? route.from : null;
     if (!farName) continue;
     const far = locationRowByName(farName);
     if (!far) continue;
-    const view = crossingView(route, { from: here.name, to: far.name });
+    const priced = discount ? { ...route, gold: Math.max(0, Math.round(route.gold * (1 - discount))) } : route;
+    const view = crossingView(priced, { from: here.name, to: far.name });
     out.push({
       ...view,
       fromId: here.id,
@@ -107,7 +110,7 @@ export function crossingsFor(locationId, characterId = null) {
       toScene: far.scene,
       toBiome: far.biome,
       toContinent: continentOf(far.id)?.name || null,
-      affordable: character ? canAfford(route, { gold: character.gold, hasItem: (k, q) => hasItem(character.id, k, q) }) : null,
+      affordable: character ? canAfford(priced, { gold: character.gold, hasItem: (k, q) => hasItem(character.id, k, q) }) : null,
     });
   }
   return out;
@@ -146,6 +149,12 @@ export function startCrossing({ characterId, fromId, toId, now = Date.now() }) {
   const route = routeFor(from.name, to.name);
   if (!route) throw new Error('Между этими берегами нет пути');
 
+  // A clan with a Причал (or the fleet) sails cheaper: `crossingDiscount` cuts
+  // the fare only, never the toll item. Without a clan the rate is 0 and the
+  // authored fare stands.
+  const discount = clanCrossingRate(characterId);
+  const priced = discount ? { ...route, gold: Math.max(0, Math.round(route.gold * (1 - discount))) } : route;
+
   // The party can only sail from the port it actually stands in, exactly as a
   // road can only be walked from where the party is. A never-placed hero begins
   // its voyage at the origin port.
@@ -156,7 +165,7 @@ export function startCrossing({ characterId, fromId, toId, now = Date.now() }) {
     throw new Error('Отряд не находится здесь');
   }
 
-  const afford = canAfford(route, { gold: character.gold, hasItem: (k, q) => hasItem(characterId, k, q) });
+  const afford = canAfford(priced, { gold: character.gold, hasItem: (k, q) => hasItem(characterId, k, q) });
   if (!afford.ok) {
     const short = afford.missing.map((m) => (m.kind === 'gold' ? `${m.need - m.have} золота` : m.label)).join(', ');
     throw new Error(`Не хватает: ${short}`);
@@ -164,7 +173,7 @@ export function startCrossing({ characterId, fromId, toId, now = Date.now() }) {
 
   // Pay first: the fare and the toll are gone whatever the sea decides.
   getDb().prepare("UPDATE characters SET gold = gold - ?, updated_at = datetime('now') WHERE id = ?")
-    .run(route.gold, characterId);
+    .run(priced.gold, characterId);
   if (route.item) takeItem(characterId, route.item.key, route.item.qty);
 
   const outcome = resolveRules(route, { seed: `${fromId}->${toId}`, day: Math.floor(now / 86_400_000) });
