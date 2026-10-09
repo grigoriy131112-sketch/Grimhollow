@@ -64,70 +64,84 @@ These are implemented and unit-tested, but nothing in the running game consumes
 them. This section is the point of the current work: **finish the mechanic, add
 it to the model — do not rewrite it.**
 
-### 2.1 Clan bonuses are computed but never applied
+### 2.1 Clan bonuses — ✅ done in `wave/w-clan-live`
 
-- `services/clan.js#clanEffects()` folds the doctrine + every raised holding into
-  an effect map: `partyAttack`, `partyDefense`, `trade`, `diplomacy`, `stealth`,
-  `crossingDiscount`, `ritualSuccess`, `goldRate`, `magicDiscount`,
-  `templeOpinion`, `forestOpinion`, `choirOpinion`, `thaw`, `madnessRisk`,
-  `fleet`, `activeAbilities`.
-- **No consumer.** It is shown on the clan screen and returned by the API, but no
-  battle, trade, crossing, ritual or campaign code reads it.
-- **To finish:** apply `partyAttack`/`partyDefense` in `services/battles.js`;
-  `trade` in `services/trade.js`; `crossingDiscount` in `services/travel.js` /
-  `services/continents.js`; `ritualSuccess` in `services/resurrections.js`;
-  the opinion/thaw/dark flags in `services/campaign.js` (they already gate the
-  endings via `character_unlocks`).
+- `services/clan.js#clanEffects()` was computed but consumed by nothing. Now
+  `clanPartyBonuses(leaderId)` folds the doctrine + holdings into the party-tree
+  bonus shape, and `characters.js#getPartyBonuses()` merges tree + clan. Battle
+  (`services/battles.js`), the hero sheet and the party strip all read it, so the
+  numbers shown match the numbers fought with.
+- Applied: `partyAttack`/`partyDefense` in battle; `trade` in `services/trade.js`
+  (buy cheaper, sell dearer); `crossingDiscount` in `services/continents.js`
+  (smaller fare). Still open: the opinion/thaw/dark flags in the finale — they
+  already gate the endings through `character_unlocks`, so nothing to wire.
 
-### 2.2 Clan «names» are never earned by play
+### 2.2 Clan «names» — ✅ done in `wave/w-clan-live`
 
-- `grantNames()` exists but is only reachable through `POST /api/clan/.../names`;
-  nothing in play calls it. Today names can only be **bought for gold**
-  (`GOLD_PER_NAME = 25`).
-- **To finish:** award names from rituals (`services/resurrections.js`) and from
-  memory quests (`services/quests.js`), as `docs/lore/clan.md` says ("набираются
-  ритуалами и квестами памяти").
+- `grantNames()` is now called by play: a won death-realm ritual pays
+  `NAMES_PER_RITUAL = 3` (`services/battles.js`), and a memory quest
+  (`MEMORY_QUEST_KEYS`) pays `NAMES_PER_MEMORY_QUEST = 2` (`services/quests.js`).
+  A hero with no clan earns none, without error.
 
-### 2.3 Random encounters / bestiary are unused
+### 2.3 The clan garrison — ✅ done in `wave/w-clan-roster` (W-CLAN-ROSTER)
 
-- `game/randomizer.js` (bestiary encounters + loot) and
-  `services/encounters.js` (`encounterPool`, `resolveEncounter`, `startEncounter`,
-  `applyLoot`) have **no caller** outside their own module and tests.
-- Road stops come from `game/travel.js`'s own small `ENCOUNTERS` table
-  (`gold`/`heal`/`mana`/`battle`/`nothing`); the bestiary pool is never drawn.
-- There is **no bestiary screen**; `GET /api/world/monsters` is only read by the
-  hero sheet's hunt list.
-- **To finish:** draw road/location encounters from the biome pool via
-  `services/encounters.js`, and add a **bestiary** section to the Codex.
+User asked: invite party companions into the clan, let some ask to join on their
+own, have them bring income/resources from raids, and be able to take any of
+them back into the party at any moment. Built as **one system**:
 
-### 2.4 Party talk on board is missing (W-SEA)
+- **A companion stationed in the clan is not gone.** `party_members.assignment`
+  (`party` | `clan`) is the only thing that moves; the sheet, traits and
+  relations stay with the member, so recall is a *move*, never a copy.
+  `stationMember` / `recallMember` (`services/party.js`).
+- **Recall respects the party cap.** The clan is a **reserve, not a bypass**:
+  `recallMember` throws «Отряд уже полон» at `roster` (base 4 + «Сбор»), so
+  «Сбор» keeps its value.
+- **People ask to join on their own.** `clan_petitions` + `listPetitions` /
+  `acceptPetition` / `declinePetition`. Rolled on the same clock as raids, so a
+  reload cannot reroll; at most `MAX_PETITION_CANDIDATES = 3` open at once.
+- **Passive raid income, by the real clock.** `services/garrison.js`
+  `tickGarrison()` pays gold (`GOLD_PER_TICK = 6` × garrison, doctrine
+  `goldRate`), names (every 6 ticks, + Дом летописей), and the odd trophy
+  (every 4). `MS_PER_TICK = 5 min`, capped at `MAX_TICKS = 48` (6 h), so idling
+  cannot be re-farmed; outcomes are hashed per tick, so a reload gives the same
+  raid. A raid can wound or **kill** a companion (`status='dead'` → the death
+  realm's ritual list). Nothing here touches a hero with no garrison.
+- **Where it is spelled out:** routes under `/api/clan/leader/:id/garrison`,
+  `/garrison/:memberId/station|recall`, `/petitions/:id/accept|decline`; the UI
+  is the garrison section on `pages/Clan.jsx`.
+- **Tests:** `server/test/garrison.test.js` (10) — station/recall, the cap,
+  determinism, the idle cap, no double pay, empty garrison, petitions.
 
-- `Voyage.jsx` links to the papers but does not mount `Talk`. The user asked for
-  **dialogue with the party while sailing** ("можно поговорить с отрядом").
-- **To finish:** mount `Talk` with `kind="companion"` on `Voyage.jsx`.
+### 2.4 Random encounters / bestiary — ✅ done in `wave/w-bestiary` (W-BESTIARY)
 
-### 2.5 Enemy scaling for sea battles (W-SEA open point) ✅ shipped (W-SEA-BALANCE)
+- Road stops in `game/travel.js` still carry their small `ENCOUNTERS` table
+  (`gold`/`heal`/`mana`/`battle`/`nothing`) for the friendly beats, but a road
+  **ambush now draws its beast from the biome pool**: `chooseTravel` calls
+  `resolveRoadEncounter` (`services/encounters.js`), which rolls the shared
+  bestiary by the road's danger band + biome. The spoils ride on the battle row
+  (`battles.loot`) and pay once on a win.
+- A **bestiary screen** now exists: `GET /api/world/bestiary`
+  (`services/world.js#getBestiary`) groups every monster into the lore's three
+  tiers with its haunts, and `client/src/pages/Bestiary.jsx` is a Codex chapter
+  (Бестиарий) with an on-the-spot hunt. `GET /api/world/monsters` still feeds the
+  sheet's hunt list.
 
-- Enemies now scale with the ship's level so a maxed ship still faces a real
-  fight. `pirateTier`/`monsterTier` (`game/naval.js`) are sized off a **reference
-  ship** for that tier — the ship a player actually has (`forgedForLevel` in
-  `game/ship.js` folds the unlocked-and-forged upgrades). The old flat table was
-  100%-trivial by level 5; enemy hull is now a multiple of the hero's *effective*
-  per-round output (`effectiveOutput`), and morale/hull scale with depth, so a
-  fight lasts several rounds and the hull takes real damage at every tier. The
-  sea monster's heavy strike fires on its own turn (a `ram` action) so it no
-  longer double-attacks on the round it bites.
-- **Payout settled:** it now scales with the tier for *both* kinds. Because the
-  fight scales, a flat payout would punish every deep voyage for no reason. The
-  user's figures stay the tier-1 anchors (pirates 5, monsters 6-10); `seaPoints`
-  interpolates the monster band across the tiers and scales both by depth, so a
-  monster is always worth a little more than a pirate at equal tier.
-- Balance is guarded by `server/test/naval.test.js` ("a fully built ship meets a
-  real fight at every tier"): a deterministic seeded fight per tier asserts the
-  hull is dented and the fight lasts 3-30 rounds.
-- Still open (separate knob, not this wave): the **absolute** grind length —
-  a fully upgraded ship costs ~13,000 ship points, so the number of wins is a
-  design choice independent of the per-fight balance.
+### 2.5 Party talk on board — ✅ done in `wave/w-sea-talk`
+
+- `Voyage.jsx` now mounts `Talk` with `kind="companion"` next to the papers link:
+  a «Поговорить с отрядом» card lists the active party and opens the same
+  conversation panel the Party screen uses (same memory, same relations, same
+  local-AI layer). The village/road talk and the sea talk are one system.
+
+### 2.6 Enemy scaling for sea battles — ✅ done in `wave/w-sea-balance` (W-SEA-BALANCE)
+
+- Sea enemies now scale to the **ship**: the enemy crew is sized off the hero's
+  own crew and the hull from the ship's effective output, with guns/damage
+  growing by tier (`game/naval.js`), so a fully built ship still meets a real
+  fight instead of a two-round rout. The **payout scales with the tier too**, so
+  a deeper fight pays more.
+- The balance is pinned by a deterministic regression test (injectable `rng`),
+  and the fights last 5–14 rounds with real hull risk at every tier.
 
 ---
 
@@ -135,13 +149,16 @@ it to the model — do not rewrite it.**
 
 | # | Wave | Goal | Touches |
 |---|------|------|---------|
-| N1 | **W-CLAN-LIVE** | Wire clan effects + names (2.1, 2.2) into battles, trade, crossings, rituals, campaign | `services/battles.js`, `trade.js`, `travel.js`, `resurrections.js`, `campaign.js`, `quests.js` |
-| N2 | **W-BESTIARY** | Draw encounters from the biome pool (2.3) + a bestiary page in the Codex | `services/travel.js`, `services/encounters.js`, `client/src/pages/Codex.jsx` |
-| N3 | **W-SEA-TALK** | Party talk on board (2.4) | `client/src/pages/Voyage.jsx` |
-| N4 | **W-SEA-BALANCE** | ✅ shipped — sea enemies scale to the ship; payout scales with tier too (2.5) | `game/naval.js`, `game/ship.js` |
+| ~~N1~~ | ~~**W-CLAN-LIVE**~~ | ✅ **done** — clan effects + names wired into battle, trade, crossings, rituals, quests | `wave/w-clan-live` |
+| ~~N2~~ | ~~**W-CLAN-ROSTER**~~ | ✅ **done** — invite companions to the clan, self-petitions, real-clock raid income, recall | `wave/w-clan-roster` |
+| ~~N3~~ | ~~**W-BESTIARY**~~ | ✅ **done** — ambushes draw from the biome pool; bestiary Codex chapter | `wave/w-bestiary` |
+| ~~N4~~ | ~~**W-SEA-TALK**~~ | ✅ **done** — party talk on board (2.5) | `wave/w-sea-talk` |
+| ~~N5~~ | ~~**W-SEA-BALANCE**~~ | ✅ **done** — sea enemies scale to the ship; payout scales with tier | `wave/w-sea-balance` |
 
-Recommended order: **N1 → N3 → N2 → N4** (impact first; N3 is tiny and unblocks a
-verbatim user request; N2 and N4 are larger).
+Recommended order: **N4 → N3 → N5** (N4 is tiny and unblocks a verbatim user
+request; N3 and N5 are larger). **All of N1–N5 are now done and merged**; the
+open roadmap is clear — only **G12 (online)** remains, and it needs a new
+explicit `погнали`.
 
 ---
 
@@ -168,3 +185,8 @@ verbatim user request; N2 and N4 are larger).
   локации в те, которые соединены дорогой… Когда он плывёт по миру… и приплывает
   на другой континент, то он может из порта переместиться в те локации, которые
   соединены с портом дорогой» (paths + time done in W-MAP; the rest is W-SEA).
+- **Clan roster / garrison:** «добавить функцию приглашать себе в клан людей (тех
+  которые игрок приглашает в отряд свой), а также функцию что в клан сами смогут
+  захотеть вступить. Ну и само собой эти ребята, которые будут в клане, будут
+  пассивно приносить доход от походов и ресурсы, а также в любой момент Игрок
+  может взять из клана любого персонажа» (done in W-CLAN-ROSTER).

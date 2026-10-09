@@ -23,7 +23,7 @@ import {
 import {
   DOCTRINES, BUILDINGS, doctrineByKey, buildingByKey, buildingCost, upgradeCost,
   costForLevel, tierGateForLevel, clanKeyFromName, ALLY_POWERS, HARBOUR_BASES,
-  CLAN_MAX_LEVEL, MAX_RANK, GOLD_PER_NAME, BUILDINGS_BY_LEVEL, LEVELS,
+  CLAN_MAX_LEVEL, MAX_RANK, GOLD_PER_NAME, NAMES_PER_RITUAL, BUILDINGS_BY_LEVEL, LEVELS,
 } from '../db/seed_clan.js';
 
 const parseJson = (v, fallback) => {
@@ -87,6 +87,42 @@ export function clanEffects(clan) {
     }
   }
   return out;
+}
+
+// --- the effects other systems read -----------------------------------------
+
+// A clan is a multiplier on what its leader does, applied wherever the game
+// already applies one. `clanEffects` is kept for the UI (it spells the booleans
+// out), but play reads these two shapes instead.
+const num = (v) => (typeof v === 'number' ? v : 0);
+
+// Fold doctrine + holdings into the tree's bonus shape, so a clan stacks with
+// Очки отряда and is applied by the same `applyBonusesToSource`. Only a doctrine
+// that gives `partyAttack`/`partyDefense`/`magicDiscount`/fleet/cargo-style
+// effects matters here; the rest ride in the flat map.
+export function clanPartyBonuses(leaderId) {
+  const effects = clanEffects(clanRowByLeader(leaderId));
+  const mult = {};
+  // Holdings use decimals for the party (0.05 = +5%); doctrines use integers for
+  // diplomacy/trade (percent) and decimals for magic. Party stats are fractions.
+  const atk = num(effects.partyAttack);
+  const def = num(effects.partyDefense);
+  if (atk) mult.attack = atk;
+  if (def) mult.defense = def;
+  return { mult, regenMana: 0, regenStamina: 0, roster: 0, startFull: false };
+}
+
+// Flat/simple multipliers a service can apply to a price or a rate.
+export function clanTradeRate(leaderId) {
+  return num(clanEffects(clanRowByLeader(leaderId)).trade);
+}
+
+export function clanCrossingRate(leaderId) {
+  return num(clanEffects(clanRowByLeader(leaderId)).crossingDiscount);
+}
+
+export function clanMagicRate(leaderId) {
+  return num(clanEffects(clanRowByLeader(leaderId)).magicDiscount);
 }
 
 // --- the view ---------------------------------------------------------------
@@ -386,7 +422,10 @@ export function buildStructure(leaderId, type) {
 // this); it may also trade gold for names, which is what lets a clan pay a
 // holding's names price with coin.
 export function grantNames(leaderId, amount) {
-  const row = requireClanByLeader(leaderId);
+  const row = clanRowByLeader(leaderId);
+  // A hero without a clan simply has nowhere to keep names: a ritual won before
+  // founding earns nothing, and that is not an error for the battle settlement.
+  if (!row) return getClan(leaderId);
   const n = Math.max(1, Math.floor(Number(amount) || 0));
   getDb().prepare("UPDATE clans SET names = names + ?, updated_at = datetime('now') WHERE id = ?").run(n, row.id);
   return getClan(leaderId);

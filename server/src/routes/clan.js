@@ -7,6 +7,10 @@ import {
   grantNames, buyNames, listHireable, hireMercenary, reviveMercenary,
   foundingRequirements,
 } from '../services/clan.js';
+import {
+  getGarrison, tickGarrison, listPetitions, acceptPetition, declinePetition,
+} from '../services/garrison.js';
+import { stationMember, recallMember } from '../services/party.js';
 
 const router = Router();
 
@@ -14,6 +18,47 @@ const router = Router();
 router.get('/leader/:leaderId', (req, res) => {
   try { res.json(getClan(Number(req.params.leaderId))); }
   catch (err) { res.status(404).json({ error: err.message }); }
+});
+
+// The garrison: stationed companions, the raid clock, and the open petitions.
+// Reading it advances the clan's clock and pays out what the elapsed time
+// earned, so the income is a function of time lived rather than of clicks.
+router.get('/leader/:leaderId/garrison', (req, res) => {
+  try {
+    const id = Number(req.params.leaderId);
+    const report = tickGarrison(id);
+    if (!getGarrison(id)) return res.status(404).json({ error: 'У этого героя ещё нет клана' });
+    res.json({ ...getGarrison(id), lastReport: report, ...listPetitions(id) });
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// Station a member in the clan / recall one into the active party.
+router.post('/leader/:leaderId/garrison/:memberId/station', (req, res) => {
+  try {
+    const leaderId = Number(req.params.leaderId);
+    const member = stationMember(leaderId, Number(req.params.memberId));
+    tickGarrison(leaderId);
+    res.json({ ...getGarrison(leaderId), member });
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+router.post('/leader/:leaderId/garrison/:memberId/recall', (req, res) => {
+  try {
+    const leaderId = Number(req.params.leaderId);
+    const member = recallMember(leaderId, Number(req.params.memberId));
+    res.json({ ...getGarrison(leaderId), member });
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// Accept or turn away a petition on its own.
+router.post('/leader/:leaderId/petitions/:petitionId/accept', (req, res) => {
+  try { res.json(acceptPetition(Number(req.params.leaderId), Number(req.params.petitionId))); }
+  catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+router.post('/leader/:leaderId/petitions/:petitionId/decline', (req, res) => {
+  try { res.json(declinePetition(Number(req.params.leaderId), Number(req.params.petitionId))); }
+  catch (err) { res.status(400).json({ error: err.message }); }
 });
 
 // The founding conditions alone.

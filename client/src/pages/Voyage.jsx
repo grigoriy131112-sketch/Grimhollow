@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import SceneBackdrop from '../scenes.jsx';
+import Talk from '../Talk.jsx';
 
 // W-SEA: the voyage screen. A sea crossing is opened up here: the party sails
 // from the port, the sea shows its stops one by one (a Fortune island to note,
@@ -11,11 +12,15 @@ export default function VoyagePage() {
   const { characterId } = useParams();
   const navigate = useNavigate();
   const [voyage, setVoyage] = useState(null);
+  const [party, setParty] = useState(null);
+  const [talking, setTalking] = useState(null);
+  const [relation, setRelation] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = () => api.getVoyage(characterId).then(setVoyage).catch((e) => setError(e.message));
   useEffect(() => { load(); }, [characterId]);
+  useEffect(() => { api.getParty(characterId).then(setParty).catch(() => {}); }, [characterId]);
 
   const resolve = async () => {
     setBusy(true); setError('');
@@ -32,6 +37,7 @@ export default function VoyagePage() {
 
   const stop = voyage.stop;
   const total = voyage.stops.length;
+  const members = party?.members || [];
 
   return (
     <div>
@@ -81,6 +87,39 @@ export default function VoyagePage() {
       <p className="muted small">
         <Link to={`/papers/${characterId}`}>Судовой журнал и бумаги →</Link>
       </p>
+
+      <div className="card">
+        <h2>Поговорить с отрядом</h2>
+        <p className="muted small">Долгий переход — время для разговоров. Спросите любого, пока корабль идёт.</p>
+        {members.length === 0 && <p className="muted">Сейчас в отряде никого нет.</p>}
+        <div className="cards">
+          {members.map((m) => (
+            <div className="card" key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ flex: 1 }}>
+                <b>{m.name}</b>
+                <div className="muted small">{m.className} · ур. {m.level}</div>
+              </span>
+              <button
+                type="button"
+                className={`btn small${talking === m.id ? '' : ' ghost'}`}
+                onClick={() => setTalking((cur) => (cur === m.id ? null : m.id))}
+              >
+                {talking === m.id ? 'Свернуть' : 'Поговорить'}
+              </button>
+            </div>
+          ))}
+        </div>
+        {talking != null && (
+          <Talk
+            leaderId={characterId}
+            kind="companion"
+            refId={talking}
+            onClose={() => setTalking(null)}
+            onRelationChange={setRelation}
+          />
+        )}
+        {relation != null && talking == null && <p className="muted small">Отношение: {relation}</p>}
+      </div>
     </div>
   );
 }

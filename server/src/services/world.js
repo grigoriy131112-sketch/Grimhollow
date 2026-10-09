@@ -2,6 +2,8 @@ import { getDb } from '../db/index.js';
 import { MS_PER_MINUTE, elapsedWalkMs, hasArrived } from '../game/travel.js';
 import { CROSSING_GATES, CROSSINGS } from '../game/continent_travel.js';
 import { seaRoute } from '../game/world_geo.js';
+import { DANGER_BANDS, TITLED_LEVEL } from '../game/randomizer.js';
+import { CLASSES } from '../game/classes.js';
 
 // Per-continent tallies, so the atlas shows each land's own numbers instead of
 // one global total. Ports are the places that open a crossing to another land.
@@ -173,6 +175,56 @@ const OFF_MAP_BOSS = 'Костяной Пастырь';
 export function listMonsters() {
   const rows = getDb().prepare('SELECT * FROM monsters ORDER BY level, name').all();
   return rows.filter((m) => m.name !== OFF_MAP_BOSS);
+}
+
+// The bestiary for the Codex: every seeded monster except the off-map ritual
+// boss, grouped into the lore's three tiers (levels 1-3 household horror, 4-8
+// trades and titles, 9-15 abstractions and gods) and carrying the places it is
+// known to haunt. Pure read of the seeded rows, so the page and the seed can
+// never disagree about a stat.
+export function getBestiary() {
+  const db = getDb();
+  const rows = db.prepare('SELECT * FROM monsters ORDER BY level, name').all()
+    .filter((m) => m.name !== OFF_MAP_BOSS);
+
+  // Which named places each monster is linked to (location_monsters), resolved
+  // to names so the page can say where it hunts.
+  const haunts = new Map();
+  const links = db.prepare(
+    `SELECT lm.monster_id AS id, l.name AS name
+       FROM location_monsters lm JOIN locations l ON l.id = lm.location_id
+      ORDER BY l.name`,
+  ).all();
+  for (const link of links) {
+    if (!haunts.has(link.id)) haunts.set(link.id, []);
+    haunts.get(link.id).push(link.name);
+  }
+
+  const tiers = DANGER_BANDS.map((b) => ({ label: b.label, levelMin: b.levelMin, levelMax: b.levelMax, monsters: [] }));
+  const slot = (level) => tiers.find((t) => level >= t.levelMin && level <= t.levelMax) || tiers[tiers.length - 1];
+
+  for (const m of rows) {
+    slot(m.level).monsters.push({
+      id: m.id,
+      name: m.name,
+      description: m.description,
+      level: m.level,
+      classKey: m.class_key,
+      className: CLASSES[m.class_key]?.label || m.class_key,
+      maxHp: m.max_hp,
+      attack: m.attack,
+      defense: m.defense,
+      accuracy: m.accuracy,
+      evasion: m.evasion,
+      speed: m.speed,
+      xpReward: m.xp_reward,
+      goldReward: m.gold_reward,
+      portrait: m.portrait,
+      titled: m.level >= TITLED_LEVEL,
+      haunts: haunts.get(m.id) || [],
+    });
+  }
+  return { tiers: tiers.filter((t) => t.monsters.length > 0), count: rows.length };
 }
 
 export function getMonsterByName(name) {

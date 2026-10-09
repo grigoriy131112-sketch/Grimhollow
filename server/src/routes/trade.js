@@ -11,21 +11,24 @@ const router = Router();
 
 // Every trading building in a settlement and what each one sells.
 router.get('/settlement/:settlementId', (req, res) => {
-  const view = listSettlementOffers(Number(req.params.settlementId));
+  const characterId = req.query.characterId ? Number(req.query.characterId) : null;
+  const view = listSettlementOffers(Number(req.params.settlementId), characterId);
   if (!view) return res.status(404).json({ error: 'Поселение не найдено' });
   return res.json(view);
 });
 
 // A building's shelf: what it sells and at what price.
 router.get('/offers/:buildingId', (req, res) => {
-  const view = listOffers(Number(req.params.buildingId));
+  const characterId = req.query.characterId ? Number(req.query.characterId) : null;
+  const view = listOffers(Number(req.params.buildingId), characterId);
   if (!view) return res.status(404).json({ error: 'Здание не найдено' });
   return res.json(view);
 });
 
 // One offer on a shelf, addressed by its shelf key.
 router.get('/offers/:buildingId/:itemKey', (req, res) => {
-  const view = getOffer(Number(req.params.buildingId), req.params.itemKey);
+  const characterId = req.query.characterId ? Number(req.query.characterId) : null;
+  const view = getOffer(Number(req.params.buildingId), req.params.itemKey, characterId);
   if (!view) return res.status(404).json({ error: 'Такого товара нет на прилавке' });
   return res.json(view);
 });

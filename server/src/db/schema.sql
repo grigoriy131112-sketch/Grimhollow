@@ -120,6 +120,7 @@ CREATE TABLE IF NOT EXISTS battles (
   result        TEXT,
   kind          TEXT NOT NULL DEFAULT 'normal',
   revive_member INTEGER,
+  loot          TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -529,4 +530,25 @@ CREATE TABLE IF NOT EXISTS ship_papers (
   log           TEXT NOT NULL DEFAULT '[]',
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Wave W-CLAN-ROSTER: someone who asks to join the clan on their own. `day` is
+-- the tick the petition was rolled for, keyed so a reload cannot reroll it.
+CREATE TABLE IF NOT EXISTS clan_petitions (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  clan_id       INTEGER NOT NULL REFERENCES clans(id) ON DELETE CASCADE,
+  template_key  TEXT NOT NULL,
+  day           INTEGER NOT NULL,
+  status        TEXT NOT NULL DEFAULT 'pending',   -- pending | accepted | declined
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Wave W-CLAN-ROSTER: the garrison's real-clock watermark (one row per clan).
+-- Petitions and raids are both derived from the wall clock, capped at this
+-- stamp, so the world pays out only for time actually lived.
+CREATE TABLE IF NOT EXISTS clan_garrison (
+  clan_id       INTEGER PRIMARY KEY REFERENCES clans(id) ON DELETE CASCADE,
+  last_tick_ms  INTEGER NOT NULL DEFAULT 0,
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 

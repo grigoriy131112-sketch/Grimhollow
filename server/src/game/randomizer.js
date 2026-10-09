@@ -157,6 +157,18 @@ export function rollEncounter({ danger = 1, biome = null, seed = '', bestiary = 
   return { monster: { ...monster }, titled: isTitled(monster), band: { ...bandForDanger(danger) } };
 }
 
+// An overland encounter for a road stop. The road already decided the danger and
+// biome from the two places it joins; this picks the beast the party meets at
+// that minute. Kept pure and separate from rollEncounter so a road stop is
+// reproducible from its own seed (road seed + stop minute) across reloads.
+export function rollRoadEncounter({ danger = 1, biome = null, seed = '' } = {}) {
+  const pool = poolFor({ danger, biome });
+  if (!pool.length) return null;
+  const picked = rollEncounter({ danger, biome, seed: `road:${seed}` });
+  if (picked) picked.pool = pool;
+  return picked;
+}
+
 // A monster's spawn weight: its bestiary weight, halved for a titled horror so
 // the retinue is what a party meets most of the time.
 export function encounterWeight(monster) {

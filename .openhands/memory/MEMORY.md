@@ -348,11 +348,36 @@ long detail in the daily logs.
   bare `gh pr merge` said "run gh auth login".
 - Each later branch needed `git merge origin/main` first (union conflicts in
   `styles.css`/`PENDING_WAVES.md`/memory; all union, resolved by keeping both
-  sides). Push the merge commit, then `gh pr ready` + `gh pr merge --merge`.
-- **`main` test baseline is now 338 pass / 0 fail.** Preview serves the merged
-  build; `/codex` 200, `/audio/*.ogg` 200, Lore lists 6 docs.
-- Still unstarted: **W-THEME / W-FONT / W-HERO-TABS** (styling), the W-SEA
-  on-board party-talk gap, and **G12 online** (needs a fresh explicit approval).
+  sides). Push the merge commit, then mark ready + merge.
+
+## Second merge queue (2026-10-08) — roadmap queue drained
+
+- Merged the whole `docs/PENDING_WAVES.md` §3 queue into `main`, one at a time:
+  **#23** `wave/w-clan-live` -> `82ac287`; **#24** `wave/w-clan-roster`
+  retargeted to `main` after #23 landed -> `659f331`; **#25** `wave/w-sea-talk`
+  -> `19ff462`; **#26** `wave/w-bestiary` -> `45490e3`; **#27**
+  `wave/w-sea-balance` -> last. **No open PRs remain.** `main` = the full game.
+- **Merging a draft PR needs `markPullRequestReadyForReview` (GraphQL)** — the
+  REST `POST /pulls/:n/ready_for_review` returns **404** with this token, and a
+  merge of a draft fails with "Pull Request is still a draft".
+- **How to retarget a stacked PR:** `PATCH /pulls/:n {"base":"main"}` after its
+  base branch merges, then merge normally.
+- Every branch after the first needed `git merge origin/main` and had
+  **union conflicts only in docs/memory** (`PENDING_WAVES.md`, day log,
+  `MEMORY.md`) — resolve by taking main's newer file, then re-apply the wave's
+  "done" marker. #26 additionally hit a **content** conflict in `settle()`
+  (`loot` from bestiary + `namesGained` from clan) — keep both keys.
+- **`main` test baseline is now 362 pass / 0 fail** (345 after #23, +7 bestiary,
+  +10 garrison, etc.). Preview serves the merged build.
+- **Found + fixed a real-clock test flake** in `server/test/garrison.test.js`
+  (from #24): it advanced the clock from a `Date.now()` taken *before*
+  `garrisonRow()` lazily stamps `last_tick_ms`, so `floor(elapsed/MS_PER_TICK)`
+  could be one short (11 !== 12). Measure from `getGarrison().lastTickMs`.
+- **Roadmap is drained**: N1–N5 all merged. Only **G12 (online)** remains, and it
+  needs a fresh explicit `погнали`.
+- The preview "ошибка"/"Failed to fetch" stays the **sandbox idle sleep**
+  (`OH_RUNTIME_IDLE_TIMEOUT_SECONDS=1200`): the URL is down while paused and the
+  server must be restarted with `bash scripts/serve.sh` after a runtime wake.
 
 ## W-CODEX/W-SHELL (added on `wave/w-codex-shell`, PR #17)
 
@@ -439,22 +464,19 @@ stale chat brief was wrong. `gh` is not authed - use
   build fails with a non-zero exit though the artifact is fine. Build first,
   then serve.
 
-## Wave queue & GitHub access (2026-10-08, orchestrator)
+## W-BESTIARY (branch wave/w-bestiary, PR #26) — bestiary wired into play
 
-- `main` = `298bfe4`. Shipped & merged: W-MAP (**PR #14**), W-SHIP (#15),
-  W-AUDIO (#18), W-CODEX/W-SHELL (#17), W-SEA (#20), W-THEME (#21),
-  W-HERO-TABS (#22). Open drafts: **#23** `wave/w-clan-live`→main, **#24**
-  `wave/w-clan-roster`→`wave/w-clan-live` (stacked on #23), **#25**
-  `wave/w-sea-talk`→main, **#26** `wave/w-bestiary`→main, **#27**
-  `wave/w-sea-balance`→main.
-- Never-stack rule: each new wave branches from **`main`** (not another wave),
-  one PR, opened last (default draft via the `create_pr` tool).
-- **`gh` CLI is not authenticated in this sandbox.** Read GitHub with
-  `curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/…`;
-  refresh pushes with `git remote set-url origin
-  https://${GITHUB_TOKEN}@github.com/grigoriy131112-sketch/Grimhollow.git`.
-- Sea-battle balance (W-SEA-BALANCE, PR #27): enemy tier stats in
-  `game/naval.js` are derived from a **reference ship** (`forgedForLevel` +
-  `effectiveOutput`) rather than a flat table; `seaPoints` scales with the tier
-  for both kinds. `createSeaBattle` takes an injectable `rng` for deterministic
-  tests. Open knob (not built): absolute ship-point grind (~13,000 to flagship).
+- Roadmap 2.3 ("bestiary unused") finished **additively**:
+  - A road ambush now meets a beast from the biome pool:
+    chooseTravel -> resolveRoadEncounter (services/encounters.js) ->
+    rollRoadEncounter (game/randomizer.js, new pure helper). Deterministic
+    from road seed + stop minute; grounded in a seeded DB row.
+  - Spoils ride on the battle row: **new column `battles.loot`** (schema +
+    db/index.js#migrate); startBattle({loot}) stores it, settle() pays it
+    **once on a win** and clears it (applyBattleLoot).
+  - GET /api/world/bestiary (services/world.js#getBestiary): 3 tiers from
+    DANGER_BANDS, haunts from location_monsters, off-map boss excluded.
+  - client/src/pages/Bestiary.jsx = Codex chapter (hero picker + hunt);
+    Codex.jsx CHAPTERS now 5.
+- Tests: server/test/bestiary.test.js (7). Full suite **345 pass / 0 fail**.
+- Merged 2026-10-08; the whole queue (N1-N5) is now in main.
