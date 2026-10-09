@@ -133,11 +133,15 @@ them back into the party at any moment. Built as **one system**:
   conversation panel the Party screen uses (same memory, same relations, same
   local-AI layer). The village/road talk and the sea talk are one system.
 
-### 2.6 Enemy scaling for sea battles (W-SEA open point)
+### 2.6 Enemy scaling for sea battles — ✅ done in `wave/w-sea-balance` (W-SEA-BALANCE)
 
-- Enemies must scale with the ship's level so a 60-upgrade ship still faces a
-  real fight (`game/ship.js`). Whether the **payout** (flat +5 pirates, 6-10
-  monsters) should also scale with the tier is still **open**.
+- Sea enemies now scale to the **ship**: the enemy crew is sized off the hero's
+  own crew and the hull from the ship's effective output, with guns/damage
+  growing by tier (`game/naval.js`), so a fully built ship still meets a real
+  fight instead of a two-round rout. The **payout scales with the tier too**, so
+  a deeper fight pays more.
+- The balance is pinned by a deterministic regression test (injectable `rng`),
+  and the fights last 5–14 rounds with real hull risk at every tier.
 
 ---
 
@@ -149,11 +153,12 @@ them back into the party at any moment. Built as **one system**:
 | ~~N2~~ | ~~**W-CLAN-ROSTER**~~ | ✅ **done** — invite companions to the clan, self-petitions, real-clock raid income, recall | `wave/w-clan-roster` |
 | ~~N3~~ | ~~**W-BESTIARY**~~ | ✅ **done** — ambushes draw from the biome pool; bestiary Codex chapter | `wave/w-bestiary` |
 | ~~N4~~ | ~~**W-SEA-TALK**~~ | ✅ **done** — party talk on board (2.5) | `wave/w-sea-talk` |
-| N5 | **W-SEA-BALANCE** | Scale sea enemies (and settle the payout question, 2.6) | `game/ship.js`, `services/naval.js` |
+| ~~N5~~ | ~~**W-SEA-BALANCE**~~ | ✅ **done** — sea enemies scale to the ship; payout scales with tier | `wave/w-sea-balance` |
 
 Recommended order: **N4 → N3 → N5** (N4 is tiny and unblocks a verbatim user
-request; N3 and N5 are larger). **N1–N4 are done**; only **N5 W-SEA-BALANCE**
-remains in the queue.
+request; N3 and N5 are larger). **All of N1–N5 are now done and merged**; the
+open roadmap is clear — only **G12 (online)** remains, and it needs a new
+explicit `погнали`.
 
 ---
 

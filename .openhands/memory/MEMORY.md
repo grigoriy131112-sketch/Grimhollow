@@ -348,18 +348,33 @@ long detail in the daily logs.
   bare `gh pr merge` said "run gh auth login".
 - Each later branch needed `git merge origin/main` first (union conflicts in
   `styles.css`/`PENDING_WAVES.md`/memory; all union, resolved by keeping both
-  sides). Push the merge commit, then `gh pr ready` + `gh pr merge --merge`.
-- **`main` test baseline is now 345 pass / 0 fail** (after W-CLAN-LIVE, PR #23).
-  Before it: 338 after W-THEME (#21, `d554448`) + W-HERO-TABS (#22, `4998314`).
-  Preview serves the merged build; `/codex` 200, `/audio/*.ogg` 200, Lore lists 6 docs.
-- **Note: the "stale chat brief" was right to distrust itself** — `wave/w-map` and
-  `wave/w-menu` were already merged into `main` long before; do not re-open them.
-- Next unstarted per `docs/PENDING_WAVES.md`: **N4 W-SEA-TALK** (party talk on
-  board, tiny), then **N3 W-BESTIARY**, **N5 W-SEA-BALANCE**; **G12 online**
-  still needs a fresh explicit approval. W-CLAN-LIVE (#23) and W-CLAN-ROSTER
-  (#24, staged on #23) are done, PRs open; not merged without an explicit ask.
-- **Two open PRs, stacked: #23 `wave/w-clan-live` then #24 `wave/w-clan-roster`
-  (base = #23's branch).** Merge #23 first, then retarget #24 to `main`.
+  sides). Push the merge commit, then mark ready + merge.
+
+## Second merge queue (2026-10-08) — roadmap queue drained
+
+- Merged the whole `docs/PENDING_WAVES.md` §3 queue into `main`, one at a time:
+  **#23** `wave/w-clan-live` -> `82ac287`; **#24** `wave/w-clan-roster`
+  retargeted to `main` after #23 landed -> `659f331`; **#25** `wave/w-sea-talk`
+  -> `19ff462`; **#26** `wave/w-bestiary` -> `45490e3`; **#27**
+  `wave/w-sea-balance` -> last. **No open PRs remain.** `main` = the full game.
+- **Merging a draft PR needs `markPullRequestReadyForReview` (GraphQL)** — the
+  REST `POST /pulls/:n/ready_for_review` returns **404** with this token, and a
+  merge of a draft fails with "Pull Request is still a draft".
+- **How to retarget a stacked PR:** `PATCH /pulls/:n {"base":"main"}` after its
+  base branch merges, then merge normally.
+- Every branch after the first needed `git merge origin/main` and had
+  **union conflicts only in docs/memory** (`PENDING_WAVES.md`, day log,
+  `MEMORY.md`) — resolve by taking main's newer file, then re-apply the wave's
+  "done" marker. #26 additionally hit a **content** conflict in `settle()`
+  (`loot` from bestiary + `namesGained` from clan) — keep both keys.
+- **`main` test baseline is now 362 pass / 0 fail** (345 after #23, +7 bestiary,
+  +10 garrison, etc.). Preview serves the merged build.
+- **Found + fixed a real-clock test flake** in `server/test/garrison.test.js`
+  (from #24): it advanced the clock from a `Date.now()` taken *before*
+  `garrisonRow()` lazily stamps `last_tick_ms`, so `floor(elapsed/MS_PER_TICK)`
+  could be one short (11 !== 12). Measure from `getGarrison().lastTickMs`.
+- **Roadmap is drained**: N1–N5 all merged. Only **G12 (online)** remains, and it
+  needs a fresh explicit `погнали`.
 - The preview "ошибка"/"Failed to fetch" stays the **sandbox idle sleep**
   (`OH_RUNTIME_IDLE_TIMEOUT_SECONDS=1200`): the URL is down while paused and the
   server must be restarted with `bash scripts/serve.sh` after a runtime wake.
@@ -464,4 +479,4 @@ stale chat brief was wrong. `gh` is not authed - use
   - client/src/pages/Bestiary.jsx = Codex chapter (hero picker + hunt);
     Codex.jsx CHAPTERS now 5.
 - Tests: server/test/bestiary.test.js (7). Full suite **345 pass / 0 fail**.
-- Queue 3 left: N1 W-CLAN-LIVE, N4 W-SEA-BALANCE (N2/N3 done).
+- Merged 2026-10-08; the whole queue (N1-N5) is now in main.

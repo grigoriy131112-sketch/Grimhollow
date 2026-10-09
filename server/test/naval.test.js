@@ -9,10 +9,10 @@ import { recordVisit } from '../src/services/world.js';
 import { buyShip } from '../src/services/ship.js';
 import {
   createSeaBattle, takeSeaAction, previewAction, seaBattleOver,
-  heroShipSide, enemySide, pirateTier, monsterTier, seaPoints,
+  heroShipSide, enemySide, pirateTier, monsterTier, seaPoints, effectiveOutput,
   rollIslands, rollVoyage, ISLAND_POOL_SIZE, seaHitChance, playerSide, enemySideOf,
 } from '../src/game/naval.js';
-import { POINTS_PER_PIRATE_WIN, POINTS_PER_MONSTER_WIN } from '../src/game/ship.js';
+import { POINTS_PER_PIRATE_WIN, POINTS_PER_MONSTER_WIN, bonusesFrom, forgedForLevel } from '../src/game/ship.js';
 
 let n = 0;
 function hero({ gold = 5000, klass = 'fighter', inPort = true } = {}) {
@@ -30,7 +30,7 @@ function hero({ gold = 5000, klass = 'fighter', inPort = true } = {}) {
 const shipKit = (level = 1, bonuses = {}) => ({
   level,
   bonuses: { hullHp: 0, armour: 0, gunSlots: 0, cannonDamage: 0, reload: 0, accuracy: 0, evade: 0, crew: 0, ...bonuses },
-  party: { attack: 40, defense: 20, members: 3 },
+  party: { attack: 60, defense: 50, members: 3 },
 });
 
 test.after(() => closeDb());
@@ -51,13 +51,79 @@ test('enemies scale with the tier, so a maxed ship still faces a real fight', ()
     const a = pirateTier(t);
     const b = pirateTier(t + 1);
     assert.ok(b.hullHp > a.hullHp && b.crewCount > a.crewCount, `tier ${t + 1} pirates are stronger`);
+    const ma = monsterTier(t);
+    const mb = monsterTier(t + 1);
+    assert.ok(mb.hullHp > ma.hullHp && mb.attack > ma.attack, `tier ${t + 1} monsters are stronger`);
   }
   const m1 = monsterTier(1);
   const m10 = monsterTier(10);
   assert.ok(m10.hullHp > m1.hullHp && m10.attack > m1.attack);
+  // Both kinds must scale with the ship, not against a fixed table: a deeper
+  // tier is sized for a stronger ship.
+  assert.ok(pirateTier(10).hullHp > pirateTier(1).hullHp * 5);
+  assert.ok(monsterTier(10).hullHp > monsterTier(1).hullHp * 5);
 });
 
-test('a pirate fight has two crews and two hulls; a monster fight has no crew', () => {
+// A fully built ship at level L: the state a player reaches the tier-L fight in.
+function builtShip(level) {
+  const b = bonusesFrom(forgedForLevel(level));
+  return { level, bonuses: { level, ...b, gunSlots: 1 + (b.gunSlots || 0) }, party: { attack: 60, defense: 50, members: 3 } };
+}
+// Greedy player: pick the action with the best expected damage each turn.
+function bestAction(state) {
+  let best = { type: 'broadside' }; let bestV = -1;
+  for (const type of ['broadside', 'board', 'ram']) {
+    const pv = previewAction(state, { type });
+    if (!pv || pv.disabled) continue;
+    const v = (pv.hitChance / 100) * pv.damage;
+    if (v > bestV) { bestV = v; best = { type }; }
+  }
+  return best;
+}
+// A small deterministic RNG so a whole fight is reproducible in tests (both the
+// enemy's opening turn and every later exchange draw from it).
+function seededRng(str) {
+  let a = 0;
+  for (let i = 0; i < str.length; i += 1) a = (a * 31 + str.charCodeAt(i)) | 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function fight(shipLevel, kind, tier, seed) {
+  const rng = seededRng(seed);
+  const st = createSeaBattle({ kind, tier, ship: builtShip(shipLevel), seed, rng });
+  let guard = 0;
+  while (!st.over && guard < 800) { takeSeaAction(st, bestAction(st), rng).state; guard += 1; }
+  return st;
+}
+// Average over a few seeds to cover variance; each fight is fully deterministic.
+function avgFight(shipLevel, kind, tier, trials = 7) {
+  let lost = 0; let rounds = 0;
+  for (let i = 0; i < trials; i += 1) {
+    const st = fight(shipLevel, kind, tier, `bal:${kind}:${tier}:${i}`);
+    lost += 1 - playerSide(st).hull.hp / playerSide(st).hull.maxHp;
+    rounds += st.round;
+  }
+  return { lost: lost / trials, rounds: rounds / trials };
+}
+
+test('a fully built ship meets a real fight at every tier (hull is dented, fight lasts)', () => {
+  for (const tier of [1, 3, 5, 7, 10]) {
+    for (const kind of ['pirates', 'sea_monster']) {
+      const r = avgFight(tier, kind, tier);
+      assert.ok(r.lost >= 0.03, `tier ${tier} ${kind}: the hull takes real damage (lost ${(r.lost * 100).toFixed(0)}%)`);
+      assert.ok(r.rounds >= 3, `tier ${tier} ${kind}: the fight lasts more than a couple of rounds (${r.rounds.toFixed(1)})`);
+      assert.ok(r.rounds <= 30, `tier ${tier} ${kind}: the fight does not drag on (${r.rounds.toFixed(1)})`);
+    }
+  }
+  // The deep fight must not be a two-turn rout the way a flat enemy table was.
+  assert.ok(avgFight(10, 'sea_monster', 10).rounds > 3, 'the deepest fight is not a rout');
+});
+
+test('a fight the enemy opens is never left active without a player turn', () => {
   const pirate = enemySide('pirates', 3, 's');
   assert.equal(pirate.kind, 'pirate');
   assert.ok(pirate.crew.count > 0 && pirate.hull.maxHp > 0);
@@ -104,11 +170,22 @@ test('a sea fight runs to a winner', () => {
   assert.equal(b.over, true);
 });
 
-test('sea points come only from sea battles and scale for monsters', () => {
-  assert.equal(seaPoints('pirates', 10), POINTS_PER_PIRATE_WIN, 'pirates are flat');
+test('sea points scale with the tier for both kinds, anchored at the user figures', () => {
+  // The user's flat figures are the tier-1 anchors.
+  assert.equal(seaPoints('pirates', 1), POINTS_PER_PIRATE_WIN);
   assert.equal(seaPoints('sea_monster', 1), POINTS_PER_MONSTER_WIN.min);
-  assert.equal(seaPoints('sea_monster', 10), POINTS_PER_MONSTER_WIN.max);
-  assert.ok(seaPoints('sea_monster', 5) > POINTS_PER_MONSTER_WIN.min);
+  // A deeper foe is worth more, because the fight is sized for a stronger ship.
+  for (const kind of ['pirates', 'sea_monster']) {
+    for (let t = 1; t < 10; t += 1) {
+      assert.ok(seaPoints(kind, t + 1) > seaPoints(kind, t), `${kind} tier ${t + 1} pays more`);
+    }
+  }
+  assert.ok(seaPoints('pirates', 10) > POINTS_PER_PIRATE_WIN, 'deep pirates pay more than the flat anchor');
+  assert.ok(seaPoints('sea_monster', 10) > POINTS_PER_MONSTER_WIN.max, 'the deep beast tops its tier-1 band');
+  // A monster is always worth at least a little more than a pirate at equal tier.
+  for (let t = 1; t <= 10; t += 1) {
+    assert.ok(seaPoints('sea_monster', t) > seaPoints('pirates', t), `tier ${t}: a beast pays more than pirates`);
+  }
 });
 
 test('the hit helper keeps the same 5..95 band as the land engine', () => {

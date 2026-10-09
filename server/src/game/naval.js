@@ -16,7 +16,7 @@
 // directly.
 
 import { hashString } from './travel.js';
-import { upgradesByKey, POINTS_PER_PIRATE_WIN, POINTS_PER_MONSTER_WIN } from './ship.js';
+import { upgradesByKey, bonusesFrom, forgedForLevel, POINTS_PER_PIRATE_WIN, POINTS_PER_MONSTER_WIN } from './ship.js';
 
 export const MIN_HIT = 5;
 export const MAX_HIT = 95;
@@ -87,39 +87,84 @@ export function heroShipSide({ level = 1, bonuses = {}, party = { attack: 0, def
 const PIRATE_NAMES = ['Чёрный спрут', 'Ржавый якорь', 'Кровавый шкипер', 'Соль и пепел', 'Вдова шторма', 'Три ворона'];
 const MONSTER_NAMES = ['Кракен', 'Левиафан', 'Морской змей', 'Утопленный кит', 'Химера глубин', 'Стеклянный моллюск'];
 
-// Pirate tier: a crew to board with and a hull whose guns answer back.
+// Enemies are sized against the ship a player actually has at that level, not
+// against a flat table. The ship tree grows explosively (a level-10 fully forged
+// ship mounts seven times the guns of a fresh sloop), so a linear enemy table is
+// 100%-trivial by level 5. These ratios are tuned so a fully-built ship answers
+// an equal-tier foe with a real fight (a broadside takes several rounds, the
+// hull is dented) instead of a two-turn rout, while a fresh sloop is safe at
+// tier 1. A "reference party" stands in for the leader + companions, because the
+// party is not the ship's own curve.
+const REF_PARTY = { attack: 60, defense: 50, members: 3 };
+
+function referenceShip(tier) {
+  const t = clamp(tier, 1, 10);
+  const forged = forgedForLevel(t);
+  const b = bonusesFrom(forged);
+  return heroShipSide({
+    level: t,
+    bonuses: { level: t, ...b, gunSlots: 1 + (b.gunSlots || 0) },
+    party: REF_PARTY,
+  });
+}
+
+// Pirate tier: a crew to board with and a hull whose guns answer back. Crew and
+// hull are sized to the reference ship's hull and crew, so the boarding fight
+// stays a fight at every tier.
 export function pirateTier(tier = 1) {
   const t = clamp(tier, 1, 10);
+  const ship = referenceShip(t);
+  const crewCount = 3 + Math.round(t * 1.4);
   return {
     tier: t,
     name: 'Пираты',
-    crewCount: 3 + t,
-    crewHp: 26 + t * 12,
-    crewAttack: 7 + t * 3,
-    crewDefense: 4 + t * 2,
-    hullHp: 120 + t * 42,
-    gunDamage: 8 + t * 3,
+    crewCount,
+    // Crew is sized off the reference hero's own crew, so boarding is a close
+    // race at every tier instead of the hero (or the pirates) one-shotting the
+    // other's deck. The hero keeps the boarding edge; the pirates' real bite is
+    // their guns against the hull below.
+    crewHp: Math.max(12, Math.round(ship.crew.maxHp / crewCount)),
+    crewAttack: Math.max(4, Math.round(ship.crew.defense * 1.08)),
+    crewDefense: Math.max(2, Math.round(ship.crew.attack * 0.7)),
+    hullHp: Math.round(effectiveOutput(ship) * 5.5),
     gunCount: 2 + Math.floor(t / 3),
-    accuracy: 55 + t * 2,
-    evade: 4 + t,
-    speed: 9 + t,
+    gunDamage: Math.max(3, Math.round((ship.hull.maxHp * (0.14 + t * 0.030)) / (2 + Math.floor(t / 3)))),
+    accuracy: clamp(52 + t * 2, 50, 80),
+    evade: clamp(3 + t, 3, 14),
+    speed: 8 + Math.round(t * 0.8),
   };
 }
 
-// Sea-monster tier: no crew, just a hull and a heavy bite.
+// The hero's effective hull damage per round: a volley is gunBurst x hit, but the
+// guns reload (a cooldown in the hero's own turns), so a long reload divides the
+// per-round output. Enemies are sized off this, not the raw burst, so a fight
+// lasts a similar number of rounds at every tier instead of dragging at low
+// levels and flashing by at high ones.
+const NOMINAL_HIT = 0.6;
+export function effectiveOutput(ship) {
+  const cooldown = Math.max(1, ship.guns.cooldown);
+  return Math.round((ship.guns.count * ship.guns.damage * NOMINAL_HIT) / cooldown);
+}
+
+// Sea-monster tier: no crew, just a hull and a heavy bite. The monster must be a
+// single, dangerous target that the ship's guns alone must wear down, so its
+// hull is larger and its bite scales with the reference ship's hull.
 export function monsterTier(tier = 1) {
   const t = clamp(tier, 1, 10);
+  const ship = referenceShip(t);
   return {
     tier: t,
     name: 'Морское чудовище',
-    hullHp: 180 + t * 56,
-    attack: 12 + t * 4,
-    defense: 4 + t * 2,
-    accuracy: 60 + t * 2,
-    evade: 5 + t,
-    speed: 8 + t,
-    // Every few turns the beast does something worse than a bite.
-    abilityEvery: 4,
+    hullHp: Math.round(effectiveOutput(ship) * 9),
+    // The bite bites harder with depth (a fixed fraction would make the deepest
+    // beast the safest, since the hero hull grows with the ship tree).
+    attack: Math.max(5, Math.round(ship.hull.maxHp * (0.030 + t * 0.004))),
+    defense: Math.max(2, Math.round(t * 1.6)),
+    accuracy: clamp(58 + t * 2, 56, 78),
+    evade: clamp(4 + t, 4, 14),
+    speed: 8 + Math.round(t * 0.7),
+    // Every few turns the beast does something worse than a bite (a heavy strike).
+    abilityEvery: 3,
     abilityName: 'Сокрушающий удар',
   };
 }
@@ -161,14 +206,19 @@ export function enemySide(kind, tier = 1, seed = 'sea') {
   };
 }
 
-// How many points a won sea battle pays. Pirates are flat (the spec's number);
-// a monster pays inside its 6..10 band, scaled by the tier so a deeper beast is
-// worth more. The user's flat figures are the tier-1 baseline.
+// How many points a won sea battle pays. Both kinds scale with the tier, because
+// the fight itself scales now: a tier-10 foe costs the same hull the tier-1 foe
+// did, so paying it the same would punish every deep voyage for no reason. The
+// user's flat figures are the tier-1 anchors (pirates 5, monsters 6..10); the
+// band interpolates across the tiers and both are scaled by depth, so a monster
+// stays worth a little more than a pirate at equal tier.
 export function seaPoints(kind, tier = 1) {
-  if (kind === 'pirates') return POINTS_PER_PIRATE_WIN;
-  const { min, max } = POINTS_PER_MONSTER_WIN;
   const t = clamp(tier, 1, 10);
-  return min + Math.round(((max - min) * (t - 1)) / 9);
+  const factor = 1 + (t - 1) * 0.3;
+  if (kind === 'pirates') return Math.round(POINTS_PER_PIRATE_WIN * factor);
+  const { min, max } = POINTS_PER_MONSTER_WIN;
+  const banded = min + ((max - min) * (t - 1)) / 9;
+  return Math.round(banded * factor);
 }
 
 // --- the fight ---------------------------------------------------------------
@@ -196,7 +246,7 @@ export function seaBattleOver(state) {
   return { over: false, winner: null };
 }
 
-export function createSeaBattle({ kind, tier = 1, ship, seed = 'sea' } = {}) {
+export function createSeaBattle({ kind, tier = 1, ship, seed = 'sea', rng = Math.random } = {}) {
   const safeKind = SEA_KINDS.includes(kind) ? kind : 'pirates';
   const hero = heroShipSide(ship);
   const foe = enemySide(safeKind, tier, seed);
@@ -208,7 +258,7 @@ export function createSeaBattle({ kind, tier = 1, ship, seed = 'sea' } = {}) {
   // A faster enemy opens the fight before the player can act, exactly like the
   // land engine. Resolve those turns now so the returned state either awaits the
   // player or is already decided -- never "active but not the player's turn".
-  runUntilPlayer(state, Math.random);
+  runUntilPlayer(state, rng);
   return state;
 }
 
@@ -384,8 +434,10 @@ function applyAction(state, actor, target, action, rng, events) {
   }
 }
 
-// The enemy's simple AI: board when its crew is strong, otherwise fire; the
-// monster just bites (a heavy hit on the hull) and occasionally uses its ability.
+// The enemy's simple AI. A pirate boards when its crew can hurt the hero's crew
+// more than its guns hurt the hull, otherwise it fires. A monster's action is
+// only about the heavy strike, so its "broadside"/"ram" are both bites (handled
+// in applyAction via `_monster`).
 function enemyAction(state, foe, hero) {
   if (foe.kind === 'monster') {
     const useAbility = foe.abilityEvery && state.round % foe.abilityEvery === 0;
