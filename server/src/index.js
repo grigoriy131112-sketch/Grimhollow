@@ -28,6 +28,7 @@ import questRoutes from './routes/quests.js';
 import campaignRoutes from './routes/campaign.js';
 import clanRoutes from './routes/clan.js';
 import shipRoutes from './routes/ship.js';
+import navalRoutes from './routes/naval.js';
 import loreRoutes from './routes/lore.js';
 import { resolveListenPorts } from './ports.js';
 
@@ -54,6 +55,7 @@ export function createApp() {
   app.use('/api/campaign', campaignRoutes);
   app.use('/api/clan', clanRoutes);
   app.use('/api/ship', shipRoutes);
+  app.use('/api/naval', navalRoutes);
   app.use('/api/lore', loreRoutes);
 
   // Serve the built SPA when present (production / work-host preview).

@@ -481,3 +481,52 @@ CREATE TABLE IF NOT EXISTS ship_works (
   started_at     TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Wave W-SEA: a sea battle (pirates or a sea monster) and the voyage it belongs
+-- to. The fight is a pure state machine (game/naval.js) whose whole state lives
+-- in `state` as JSON, so a reload resumes mid-fight; `kind`, `tier` and `result`
+-- are duplicated as columns for listing and honesty. One ship fights one battle
+-- at a time.
+CREATE TABLE IF NOT EXISTS naval_battles (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  character_id  INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  kind          TEXT NOT NULL,                   -- pirates | sea_monster
+  tier          INTEGER NOT NULL DEFAULT 1,
+  voyage_id     INTEGER,
+  state         TEXT NOT NULL,
+  result        TEXT,                            -- end-of-battle report as JSON
+  status        TEXT NOT NULL DEFAULT 'active',  -- active | won | lost | fled
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Wave W-SEA: a sea voyage between two ports. Deterministic like a road: the
+-- stops are re-derived from the seed, so the row only records how far the party
+-- has got. `stops` is the planned list (pirates / monster / Fortune island) and
+-- `cursor` is the stop reached; once the cursor passes the end the voyage lands
+-- the party at the far port.
+CREATE TABLE IF NOT EXISTS voyages (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  character_id  INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  from_id       INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+  to_id         INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+  route_key     TEXT,
+  seed          TEXT NOT NULL,
+  stops         TEXT NOT NULL DEFAULT '[]',
+  cursor        INTEGER NOT NULL DEFAULT 0,
+  resolved      INTEGER NOT NULL DEFAULT 0,      -- 1 once the party has landed
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Wave W-SEA: the ship's papers -- a free-form journal plus an automatic event
+-- log. `notes` are the player's own lines, `log` the milestones the game writes
+-- (a won sea battle, a discovered island, a learned lore note).
+CREATE TABLE IF NOT EXISTS ship_papers (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  character_id  INTEGER NOT NULL UNIQUE REFERENCES characters(id) ON DELETE CASCADE,
+  notes         TEXT NOT NULL DEFAULT '',
+  log           TEXT NOT NULL DEFAULT '[]',
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
