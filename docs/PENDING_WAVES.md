@@ -147,7 +147,12 @@ them back into the party at any moment. Built as **one system**:
 
 ## 3. Next queue (each needs its own `погнали`)
 
-### 3.0 W-WIRE — wiring the unreachable into play — ✅ done in `wave/w-wire`
+> **Empty.** Every queued wave is done and merged. **G12 (online) is cancelled**
+> by an explicit user decision (2026-10-08: «не онлайн, онлайн не делаем
+> вообще») — do not build it, do not offer it as a next wave, and do not treat it
+> as an open plan item.
+
+### 3.0 W-WIRE — wiring the unreachable into play — ✅ done, merged (PR #28)
 
 The full-game audit found that G6/G7 (settlements + trade), the G8→G9→G11 endgame,
 the survival meters and the campaign screen existed but nothing in play reached
@@ -174,7 +179,7 @@ them. W-WIRE finishes the mechanic **additively**:
   (chapters 4-6) and their keepers open the branch flags.
 - Tests: `server/test/wire.test.js` (9); suite **372 pass / 0 fail**.
 
-### 3.1 W-ACTIONS-CRAFT — working settlements, fixed audio, a real forge — ✅ done in `wave/w-actions-craft`
+### 3.1 W-ACTIONS-CRAFT — working settlements, fixed audio, a real forge — ✅ done, merged (PR #29)
 
 The player could press «Войти» in a settlement but every line under it was
 decoration; the location themes also all played at once; and a smithy existed
@@ -212,17 +217,18 @@ music player, and adds a crafting loop fed by the loot that was already rolled.
 | ~~N5~~ | ~~**W-SEA-BALANCE**~~ | ✅ **done** — sea enemies scale to the ship; payout scales with tier | `wave/w-sea-balance` |
 
 Recommended order: **N4 → N3 → N5** (N4 is tiny and unblocks a verbatim user
-request; N3 and N5 are larger). **All of N1–N5 are now done and merged**; the
-open roadmap is clear — only **G12 (online)** remains, and it needs a new
-explicit `погнали`.
+request; N3 and N5 are larger). **All of N1–N5 are now done and merged**, and the
+follow-on queue (W-WIRE #28, W-ACTIONS-CRAFT #29) is merged too. The roadmap is
+**clear** — and **G12 (online) is cancelled** (see §3), so there is no open wave.
+`main` is at **391 pass / 0 fail**.
 
 ---
 
 ## 4. Backlog
 
-- **G12 (online)** — the last wave by directive; needs a **new explicit
-  approval**. Re-architects accounts and a shared world; scope in
-  `docs/lore/online.md`. **Not started.**
+> **Empty.** **G12 (online)** is **cancelled** by explicit user decision
+> (2026-10-08). Not to be built, offered, or counted as open. `docs/lore/online.md`
+> stays as unused canon only.
 
 ---
 
