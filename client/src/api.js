@@ -1,13 +1,32 @@
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// A GET is safe to retry, and the preview frequently comes back a moment late:
+// the sandbox forwards a request while the server is still starting after an
+// idle stop. Retrying a GET a few times turns that cold-start blink into a short
+// wait instead of "Failed to fetch". Writes (POST/PUT/DELETE) are never retried,
+// so a mutation cannot be applied twice.
 async function request(method, path, body) {
-  const res = await fetch(`/api${path}`, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  if (res.status === 204) return null;
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
-  return data;
+  const maxTries = method === 'GET' ? 4 : 1;
+  let lastError;
+  for (let attempt = 1; attempt <= maxTries; attempt += 1) {
+    let res;
+    try {
+      res = await fetch(`/api${path}`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+    } catch {
+      lastError = new Error('Сервер просыпается, подождите секунду…');
+      if (attempt < maxTries) { await sleep(400 * attempt); continue; }
+      throw lastError;
+    }
+    if (res.status === 204) return null;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Запрос не удался (${res.status})`);
+    return data;
+  }
+  throw lastError;
 }
 
 export const api = {

@@ -1,33 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
-
-// Client-side preferences (Wave G4). These live only in the browser: the server
-// never needs to know them, and they apply the moment the page loads.
-const PREFS_KEY = 'grimhollow.settings.v1';
-
-const DEFAULT_PREFS = {
-  sfx: true,          // звуковые эффекты
-  music: true,        // фоновая музыка
-  animations: true,   // анимации боя
-  uiScale: 1,         // масштаб интерфейса
-};
-
-function loadPrefs() {
-  try {
-    return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(PREFS_KEY) || '{}') };
-  } catch {
-    return { ...DEFAULT_PREFS };
-  }
-}
-
-// The interface is sized in rem, so changing the root font-size scales it.
-function applyPrefs(prefs) {
-  document.documentElement.style.fontSize = `${16 * (Number(prefs.uiScale) || 1)}px`;
-  document.documentElement.dataset.animations = prefs.animations ? 'on' : 'off';
-  document.documentElement.dataset.sfx = prefs.sfx ? 'on' : 'off';
-  document.documentElement.dataset.music = prefs.music ? 'on' : 'off';
-}
+import { DEFAULT_PREFS, applyPrefs, loadPrefs, savePrefs } from '../prefs.js';
+import { playSfx } from '../audio.js';
 
 const formatDate = (iso) => (iso ? String(iso).replace('T', ' ').slice(0, 16) : '');
 
@@ -62,7 +37,7 @@ export default function SettingsPage() {
   const updatePref = (key, value) => {
     const next = { ...prefs, [key]: value };
     setPrefs(next);
-    localStorage.setItem(PREFS_KEY, JSON.stringify(next));
+    savePrefs(next);
   };
 
   const createSlot = async (e) => {
@@ -147,6 +122,24 @@ export default function SettingsPage() {
             onChange={(e) => updatePref('music', e.target.checked)}
           />
           Фоновая музыка
+        </label>
+        <label className="slider-row">
+          Громкость музыки
+          <input
+            type="range" min="0" max="1" step="0.05"
+            value={prefs.musicVolume}
+            onChange={(e) => updatePref('musicVolume', Number(e.target.value))}
+            onInput={() => playSfx('ui_click')}
+          />
+        </label>
+        <label className="slider-row">
+          Громкость эффектов
+          <input
+            type="range" min="0" max="1" step="0.05"
+            value={prefs.sfxVolume}
+            onChange={(e) => updatePref('sfxVolume', Number(e.target.value))}
+            onInput={() => playSfx('ui_click')}
+          />
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
           <input
