@@ -11,13 +11,17 @@ import {
   getGarrison, tickGarrison, listPetitions, acceptPetition, declinePetition,
 } from '../services/garrison.js';
 import { stationMember, recallMember } from '../services/party.js';
+import { syncChapterUnlocks } from '../services/characters.js';
 
 const router = Router();
 
 // The whole clan screen for a hero (or the founding conditions when none yet).
 router.get('/leader/:leaderId', (req, res) => {
-  try { res.json(getClan(Number(req.params.leaderId))); }
-  catch (err) { res.status(404).json({ error: err.message }); }
+  try {
+    const leaderId = Number(req.params.leaderId);
+    syncChapterUnlocks(leaderId);
+    res.json(getClan(leaderId));
+  } catch (err) { res.status(404).json({ error: err.message }); }
 });
 
 // The garrison: stationed companions, the raid clock, and the open petitions.
@@ -63,8 +67,13 @@ router.post('/leader/:leaderId/petitions/:petitionId/decline', (req, res) => {
 
 // The founding conditions alone.
 router.get('/leader/:leaderId/requirements', (req, res) => {
-  try { res.json(foundingRequirements(Number(req.params.leaderId))); }
-  catch (err) { res.status(404).json({ error: err.message }); }
+  try {
+    const leaderId = Number(req.params.leaderId);
+    // Chapter unlocks are derived from quests and flags at read time, so the
+    // founding conditions are honest even before the campaign screen is opened.
+    syncChapterUnlocks(leaderId);
+    res.json(foundingRequirements(leaderId));
+  } catch (err) { res.status(404).json({ error: err.message }); }
 });
 
 // Found the clan. Refused until the conditions hold.

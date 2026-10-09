@@ -3,6 +3,7 @@ import { deriveCharacter, validateCharacterInput, levelFromXp } from '../game/ru
 import { getBonuses } from './upgrades.js';
 import { applyBonusesToSource } from '../game/party_upgrades.js';
 import { clanPartyBonuses } from './clan.js';
+import { derivedFlags, endgameUnlocksFromFlags } from '../game/campaign.js';
 
 export function listCharacters() {
   return getDb().prepare('SELECT * FROM characters ORDER BY created_at DESC').all().map(deriveCharacter);
@@ -36,6 +37,34 @@ export function getPartyBonuses(leaderId) {
   const mult = { ...(tree.mult || {}) };
   for (const [k, v] of Object.entries(clan.mult || {})) mult[k] = (mult[k] || 0) + v;
   return { ...tree, mult };
+}
+
+// Grant the `chapter_N` unlocks a hero has earned, derived *live* from their
+// quest completions and campaign flags instead of being written by a screen
+// visit. Without this the endgame was unreachable: the clan gate (G9) reads
+// `chapter_*` unlocks, and nothing in play granted them unless the campaign
+// screen happened to be opened first. The clan's six chapters are the ORDINAL of
+// the campaign milestones (see game/campaign.js#CLAN_CHAPTER_FLAGS).
+export function syncChapterUnlocks(characterId) {
+  const db = getDb();
+  const completed = db.prepare(
+    "SELECT quest_key FROM character_quests WHERE character_id = ? AND status = 'completed'",
+  ).all(characterId).map((r) => r.quest_key);
+  const flags = {};
+  for (const r of db.prepare('SELECT flag FROM campaign_progress WHERE character_id = ?').all(characterId)) {
+    flags[r.flag] = true;
+  }
+  // Derived flags do not override an explicitly-set flag, but an explicit one
+  // (a branch or the clan) must count too, so merge derived on top.
+  Object.assign(flags, derivedFlags(completed));
+  return endgameUnlocksFromFlags(flags).filter((flag) => addUnlockRow(characterId, flag));
+}
+
+function addUnlockRow(characterId, flag) {
+  const info = getDb().prepare(
+    'INSERT OR IGNORE INTO character_unlocks (character_id, flag, quest_key) VALUES (?, ?, ?)',
+  ).run(characterId, flag, 'campaign');
+  return info.changes > 0 ? flag : null;
 }
 
 // A character's sheet with the party tree folded in: base stats plus the

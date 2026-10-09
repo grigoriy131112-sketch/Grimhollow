@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import HeroTabs from '../HeroTabs.jsx';
 import { Icon } from '../icons.jsx';
 
 // Прогресс кампании (Wave G11). API живёт под /api/campaign (routes/campaign.js).
@@ -145,6 +146,8 @@ export default function CampaignPage() {
         <h1>🗼 Кампания</h1>
         <span className="badge">{hero ? `${hero.name} · главы ${progress.metCount}/${progress.totalCount}` : 'нет героя'}</span>
       </div>
+
+      <HeroTabs characterId={heroId} active="campaign" />
 
       {error && <div className="error">{error}</div>}
       {notice && <p className="muted small">✓ {notice}</p>}

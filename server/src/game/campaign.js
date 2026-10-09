@@ -18,6 +18,54 @@ export const FLAG_ORDER = [
   'clan_founded',
 ];
 
+// The branch flags are earned in play by the three continent quests (one per
+// power), not written by hand: finishing the quest derives the flag. The mapping
+// is pure so both campaign (deriveProgress) and clan (chapter unlocks) agree.
+export const BRANCH_QUEST_FLAGS = {
+  frozen_cradle: 'north_frozen',   // Морозная Колыбель — Архивы
+  bought_memory: 'memory_bought',  // Кор-Ашан — Дома-витражи
+  forest_ally: 'world_woken',      // Зелёный Предел — Лес
+};
+
+// The campaign as the lore tells it (docs/lore/campaign_progress.md): each
+// chapter is one campaign flag, and the next chapter only opens on the flash of
+// the one before it — the clan (7) is the gateway to the finale (8). `unlocks`
+// names the flash that opens the following chapter.
+export const CAMPAIGN_CHAPTERS = [
+  { n: 0, flag: 'prologue_done', title: 'Пролог' },
+  { n: 2, flag: 'chapel_opened', title: 'Часовня, что утонула вместе со стадом' },
+  { n: 3, flag: 'war_truth', title: 'Пепел помнит войну' },
+  { n: 4, flag: 'north_frozen', title: 'Заморозить, чтобы помнить' },
+  { n: 5, flag: 'memory_bought', title: 'Память на продажу' },
+  { n: 6, flag: 'world_woken', title: 'Лес, который помнит всё' },
+  { n: 7, flag: 'clan_founded', title: 'Гавани собирают флот' },
+];
+
+// The "flash" recap of the chapters a hero has passed, as the lore describes it:
+// a chapter counts once its flag is set, and each one unlocks the next. Gaps —
+// a flag set without the one before it, and the free prologue — are reported so
+// the campaign screen can explain what is still missing rather than hide it.
+export function deriveFlash(chapters = [], { doctrine = null } = {}) {
+  const met = new Set(CAMPAIGN_CHAPTERS.filter((c) => !!chapters[c.n]).map((c) => c.n));
+  const flash = CAMPAIGN_CHAPTERS.map((c, i) => {
+    const prev = i === 0 ? true : met.has(CAMPAIGN_CHAPTERS[i - 1].n);
+    return {
+      n: c.n,
+      flag: c.flag,
+      title: c.title,
+      met: met.has(c.n),
+      prevMet: prev,
+      gap: met.has(c.n) && !prev && c.n !== 0,
+    };
+  });
+  // The clan unlock (chapter 7) never has an authored flag to set: it is free
+  // once every earlier chapter is passed.
+  const beforeClan = flash.slice(0, 6).every((c) => c.met);
+  const clanIndex = flash.findIndex((c) => c.n === 7);
+  if (clanIndex >= 0) flash[clanIndex].free = beforeClan;
+  return { chapters: flash, doctrine, freeClan: beforeClan };
+}
+
 // The chapter-flag table from docs/lore/campaign_progress.md.
 //
 //   flag            chapter  condition                       unlocks
@@ -139,7 +187,46 @@ export function derivedFlags(completedKeys = []) {
     const def = FLAG_DEFS[flag];
     if (def.quests.length && def.quests.every((q) => done.has(q))) derived[flag] = true;
   }
+  // The three continent powers are won with a single quest each; finishing it
+  // sets the branch flag that opens that path of the campaign.
+  for (const [quest, flag] of Object.entries(BRANCH_QUEST_FLAGS)) {
+    if (done.has(quest)) derived[flag] = true;
+  }
   return derived;
+}
+
+// Which `chapter_N` unlocks a set of completed quests earns. The clan gate (G9)
+// names six chapters `chapter_1..chapter_6` in story order, but the campaign's
+// own chapter numbers skip 1 (the prologue is 0, the chapel is 2), so the clan's
+// chapter is the milestone's ORDINAL — not its campaign number. The clan itself
+// (7) opens once all six milestones are passed. Pure, so both the campaign and
+// the quests service grant the same unlocks without an import cycle.
+export const CLAN_CHAPTER_FLAGS = [
+  'prologue_done', 'chapel_opened', 'war_truth', 'north_frozen', 'memory_bought', 'world_woken',
+];
+
+export function chapterUnlocksFor(completedKeys = []) {
+  return chapterUnlocksFromFlags(derivedFlags(completedKeys));
+}
+
+// The clan's chapter unlocks from a flag map (derived or explicitly set).
+export function chapterUnlocksFromFlags(flags = {}) {
+  const unlocks = [];
+  CLAN_CHAPTER_FLAGS.forEach((flag, i) => {
+    if (flags[flag]) unlocks.push(`chapter_${i + 1}`);
+  });
+  if (CLAN_CHAPTER_FLAGS.every((f) => flags[f])) unlocks.push('chapter_7');
+  return unlocks;
+}
+
+// Everything the endgame reads as a `character_unlocks` row: the campaign
+// milestone flags themselves (the clan's founding ally check and the finale gate
+// read them with `hasUnlock`) plus the clan's ordinal `chapter_N` unlocks. The
+// campaign keeps its own `campaign_progress` table too, but unlock rows are what
+// G9/G11 actually query.
+export function endgameUnlocksFromFlags(flags = {}) {
+  const named = FLAG_ORDER.filter((flag) => flags[flag]);
+  return [...named, ...chapterUnlocksFromFlags(flags)];
 }
 
 // The chapter view the UI renders: every flag in order with whether it is met.

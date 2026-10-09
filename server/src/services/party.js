@@ -17,6 +17,7 @@ import {
 } from '../game/companions.js';
 import { getPartyBonuses } from './characters.js';
 import { applyBonusesToSource } from '../game/party_upgrades.js';
+import { advanceQuest } from './quests.js';
 
 const parseJson = (v, fallback) => {
   try { return v ? JSON.parse(v) : fallback; } catch { return fallback; }
@@ -146,6 +147,10 @@ export function recruit(leaderId, templateKey, { source, goldOffered = 0 } = {},
     }
     return newId;
   });
+
+  // A recruited companion is a `collect` quest event: an objective that asks for
+  // the orphan, the beast or the freed prisoner is met the moment they join.
+  try { advanceQuest(leaderId, { type: 'collect', target: 'companion' }); } catch { /* best-effort */ }
 
   return { accepted: true, chance: Math.round(chance * 100), member: getMember(memberId), goldPaid };
 }

@@ -12,7 +12,7 @@
 // final trophy, claimed once the finale is won.
 
 import { getDb } from '../db/index.js';
-import { getCharacter } from './characters.js';
+import { getCharacter, syncChapterUnlocks } from './characters.js';
 import { activeMembers, fallenMembers } from './party.js';
 import { hasItem, grantItem } from './items.js';
 import { getMonsterByName } from './world.js';
@@ -22,7 +22,7 @@ import { startBattle } from './battles.js';
 import {
   FLAG_DEFS, FLAG_ORDER, FINAL_BATTLE_KIND, FINAL_BOSS, FINAL_TROPHY, FINAL_LOCATION,
   SPIRE_UNLOCK, derivedFlags, flagStatuses, finalGateStatus, resolveEnding, endingCandidates,
-  buildEpilogue, doctrineInfo, EPILOGUE_VOICES, ENDING_ORDER,
+  buildEpilogue, doctrineInfo, EPILOGUE_VOICES, ENDING_ORDER, CAMPAIGN_CHAPTERS, deriveFlash,
 } from '../game/campaign.js';
 
 function requireCharacter(id) {
@@ -46,8 +46,19 @@ function completedQuestKeys(characterId) {
   return listQuests(characterId).completed.map((q) => q.key);
 }
 
+// The lore "flash" of chapters: which campaign chapters are met, where a gap is,
+// and whether the clan (7) is free. Built on the pure deriveFlash.
+function flashView(flags, doctrine) {
+  const byChapter = {};
+  for (const def of CAMPAIGN_CHAPTERS) byChapter[def.n] = !!flags[def.flag];
+  return deriveFlash(byChapter, { doctrine });
+}
+
 // Fold the flags G8 implies into the campaign table. Additive: a flag already
-// set by a branch or by hand keeps its own source.
+// set by a branch or by hand keeps its own source. A met chapter also unlocks
+// the NEXT chapter's flash (lore campaign_progress.md): the clan unlock
+// `chapter_7` is granted once every earlier chapter is passed, which is what the
+// clan (G9) founding gate reads. Without this the whole endgame was locked.
 export function deriveProgress(characterId) {
   requireCharacter(characterId);
   const completed = completedQuestKeys(characterId);
@@ -61,6 +72,10 @@ export function deriveProgress(characterId) {
     ).run(characterId, flag, 'quest');
     if (info.changes > 0) added += 1;
   }
+  // The flash: a chapter is met once its flag is set; the clan opens when every
+  // earlier chapter is passed. syncChapterUnlocks grants the `chapter_N` unlocks
+  // so G9 can found the clan, reading the same derived flags.
+  syncChapterUnlocks(characterId);
   return { completed: completed.length, derived, added };
 }
 
@@ -182,6 +197,7 @@ export function getProgress(characterId) {
     metCount: metChapters.length,
     totalCount: FLAG_ORDER.length,
     flags,
+    flash: flashView(flags, doctrine),
     doctrine: doctrineInfo(doctrine),
     finale: {
       ready: finale.ready,

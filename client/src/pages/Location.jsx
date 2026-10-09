@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { monsterIcon, Icon } from '../icons.jsx';
 import SceneBackdrop from '../scenes.jsx';
 import Talk from '../Talk.jsx';
+import SurvivalMeters from '../SurvivalMeters.jsx';
 import { hintScene } from '../audio.js';
 
 export default function LocationPage() {
@@ -18,6 +19,9 @@ export default function LocationPage() {
   const [sailing, setSailing] = useState(false);
   const [error, setError] = useState('');
   const [found, setFound] = useState(null);
+  const [settlement, setSettlement] = useState(null);
+  const [survival, setSurvival] = useState(null);
+  const [resting, setResting] = useState(false);
 
   useEffect(() => { if (location) hintScene({ location }); }, [location]);
 
@@ -45,6 +49,29 @@ export default function LocationPage() {
       .then((res) => { if (res?.found) setFound(res.found); })
       .catch(() => {});
   }, [id, heroId]);
+
+  // A settlement stands here? Link into it, and offer a rest in a safe place.
+  useEffect(() => {
+    api.getSettlementByLocation(Number(id))
+      .then((s) => setSettlement(s && s.id ? s : null))
+      .catch(() => setSettlement(null));
+  }, [id]);
+
+  // The survival meters for the hero standing here. Hidden when no hero.
+  useEffect(() => {
+    if (!heroId) { setSurvival(null); return; }
+    api.getSurvival(Number(heroId)).then(setSurvival).catch(() => setSurvival(null));
+  }, [id, heroId]);
+
+  const rest = async () => {
+    if (!heroId) return;
+    setResting(true);
+    try {
+      await api.restSurvival(Number(heroId));
+      setSurvival(await api.getSurvival(Number(heroId)));
+    } catch (err) { setError(err.message); }
+    finally { setResting(false); }
+  };
 
   const startFight = async (monsterId) => {
     if (!heroId) return setError('Сначала создайте героя.');
@@ -81,7 +108,7 @@ export default function LocationPage() {
       const voy = await api.startVoyage(Number(heroId), {
         fromId: Number(id), toId: route.toId,
       });
-      setVoyage(voy);
+      if (!voy) throw new Error('Корабль не вышел в море');
       setCrossings((prev) => prev.map((c) => (c.key === route.key ? { ...c, affordable: null } : c)));
       navigate(`/voyage/${heroId}`);
     } catch (err) { setError(err.message); }
@@ -128,6 +155,21 @@ export default function LocationPage() {
           <p className="muted small">{found.description}</p>
         </div>
       )}
+
+      {settlement && (
+        <div className="card">
+          <h2>Поселение</h2>
+          <p className="muted small">
+            Здесь стоит «{settlement.name}» — таверны, храмы, лавки и гильдии.
+            Зайдите, чтобы отдохнуть, поговорить и поторговать.
+          </p>
+          <Link to={`/settlements/${settlement.id}`}>
+            <button type="button">Войти в поселение</button>
+          </Link>
+        </div>
+      )}
+
+      {survival && <SurvivalMeters view={survival} onRest={here ? rest : null} busy={resting} />}
 
       {crossings.length > 0 && (
         <div className="card">

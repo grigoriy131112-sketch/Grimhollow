@@ -17,6 +17,7 @@ import { itemInfo } from '../game/items.js';
 import { levelFromXp, deriveCharacter } from '../game/rules.js';
 import { grantNames } from './clan.js';
 import { MEMORY_QUEST_KEYS, NAMES_PER_MEMORY_QUEST } from '../db/seed_clan.js';
+import { derivedFlags, endgameUnlocksFromFlags } from '../game/campaign.js';
 import {
   QUEST_SOURCES, OBJECTIVE_TYPES, questByKey, isStoryQuest, SIDE_FAIL_OPINION,
 } from '../db/seed_quests.js';
@@ -421,7 +422,18 @@ export function completeQuest(characterId, key) {
   const granted = transaction(() => grantReward(characterId, def));
   getDb().prepare("UPDATE character_quests SET status = 'completed', updated_at = datetime('now') WHERE id = ?")
     .run(existing.id);
+  // Finishing a chapter quest opens the campaign flash: grant the `chapter_N`
+  // unlocks the completed set now earns, so the clan (G9) and the finale (G11)
+  // become reachable without waiting for the campaign screen to be opened.
+  const unlocks = endgameUnlocksFromFlags(derivedFlags(completedQuestKeys(characterId)));
+  granted.chapters = unlocks.map((flag) => addUnlock(characterId, flag, key));
   return { key, status: 'completed', granted };
+}
+
+// The keys of every completed quest (used to derive the chapter flash).
+function completedQuestKeys(characterId) {
+  return getDb().prepare("SELECT quest_key FROM character_quests WHERE character_id = ? AND status = 'completed'")
+    .all(characterId).map((r) => r.quest_key);
 }
 
 // Fail an active quest. A key story quest is never lost for good — it returns
