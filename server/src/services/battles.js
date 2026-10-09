@@ -6,8 +6,10 @@ import {
 import { getCharacter, applyBattleRewards } from './characters.js';
 import { getMonster, getLocation } from './world.js';
 import { activeMembers, getMember, markDead, grantMemberXp, reviveMember, applyRevivalRelations } from './party.js';
-import { grantItem } from './items.js';
+import { grantItem, activeModifiers } from './items.js';
+import { getMeters } from './survival.js';
 import { revivalDelta, WITNESS_DELTA } from '../game/revival.js';
+import { needModifiersFromMeters } from '../game/survival.js';
 import { RITUAL_ITEM } from '../game/items.js';
 import { getBonuses, awardPartyPoints } from './upgrades.js';
 import { applyBonusesToSource, POINTS_PER_WIN, POINTS_PER_LEVEL } from '../game/party_upgrades.js';
@@ -51,10 +53,15 @@ export function startBattle({ characterId, monsterId, locationId, kind = 'normal
   if (!monster) throw new Error('Для этой встречи нет доступного монстра');
 
   // The whole active party joins the fight; the leader is 'p1'. The party tree
-  // strengthens everyone: stats scale and regeneration deepens.
+  // strengthens everyone: stats scale and regeneration deepens. Equipment, active
+  // buffs and survival needs also apply, so a hero fights with the sheet the
+  // player reads (see getCharacterSheet/getInventory).
   const bonuses = getBonuses(character.id);
+  const needs = needModifiersFromMeters(getMeters(character.id));
+  const selfMods = (id) => [...activeModifiers(id), ...needs];
   const boost = (src) => {
-    const b = applyBonusesToSource(src, bonuses);
+    const withMods = { ...src, modifiers: selfMods(src.id) };
+    const b = applyBonusesToSource(withMods, bonuses);
     b.regenMana = bonuses.regenMana;
     b.regenStamina = bonuses.regenStamina;
     if (bonuses.startFull) { b.hp = b.stats.maxHp; b.mana = b.stats.maxMana; b.stamina = b.stats.maxStamina; }
@@ -71,7 +78,18 @@ export function startBattle({ characterId, monsterId, locationId, kind = 'normal
     `INSERT INTO battles (status, character_id, monster_id, location_id, state, log, kind, revive_member)
      VALUES ('active', ?, ?, ?, ?, ?, ?, ?)`,
   ).run(character.id, monster.id, location?.id ?? null, serialize(state), JSON.stringify(events), kind, reviveMember ?? null);
-  return getBattleView(info.lastInsertRowid);
+  const battleId = info.lastInsertRowid;
+
+  // An enemy faster than the whole party can act before the player's first turn
+  // and finish the fight outright (createBattle runs those turns immediately). If
+  // the battle is already over, settle it now — otherwise it stays 'active' with
+  // no player turn, so the reward screen never appears and the party is stuck.
+  if (state.over) {
+    const settled = state.winner === 'player' ? 'won' : state.winner === 'enemy' ? 'lost' : 'fled';
+    db.prepare("UPDATE battles SET status=?, updated_at=datetime('now') WHERE id=?").run(settled, battleId);
+    settle({ id: battleId, character_id: character.id, monster_id: monster.id }, state, settled);
+  }
+  return getBattleView(battleId);
 }
 
 export function getBattle(id) {
