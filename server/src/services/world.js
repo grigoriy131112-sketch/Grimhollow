@@ -22,10 +22,10 @@ function statsOf(locs) {
 
 export function getWorld() {
   const db = getDb();
-  const continents = db.prepare('SELECT * FROM continents ORDER BY sort_order, id').all();
+  // Hidden continents/locations (the sea's islands, W-ISLES) are never listed.
+  const continents = db.prepare('SELECT * FROM continents WHERE hidden = 0 ORDER BY sort_order, id').all();
   const regions = db.prepare('SELECT * FROM regions ORDER BY sort_order, id').all();
-  const locations = db.prepare('SELECT * FROM locations ORDER BY sort_order, id').all();
-  const connections = db.prepare('SELECT * FROM connections ORDER BY id').all();
+  const locations = db.prepare('SELECT * FROM locations WHERE hidden = 0 ORDER BY sort_order, id').all();
   return continents.map((c) => ({
     ...c,
     regions: regions.filter((r) => r.continent_id === c.id).map((r) => ({
@@ -60,12 +60,17 @@ function seaLanes(locations) {
 // have seen, and any road they are currently walking.
 export function getMap(characterId) {
   const db = getDb();
-  const continents = db.prepare('SELECT * FROM continents ORDER BY sort_order, id').all();
+  const continents = db.prepare('SELECT * FROM continents WHERE hidden = 0 ORDER BY sort_order, id').all();
   const regions = db.prepare('SELECT * FROM regions ORDER BY sort_order, id').all();
-  const locations = db.prepare('SELECT * FROM locations ORDER BY sort_order, id').all();
+  const locations = db.prepare('SELECT * FROM locations WHERE hidden = 0 ORDER BY sort_order, id').all();
   const connections = db.prepare('SELECT * FROM connections ORDER BY id').all();
-  const monsters = db.prepare('SELECT location_id, COUNT(*) AS n FROM location_monsters GROUP BY location_id').all();
+  const monsters = db.prepare(
+    `SELECT lm.location_id, COUNT(*) AS n FROM location_monsters lm
+       JOIN locations l ON l.id = lm.location_id
+      WHERE l.hidden = 0 GROUP BY lm.location_id`,
+  ).all();
   const counts = new Map(monsters.map((m) => [m.location_id, m.n]));
+  const idSet = new Set(locations.map((l) => l.id));
   const map = {
     continents: continents.map((c) => ({ ...c, regions: regions.filter((r) => r.continent_id === c.id).map((r) => ({ ...r })) })),
     locations: locations.map((l) => {
@@ -79,9 +84,11 @@ export function getMap(characterId) {
         monsterCount: counts.get(l.id) || 0,
       };
     }),
-    // Undirected edges: draw each road once.
+    // Undirected edges: draw each road once. A road that touches a hidden island
+    // place is never handed out -- both endpoints must be visible places, or the
+    // island's geography leaks into the atlas (150 of 208 roads used to).
     connections: connections
-      .filter((c) => c.from_id < c.to_id)
+      .filter((c) => c.from_id < c.to_id && idSet.has(c.from_id) && idSet.has(c.to_id))
       .map((c) => ({ from: c.from_id, to: c.to_id, label: c.label, minutes: c.minutes })),
     // Sea lanes between the port gates. A road is a walk; a lane is a voyage,
     // so its time is in days, not minutes. Both endpoints are real gates, so
@@ -107,7 +114,7 @@ export function characterExploration(characterId) {
   if (!row) return null;
 
   if (row.location_id == null) {
-    const start = db.prepare('SELECT id FROM locations ORDER BY is_safe DESC, sort_order, id LIMIT 1').get();
+    const start = db.prepare('SELECT id FROM locations WHERE hidden = 0 ORDER BY is_safe DESC, sort_order, id LIMIT 1').get();
     if (start) recordVisit(characterId, start.id);
   }
 
@@ -193,6 +200,7 @@ export function getBestiary() {
   const links = db.prepare(
     `SELECT lm.monster_id AS id, l.name AS name
        FROM location_monsters lm JOIN locations l ON l.id = lm.location_id
+      WHERE l.hidden = 0
       ORDER BY l.name`,
   ).all();
   for (const link of links) {

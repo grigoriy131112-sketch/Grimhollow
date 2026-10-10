@@ -53,8 +53,10 @@ Post-G12 shell/UX waves, also merged:
 | W-SEA | Sea crossing: pirates, sea monsters, islands, papers, sea battle | #20 |
 | W-THEME | Dark Dark Fantasy palette (cold ash + embers), cyrillic display type, grain/vignette | #21 |
 | W-HERO-TABS | One tab strip across every per-hero screen | #22 |
+| W-ISLES | Sea islands: hidden, the sea asks whether to dock, entry/exit mirrors continents | this branch |
 
-`main` after #22: **338 pass / 0 fail**.
+`main` after #22: **338 pass / 0 fail**. `main` after the W-WIRE/W-ACTIONS-CRAFT/
+W-ISLES follow-ons: **405 pass / 0 fail**.
 
 ---
 
@@ -142,6 +144,67 @@ them back into the party at any moment. Built as **one system**:
   a deeper fight pays more.
 - The balance is pinned by a deterministic regression test (injectable `rng`),
   and the fights last 5–14 rounds with real hull risk at every tier.
+
+### 2.7 Sea islands — ✅ done in `wave/w-isles` (W-ISLES)
+
+User asked: islands scattered across the ocean that the player is **asked whether
+to dock at** (может причалить или отказаться, only on accept does he enter), that
+are **not visible on the map**, and whose entry/exit mirrors continents — and,
+when the first cut shipped one place per island, «надо несколько локаций и больше,
+намного больше островов».
+
+- **Many islands, many places each.** **30 islands** in `game/islands.js`, built
+  from six authored island *types* (salt / drowned / bone / ash / coral / frozen),
+  each island holding **four walkable places** — a shore, an interior, a heart and
+  a **landmark** — named from its type (`<роль> острова <имя>`). So there are
+  **120 island locations**, every one hidden and every one with its own scene,
+  biome, danger and beasts (drawn from the bestiary band of its danger).
+- **Every island has one landmark** — the thing it is known for: a **native
+  village**, a **temple of the drowned god**, a **shrine** or a wreckers' **camp**
+  (salt/ash islands hold villages, drowned/coral hold temples, bone holds a
+  shrine, frozen holds a camp). A landmark is reachable from the heart by road and
+  the party chooses its fate there:
+  - **Explore** it (the quiet way): learn its story, take a small gift, and — at a
+    village — open a **settlement** (tavern, temple, shop, market, inn) to trade
+    and rest in.
+  - **Raid** it (the loud way): a real fight against its keepers for a much bigger
+    haul. A won raid records the island as raided.
+  Exploring and raiding are **mutually exclusive**: once explored, a place cannot
+  be raided, and a raided place has no one left to talk to. `island_discoveries`
+  `.landmark_state` (`''`/`explored`/`raided`) remembers the choice; the fight is
+  a `kind: 'island_raid'` battle and `recordIslandRaid()` in `services/battles.js`
+  settles the win without importing the island catalogue (no import cycle).
+- **An island is walked like a continent.** The shore, interior, heart and
+  landmark are joined by **ordinary roads** (`db/seed_islands.js` lays
+  shore→interior→heart→landmark plus shortcuts, minutes derived from the drawn
+  distance), so the party crosses an island exactly as it crosses a continent.
+  Only the shore is ever "entered from the sea"; the ship waits there to put back
+  to sea, and the party must return to it before it can sail on.
+- **Hidden, by construction.** The islands live on a hidden continent
+  (`Море Осколков`) as `locations` with `hidden = 1`; every reader — the map
+  (`getMap`), the world list (`getWorld`), the continent list/detail
+  (`listContinents`/`getContinent`), the bestiary and the monster spawner — filters
+  `hidden = 0`, so no island place appears in any atlas, list, count or spawn
+  pool. `continents`/`locations` carry the `hidden` column (schema + additive
+  migration).
+- **The sea asks.** A voyage that reaches an island stop no longer logs a note: a
+  voyage carries a `mode` and the stop is held at `cursor` until the party answers
+  with `POST /naval/:id/voyage/put-in` (accept) or `.../sail-past` (refuse).
+  `Voyage.jsx` shows «Причалить» / «Пройти мимо».
+- **Docking mirrors continents.** On accept the shore becomes a real location the
+  party *stands on* (`characters.location_id`, `character_visits`) — a full screen
+  with its own scene and monsters and its roads into the island. Ashore the party
+  may `.../search` **each place** (its own cache, paid once, kept in
+  `island_discoveries.searched_places`) and `.../leave-island` from the shore to
+  put back to sea; the voyage then carries on and lands at the far port when the
+  stops run out. `island_discoveries` records each first landing.
+- **Tests:** `server/test/islands.test.js` (14) — hiddenness across map/list/
+  continent, "four places and the roads between them", the landmark kinds and the
+  village's settlement, the ask, refuse, accept-and-stand-on-the-shore, walking the
+  island on foot, per-place search paid once, exploring a landmark (gift once, then
+  closed to raiding), raiding it (a real `island_raid` fight, recorded once on a
+  win), sailing only from the shore, and the deterministic island draw. Suite
+  **405 pass / 0 fail**.
 
 ---
 
@@ -252,3 +315,7 @@ follow-on queue (W-WIRE #28, W-ACTIONS-CRAFT #29) is merged too. The roadmap is
   захотеть вступить. Ну и само собой эти ребята, которые будут в клане, будут
   пассивно приносить доход от походов и ресурсы, а также в любой момент Игрок
   может взять из клана любого персонажа» (done in W-CLAN-ROSTER).
+- **Sea islands:** «Острова в море… игрок должен быть спрошен, причалить ли;
+  может отказаться или согласиться; только при согласии он попадает на остров.
+  Острова НЕ должны быть видны на карте. Вход и выход должен работать так же, как
+  на континентах» (done in W-ISLES, §2.7).

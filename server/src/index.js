@@ -7,6 +7,7 @@ import { seedWorld } from './db/seed.js';
 import { seedSettlements } from './db/seed_settlements.js';
 import { seedContinents } from './db/seed_continents.js';
 import { seedMonstersExtra } from './db/seed_monsters_extra.js';
+import { seedIslands } from './db/seed_islands.js';
 import { seedQuests } from './db/seed_quests.js';
 import { seedClan } from './db/seed_clan.js';
 import { seedNpcs } from './services/npcs.js';
@@ -81,6 +82,7 @@ if (isMain) {
   seedSettlements();
   seedContinents();
   seedMonstersExtra();
+  seedIslands();
   seedQuests();
   seedClan();
   const app = createApp();

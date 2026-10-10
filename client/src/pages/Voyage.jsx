@@ -21,6 +21,15 @@ export default function VoyagePage() {
   const load = () => api.getVoyage(characterId).then(setVoyage).catch((e) => setError(e.message));
   useEffect(() => { load(); }, [characterId]);
   useEffect(() => { api.getParty(characterId).then(setParty).catch(() => {}); }, [characterId]);
+  // Ashore: the party stands on the island itself, so send the player to the
+  // real location screen (it is a walkable place, like a continent's). Use
+  // `ashoreAt` (the party's real place) rather than `ashore` (the ship's anchor),
+  // so a reload while inland does not teleport the party back to the shore.
+  useEffect(() => {
+    if (voyage?.mode === 'island' && (voyage.ashoreAt || voyage.ashore)) {
+      navigate(`/world/locations/${voyage.ashoreAt || voyage.ashore}`);
+    }
+  }, [voyage, navigate]);
 
   const resolve = async () => {
     setBusy(true); setError('');
@@ -28,6 +37,26 @@ export default function VoyagePage() {
       const res = await api.resolveVoyage(characterId);
       setVoyage(res.voyage);
       if (res.battleId) navigate(`/sea/${res.battleId}`);
+    } catch (e) { setError(e.message); }
+    finally { setBusy(false); }
+  };
+
+  // The sea offers an island: put in (go ashore, a real location) or hold course.
+  const putIn = async () => {
+    setBusy(true); setError('');
+    try {
+      const res = await api.putInIsland(characterId);
+      setVoyage(res.voyage);
+      if (res.locationId) navigate(`/world/locations/${res.locationId}`);
+    } catch (e) { setError(e.message); }
+    finally { setBusy(false); }
+  };
+
+  const sailPast = async () => {
+    setBusy(true); setError('');
+    try {
+      const res = await api.sailPastIsland(characterId);
+      setVoyage(res.voyage);
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
@@ -41,7 +70,7 @@ export default function VoyagePage() {
 
   return (
     <div>
-      <Link to={`/world/locations/${voyage.to}`} className="muted">← Порт</Link>
+      <Link to={`/world/locations/${voyage.toId ?? voyage.to}`} className="muted">← Порт</Link>
       <div className="scene-hero">
         <SceneBackdrop scene="sea" biome="coast" danger={2} name={`Море: ${voyage.from} → ${voyage.to}`} />
         <div className="scene-caption">
@@ -54,12 +83,32 @@ export default function VoyagePage() {
 
       <div className="card">
         <h2>Плавание</h2>
-        {total === 0 && <p className="muted">Море спокойно — ни паруса, ни тени на горизонте.</p>}
+        {total === 0 && (
+          <p className="muted">Море спокойно — ни паруса, ни тени на горизонте.</p>
+        )}
+        {total === 0 && voyage.canLand && (
+          <div className="road-arrived">
+            <div className="actions">
+              <button type="button" disabled={busy} onClick={resolve}>Войти в порт</button>
+            </div>
+          </div>
+        )}
         {stop && (
           <div className="road-encounter">
             <h3>{stop.title}</h3>
             {stop.kind === 'island' && (
-              <p className="muted">{stop.island?.name} — {stop.island?.description}</p>
+              <>
+                <p className="muted">
+                  {voyage.island?.name || stop.island?.name} — {voyage.island?.description || stop.island?.description}
+                </p>
+                <p className="muted small">
+                  Море поднимает из тумана клочок земли. Причалить и сойти на берег или пройти мимо?
+                </p>
+                <div className="actions">
+                  <button type="button" disabled={busy} onClick={putIn}>Причалить</button>
+                  <button type="button" disabled={busy} className="ghost" onClick={sailPast}>Пройти мимо</button>
+                </div>
+              </>
             )}
             {stop.kind === 'pirates' && (
               <p className="muted">Пиратский корабль яруса {stop.tier} идёт на сближение. Отряд пойдёт на абордаж, пушки бьют по корпусу врага.</p>
@@ -67,18 +116,18 @@ export default function VoyagePage() {
             {stop.kind === 'sea_monster' && (
               <p className="muted">Из глубины поднимается чудовище яруса {stop.tier}. Корабль бьётся один — отряд остаётся на палубе.</p>
             )}
-            <div className="actions">
-              <button type="button" disabled={busy} onClick={resolve}>
-                {stop.kind === 'island' ? 'Занести в бумаги' : 'К бою!'}
-              </button>
-            </div>
+            {stop.kind !== 'island' && (
+              <div className="actions">
+                <button type="button" disabled={busy} onClick={resolve}>К бою!</button>
+              </div>
+            )}
           </div>
         )}
         {!stop && voyage.done && (
           <div className="road-arrived">
             <p className="road-outcome">Плавание окончено. Отряд стоит в порту {voyage.to}.</p>
             <div className="actions">
-              <button type="button" onClick={() => navigate(`/world/locations/${voyage.to}`)}>Сойти на берег</button>
+              <button type="button" onClick={() => navigate(`/world/locations/${voyage.toId ?? voyage.to}`)}>Сойти на берег</button>
             </div>
           </div>
         )}

@@ -84,6 +84,7 @@ function locationInfo(locationId) {
   return {
     id: loc.id, name: loc.name, description: loc.description, danger: loc.danger,
     isSafe: !!loc.is_safe, scene: loc.scene, biome: loc.biome, x: loc.map_x, y: loc.map_y,
+    hidden: !!loc.hidden,
     regionName: region?.name, continentName: continent?.name,
   };
 }
@@ -107,7 +108,10 @@ function deriveSettlement(row, { withBuildings = true } = {}) {
 
 // Every settlement in the world, without their buildings (the list view).
 export function listSettlements() {
-  return getDb().prepare('SELECT * FROM settlements ORDER BY sort_order, id')
+  return getDb().prepare(
+    `SELECT s.* FROM settlements s JOIN locations l ON l.id = s.location_id
+      WHERE l.hidden = 0 ORDER BY s.sort_order, s.id`,
+  )
     .all()
     .map((r) => deriveSettlement(r, { withBuildings: false }));
 }

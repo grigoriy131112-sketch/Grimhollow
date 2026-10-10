@@ -48,6 +48,18 @@ export function startBattle({ characterId, monsterId, locationId, kind = 'normal
   const character = getCharacter(characterId);
   if (!character) throw new Error('Персонаж не найден');
   if (character.fate === 'dead') throw new Error('Герой пал — им больше нельзя сражаться');
+  // Sea and land do not overlap: a naval battle still running would fight the
+  // same party at the same time. The captain must finish it first.
+  if (getDb().prepare("SELECT id FROM naval_battles WHERE character_id = ? AND status = 'active' LIMIT 1").get(characterId)) {
+    throw new Error('Сначала закончите морской бой');
+  }
+  // One land fight at a time, too. Nothing stopped opening a second battle for
+  // the same hero (a surrendered fight could be re-started mid-turn, and every
+  // hunt from another tab opened its own battle), and both then settle against
+  // the same party. The party must finish the fight it is in.
+  if (getDb().prepare("SELECT id FROM battles WHERE character_id = ? AND status = 'active' LIMIT 1").get(characterId)) {
+    throw new Error('Сначала закончите бой');
+  }
 
   let monster = opponent || (monsterId ? getMonster(monsterId) : null);
   let location = locationId ? getLocation(locationId) : null;
@@ -172,6 +184,25 @@ export function takeTurn(id, action) {
   return { ...getBattleView(id), events, rewards };
 }
 
+// Record a won raid on an island's landmark. The landmark's location is a
+// hidden island place whose region is the island; the anchor is the first place
+// of that region. There is no direct import of the island catalogue, so this
+// finds the anchor by the region itself -- which keeps battles free of a cycle.
+export function recordIslandRaid(characterId, locationId) {
+  const anchor = getDb().prepare(
+    `SELECT a.id AS anchor_id FROM locations lm
+     JOIN regions lr ON lr.id = lm.region_id
+     JOIN locations a ON a.region_id = lr.id AND a.hidden = 1
+     WHERE lm.id = ? AND lm.scene LIKE 'isle_%'
+     ORDER BY a.sort_order LIMIT 1`,
+  ).get(locationId);
+  if (!anchor) return { staked: false };
+  const info = getDb().prepare(
+    "UPDATE island_discoveries SET landmark_state = 'raided' WHERE character_id = ? AND island_id = ? AND landmark_state = ''",
+  ).run(characterId, anchor.anchor_id);
+  return { staked: info.changes > 0 };
+}
+
 // Persist everything that happened in the fight: the leader's resources and XP,
 // each companion's HP and XP, and permanent death for anyone who fell.
 function settle(battle, state, status) {
@@ -266,6 +297,12 @@ function settle(battle, state, status) {
   let loot = null;
   if (won && battle.loot) {
     loot = applyBattleLoot(battle.id, battle.character_id, battle.loot);
+  }
+
+  // An island raid: a won fight over a landmark records it as raided, so the
+  // island knows the natives are gone and exploring it is no longer an option.
+  if (won && battle.kind === 'island_raid' && battle.location_id) {
+    recordIslandRaid(battle.character_id, battle.location_id);
   }
 
   // Quests: a won fight reports the kill and, for a death-realm ritual, the

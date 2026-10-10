@@ -53,6 +53,20 @@ function migrate(d) {
   if (!memberCols.includes('assignment')) {
     d.exec("ALTER TABLE party_members ADD COLUMN assignment TEXT NOT NULL DEFAULT 'party'");
   }
+  // Wave W-ISLES: hidden places (sea islands) and the open-water voyage state.
+  if (!columns('continents').includes('hidden')) {
+    d.exec('ALTER TABLE continents ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0');
+  }
+  if (!columns('locations').includes('hidden')) {
+    d.exec('ALTER TABLE locations ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0');
+  }
+  const voyageCols = columns('voyages');
+  if (!voyageCols.includes('mode')) d.exec("ALTER TABLE voyages ADD COLUMN mode TEXT NOT NULL DEFAULT 'voyage'");
+  if (!voyageCols.includes('ashore_id')) d.exec('ALTER TABLE voyages ADD COLUMN ashore_id INTEGER REFERENCES locations(id) ON DELETE SET NULL');
+  if (!voyageCols.includes('island_ref')) d.exec('ALTER TABLE voyages ADD COLUMN island_ref TEXT');
+  const discCols = columns('island_discoveries');
+  if (!discCols.includes('searched_places')) d.exec("ALTER TABLE island_discoveries ADD COLUMN searched_places TEXT NOT NULL DEFAULT '[]'");
+  if (!discCols.includes('landmark_state')) d.exec("ALTER TABLE island_discoveries ADD COLUMN landmark_state TEXT NOT NULL DEFAULT ''");
 }
 
 export function transaction(fn) {

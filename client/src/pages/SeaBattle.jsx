@@ -135,6 +135,9 @@ export default function SeaBattlePage() {
           {view.result?.gold ? <p className="muted">Добыча: {view.result.gold} золота, {view.result.xp} опыта.</p> : null}
           {lost && <p className="muted">Корабль уцелел, но отряд едва отошёл.</p>}
           <div className="actions">
+            {view.voyageId && (
+              <button type="button" onClick={() => navigate(`/voyage/${view.characterId}`)}>Продолжить плавание</button>
+            )}
             <button type="button" onClick={() => navigate(`/papers/${view.characterId}`)}>В судовой журнал</button>
           </div>
         </div>

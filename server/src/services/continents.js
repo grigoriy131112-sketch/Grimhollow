@@ -32,10 +32,11 @@ function continentOf(locationId) {
 // crossing screen both read this.
 export function listContinents() {
   const db = getDb();
-  const continents = db.prepare('SELECT * FROM continents ORDER BY sort_order, id').all();
-  const regions = db.prepare('SELECT * FROM regions ORDER BY sort_order, id').all();
+  // The sea's hidden islands are their own hidden continent; they never appear.
+  const continents = db.prepare('SELECT * FROM continents WHERE hidden = 0 ORDER BY sort_order, id').all();
+  const regions = db.prepare('SELECT r.* FROM regions r JOIN continents c ON c.id = r.continent_id WHERE c.hidden = 0 ORDER BY r.sort_order, r.id').all();
   const counts = db.prepare(
-    'SELECT region_id, COUNT(*) AS n FROM locations GROUP BY region_id',
+    'SELECT region_id, COUNT(*) AS n FROM locations WHERE hidden = 0 GROUP BY region_id',
   ).all();
   const countOf = new Map(counts.map((r) => [r.region_id, r.n]));
   return continents.map((c) => {
@@ -56,12 +57,12 @@ export function listContinents() {
 // One continent by id or by name, with its regions and locations.
 export function getContinent(idOrName) {
   const db = getDb();
-  const c = db.prepare('SELECT * FROM continents WHERE id = ? OR name = ?').get(idOrName, idOrName);
+  const c = db.prepare('SELECT * FROM continents WHERE (id = ? OR name = ?) AND hidden = 0').get(idOrName, idOrName);
   if (!c) return null;
   const regions = db.prepare('SELECT * FROM regions WHERE continent_id = ? ORDER BY sort_order, id').all(c.id);
   const locations = db.prepare(
     `SELECT l.* FROM locations l JOIN regions r ON r.id = l.region_id
-     WHERE r.continent_id = ? ORDER BY l.sort_order, l.id`,
+     WHERE r.continent_id = ? AND l.hidden = 0 ORDER BY l.sort_order, l.id`,
   ).all(c.id).map((l) => ({ ...l, is_safe: !!l.is_safe }));
   return {
     id: c.id, name: c.name, description: c.description,

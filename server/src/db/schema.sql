@@ -32,7 +32,10 @@ CREATE TABLE IF NOT EXISTS continents (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   name        TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
-  sort_order  INTEGER NOT NULL DEFAULT 0
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  -- Wave W-ISLES: a hidden continent (the sea's scattered islands) is never
+  -- drawn on the atlas and never listed; it is reachable only by sailing.
+  hidden      INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS regions (
@@ -54,7 +57,10 @@ CREATE TABLE IF NOT EXISTS locations (
   map_x        REAL,
   map_y        REAL,
   scene        TEXT,
-  biome        TEXT
+  biome        TEXT,
+  -- Wave W-ISLES: a hidden place (a sea island) never appears on the map, in a
+  -- region or in a list; the party can only stand on it after sailing ashore.
+  hidden       INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS connections (
@@ -516,9 +522,37 @@ CREATE TABLE IF NOT EXISTS voyages (
   stops         TEXT NOT NULL DEFAULT '[]',
   cursor        INTEGER NOT NULL DEFAULT 0,
   resolved      INTEGER NOT NULL DEFAULT 0,      -- 1 once the party has landed
+  -- Wave W-ISLES: where the party stands in the open-water stretch --
+  -- 'voyage' (at sea), 'island' (ashore, id in ashore_id), 'aside' (held at the
+  -- port) or 'battle' -- and `island_ref`, the stop's island key when a stop is
+  -- an island, so the prompt and the ashore screen resolve the same place.
+  mode          TEXT NOT NULL DEFAULT 'voyage',
+  ashore_id     INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+  island_ref    TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Wave W-ISLES: each sea island the party has set foot on: when it was first
+-- seen, whether its hoard has been searched yet (loot pays once), and the last
+-- place it was standing before it went ashore -- so "put back to sea" returns it
+-- to the water beside the island, not to some far port.
+CREATE TABLE IF NOT EXISTS island_discoveries (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  character_id   INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+  island_id      INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
+  from_id        INTEGER REFERENCES locations(id) ON DELETE SET NULL,
+  searched       INTEGER NOT NULL DEFAULT 0,
+  -- The ids of the island's places whose cache has already been emptied; an
+  -- island hides a hoard in each place, and each pays once.
+  searched_places TEXT NOT NULL DEFAULT '[]',
+  -- What the party did with the island's landmark: '' (untouched), 'explored' or
+  -- 'raided'. Exploring and raiding are mutually exclusive; the choice stands.
+  landmark_state TEXT NOT NULL DEFAULT '',
+  found_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (character_id, island_id)
+);
+
 
 -- Wave W-SEA: the ship's papers -- a free-form journal plus an automatic event
 -- log. `notes` are the player's own lines, `log` the milestones the game writes

@@ -239,13 +239,38 @@ test('a sea battle needs a ship and pays ship points only on a win', async () =>
   assert.ok(points >= POINTS_PER_PIRATE_WIN);
 });
 
-// --- voyage + papers ---------------------------------------------------------
+test('land and sea battles never overlap for one hero', async () => {
+  const { startNavalBattle } = await import('../src/services/naval.js');
+  const { startBattle } = await import('../src/services/battles.js');
+  const c = hero();
+  buyShip(c.id, { name: 'Граница' });
+  const loc = getDb().prepare('SELECT id FROM locations WHERE hidden = 0 AND is_safe = 1 LIMIT 1').get();
+  const monster = getDb().prepare('SELECT id FROM monsters ORDER BY id LIMIT 1').get();
 
+  // A running land battle blocks opening a sea fight.
+  const land = startBattle({ characterId: c.id, monsterId: monster.id, locationId: loc.id });
+  assert.throws(() => startNavalBattle(c.id, { kind: 'pirates', tier: 1 }), /наземный бой/i);
+  const { takeTurn } = await import('../src/services/battles.js');
+  takeTurn(land.id, { type: 'flee' });
+
+  // ...and a running sea fight blocks opening a land battle. A sea fight may be
+  // settled the instant it opens, so plant an active one to test the guard.
+  getDb().prepare(
+    "INSERT INTO naval_battles (character_id, kind, tier, state, status) VALUES (?, 'pirates', 1, '{}', 'active')",
+  ).run(c.id);
+  assert.throws(
+    () => startBattle({ characterId: c.id, monsterId: monster.id, locationId: loc.id }),
+    /морской бой/i,
+  );
+  getDb().prepare("UPDATE naval_battles SET status = 'fled' WHERE character_id = ? AND status = 'active'").run(c.id);
+});
+
+// --- voyage + papers ---------------------------------------------------------
 const PORT_A = 'Сумеречная гавань';
 const PORT_B = 'Порт Солёного Стекла';
 
-test('a voyage charges the fare, logs the papers and lands the party at the far port', async () => {
-  const { startVoyage, getVoyageView, resolveVoyageStop } = await import('../src/services/naval.js');
+test('a voyage charges the fare, keeps the party at sea, and lands it at the far port', async () => {
+  const { startVoyage, getVoyageView, resolveVoyageStop, putInIsland, sailPastIsland } = await import('../src/services/naval.js');
   const { getPapers } = await import('../src/services/naval.js');
   const { routeFor } = await import('../src/game/continent_travel.js');
   const { grantItem } = await import('../src/services/items.js');
@@ -260,32 +285,45 @@ test('a voyage charges the fare, logs the papers and lands the party at the far 
 
   const view = startVoyage({ characterId: c.id, fromId: portId(), toId: portBId() });
   assert.equal(view.to, PORT_B);
+  assert.equal(view.toId, portBId(), 'the view carries the destination id, not just the name');
+  assert.equal(view.fromId, portId(), 'and the origin id');
+  assert.equal(view.mode, 'voyage', 'the party is on the open water, not landed yet');
   assert.ok(view.stops.length <= 2, 'zero to two stops');
 
   const after = getDb().prepare('SELECT gold FROM characters WHERE id = ?').get(c.id).gold;
   assert.ok(after <= 50, 'the fare was paid');
 
-  // The party is already at the far port; the stops resolve one by one.
-  assert.equal(characterExploration(c.id).locationId, portBId(), 'landed at the far port');
+  // The party is at sea until every stop is answered; the road lands it at the
+  // far port only when the list runs out.
+  assert.equal(characterExploration(c.id).locationId, portId(), 'still at the home port until the voyage ends');
 
   let res = getVoyageView(c.id);
   let guard = 0;
-  while (res && !res.done && guard < 8) {
-    resolveVoyageStop(c.id);
+  while (res && !res.done && guard < 12) {
+    const r = resolveVoyageStop(c.id);
     guard += 1;
+    res = getVoyageView(c.id);
+    // An island asks first: decide so the loop can move on.
+    if (r?.ask === 'island') {
+      if (guard % 2 === 0) sailPastIsland(c.id); else putInIsland(c.id);
+      res = getVoyageView(c.id);
+      if (res?.mode === 'island') {
+        const { leaveIsland } = await import('../src/services/naval.js');
+        leaveIsland(c.id);
+        res = getVoyageView(c.id);
+      }
+    }
     // If a fight was opened, settle it first so the voyage can continue.
     const active = getDb().prepare("SELECT id FROM naval_battles WHERE character_id = ? AND status = 'active'").get(c.id);
     if (active) {
-      const { takeNavalTurn } = await import('../src/services/naval.js');
-      let v = getDb().prepare('SELECT id FROM naval_battles WHERE id = ?').get(active.id);
+      const { takeNavalTurn, getNavalView } = await import('../src/services/naval.js');
+      let nv = getNavalView(active.id);
       let turnGuard = 0;
-      const { getNavalView } = await import('../src/services/naval.js');
-      let nv = getNavalView(v.id);
-      while (!nv.over && turnGuard < 200) { nv = takeNavalTurn(v.id, { type: 'broadside' }); turnGuard += 1; }
+      while (!nv.over && turnGuard < 200) { nv = takeNavalTurn(active.id, { type: 'broadside' }); turnGuard += 1; }
     }
-    res = getVoyageView(c.id);
   }
   assert.equal(res, null, 'the voyage is over (resolved)');
+  assert.equal(characterExploration(c.id).locationId, portBId(), 'landed at the far port');
   const papers = getPapers(c.id);
   assert.ok(papers.log.some((e) => e.kind === 'voyage'), 'the papers record the voyage');
 });

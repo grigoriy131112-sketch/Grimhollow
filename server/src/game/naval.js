@@ -17,6 +17,7 @@
 
 import { hashString } from './travel.js';
 import { upgradesByKey, bonusesFrom, forgedForLevel, POINTS_PER_PIRATE_WIN, POINTS_PER_MONSTER_WIN } from './ship.js';
+import { ISLANDS } from './islands.js';
 
 export const MIN_HIT = 5;
 export const MAX_HIT = 95;
@@ -529,7 +530,10 @@ export function loreNotesFrom(unlocks = []) {
 // --- voyage roll -------------------------------------------------------------
 
 // What a voyage meets, derived from the seed so a reload cannot reroll it. Zero
-// to two stops; a sharing of pirates / a sea monster / a Fortune island.
+// to two stops; a sharing of pirates / a sea monster / an island. An island stop
+// names a seeded island (game/islands.js) by key, so the party can actually put
+// in and walk it -- the Fortune-island word pool below survives only for the
+// old `rollIslands` helper and for flavour on the open water.
 export function rollVoyage({ seed = 'voyage', tier = 1, danger = 1 } = {}) {
   const rng = rngFrom(`voyage:${seed}`);
   const stops = [];
@@ -538,7 +542,17 @@ export function rollVoyage({ seed = 'voyage', tier = 1, danger = 1 } = {}) {
     const r = rng();
     if (r < 0.4) stops.push({ kind: 'pirates', tier, title: 'Пираты на горизонте' });
     else if (r < 0.7) stops.push({ kind: 'sea_monster', tier, title: 'Из глубины поднимается тень' });
-    else stops.push({ kind: 'island', island: rollIslands(`${seed}:${i}`, 1)[0], title: 'Неизвестный остров' });
+    else {
+      const isle = pickIsland(`${seed}:${i}`);
+      stops.push({ kind: 'island', island: { key: isle.key, name: isle.name, description: isle.anchor.description }, title: 'Неизвестный остров' });
+    }
   }
   return { seed, tier, stops };
+}
+
+// Pick a seeded island for an island stop. Deterministic per stop seed, drawn
+// from the real island list, so the stop names a place the party can go ashore on.
+export function pickIsland(seed = 'isle') {
+  const rng = rngFrom(`isle:${seed}`);
+  return ISLANDS[Math.floor(rng() * ISLANDS.length)];
 }
