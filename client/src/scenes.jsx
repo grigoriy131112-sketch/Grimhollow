@@ -85,6 +85,19 @@ function cliffs(rng, base, color) {
   ];
 }
 
+// A scatter of stars in the upper sky. Small, dim, and denser toward the top, so
+// the night reads as depth rather than a flat gradient.
+function stars(rng, color, n) {
+  const out = [];
+  for (let i = 0; i < n; i += 1) {
+    const x = rng() * W;
+    const y = rng() * (H * 0.5);
+    const r = rng() < 0.85 ? 0.7 : 1.3;
+    out.push(<circle key={`st${i}`} cx={x} cy={y} r={r} fill={color} opacity={0.15 + rng() * 0.5} />);
+  }
+  return out;
+}
+
 // Scene-specific accents drawn near the horizon.
 function accent(scene, rng, base, color) {
   switch (scene) {
@@ -139,6 +152,8 @@ export default function SceneBackdrop({ scene = 'crossroads', biome = 'waste', d
     return accent(scene, rng, H - 10, b.near);
   }, [scene, name, b]);
 
+  const starField = useMemo(() => stars(rngFrom(hash(`${name}:stars`)), b.moon, 46), [name, b.moon]);
+
   return (
     <svg className="scene" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" role="img" aria-label={`Вид: ${name}`}>
       <defs>
@@ -157,6 +172,11 @@ export default function SceneBackdrop({ scene = 'crossroads', biome = 'waste', d
           <stop offset="60%" stopColor="#9b8f9f" stopOpacity={0.1 + danger * 0.02} />
           <stop offset="100%" stopColor="#9b8f9f" stopOpacity="0" />
         </linearGradient>
+        <linearGradient id={`${uid}horizon`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={b.moon} stopOpacity="0.16" />
+          <stop offset="42%" stopColor={b.moon} stopOpacity="0.05" />
+          <stop offset="100%" stopColor={b.moon} stopOpacity="0" />
+        </linearGradient>
         <filter id={`${uid}grain`}>
           <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed={hash(name) % 100} />
           <feColorMatrix type="saturate" values="0" />
@@ -166,9 +186,11 @@ export default function SceneBackdrop({ scene = 'crossroads', biome = 'waste', d
 
       <rect width={W} height={H} fill={`url(#${uid}sky)`} />
       <circle cx={W * 0.74} cy={74} r={110} fill={`url(#${uid}moon)`} />
+      {starField}
       <circle cx={W * 0.74} cy={74} r={26} fill={b.moon} opacity={0.85} />
 
       {layers.far}
+      <rect y={H * 0.52} width={W} height={H * 0.48} fill={`url(#${uid}horizon)`} />
       {acc}
       {layers.mid}
       <rect y={H * 0.55} width={W} height={H * 0.45} fill={`url(#${uid}fog)`} />

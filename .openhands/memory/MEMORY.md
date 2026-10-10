@@ -504,6 +504,9 @@ stale chat brief was wrong. `gh` is not authed - use
 - Tests: server/test/bestiary.test.js (7). Full suite **345 pass / 0 fail**.
 - Merged 2026-10-08; the whole queue (N1-N5) is now in main.
 
+## W-ATMOSPHERE (PR #33)
+- Look-and-feel wave, branch wave/w-atmosphere cut from main (independent of W-ISLES). client/src/Atmosphere.jsx = screen-wide ember/fog/grain film; tone derived in App.jsx from the music scene hint. scenes.jsx gained stars + horizon glow. Tests 391 (main baseline) / 0 fail.
+- The Lovable link the user gave is a PRIVATE project (403); no LOVABLE secret in env — the redesign was done by hand.
 ## W-ISLES (branch wave/w-isles, PR #32) — hidden sea islands
 
 - Islands are hidden by a column, not by convention: `locations.hidden` and

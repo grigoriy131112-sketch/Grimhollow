@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useState } from 'react';
 import { installUnlock, bindUiSounds, playMusic, resolveContext, setVolumes } from './audio.js';
 import { loadPrefs, subscribePrefs } from './prefs.js';
+import Atmosphere from './Atmosphere.jsx';
 import CharactersPage from './pages/Characters.jsx';
 import CharacterSheetPage from './pages/CharacterSheet.jsx';
 import WorldPage from './pages/World.jsx';
@@ -79,11 +80,25 @@ function useAudioContext() {
   useEffect(() => {
     playMusic(resolveContext({ pathname, location: hint && hint.location, settlement: hint && hint.settlement }));
   }, [pathname, hint]);
+
+  // The atmosphere tone follows the same scene hint as the music, so a battle
+  // glows red and the sea turns cold blue without every page wiring it by hand.
+  return resolveTone(pathname, hint);
+}
+
+// Battle routes run hot; a place/port runs by its biome/type; everything else
+// keeps the default ember.
+function resolveTone(pathname, hint) {
+  if (/^\/(battles|sea)\//.test(pathname)) return 'ember';
+  const biome = hint && hint.location && hint.location.biome;
+  if (biome === 'coast' || biome === 'marsh' || (hint && hint.settlement && hint.settlement.kind === 'port')) return 'sea';
+  if (biome === 'bonefield' || biome === 'forest') return 'cold';
+  return 'ember';
 }
 
 export default function App() {
   const { pathname } = useLocation();
-  useAudioContext();
+  const tone = useAudioContext();
   const [menu, setMenu] = useState({ characters: [], saves: [] });
 
   const refreshMenu = useCallback(
@@ -99,7 +114,8 @@ export default function App() {
   return (
     <div className="app">
       <Nav />
-      <main className={pathname === '/' ? 'menu-host' : 'container'}>
+      {pathname !== '/' && <Atmosphere tone={tone} />}
+      <main className={pathname === '/' ? 'menu-host' : 'container screen-atmos'}>
         <Routes>
           <Route path="/" element={<MainMenuPage characters={menu.characters} saves={menu.saves} onRefresh={refreshMenu} />} />
           <Route path="/creators" element={<CreatorsPage />} />
