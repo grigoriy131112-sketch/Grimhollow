@@ -64,6 +64,8 @@ function migrate(d) {
   if (!voyageCols.includes('mode')) d.exec("ALTER TABLE voyages ADD COLUMN mode TEXT NOT NULL DEFAULT 'voyage'");
   if (!voyageCols.includes('ashore_id')) d.exec('ALTER TABLE voyages ADD COLUMN ashore_id INTEGER REFERENCES locations(id) ON DELETE SET NULL');
   if (!voyageCols.includes('island_ref')) d.exec('ALTER TABLE voyages ADD COLUMN island_ref TEXT');
+  const discCols = columns('island_discoveries');
+  if (!discCols.includes('searched_places')) d.exec("ALTER TABLE island_discoveries ADD COLUMN searched_places TEXT NOT NULL DEFAULT '[]'");
 }
 
 export function transaction(fn) {

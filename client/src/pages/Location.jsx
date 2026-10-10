@@ -60,19 +60,26 @@ export default function LocationPage() {
       .catch(() => setSettlement(null));
   }, [id]);
 
-  // W-ISLES: is the party standing on a sea island, or is a voyage still open
-  // for this hero (so this port can offer to sail, or hold her)? The voyage view
-  // carries the mode: on an island the party may search the hoard and put back to
-  // sea; at a port a voyage still open means the ship is out there, not here.
+  // W-ISLES: is the party standing on a sea island? An island is a little
+  // country of several places, so any of its places counts -- the shore, the
+  // interior or the heart -- and the whole island is walked like a continent.
+  // `isAnchor` (the shore) is the only place a ship waits, so only there can the
+  // party put back to sea.
   useEffect(() => {
     if (!heroId) { setIsland(null); return; }
     let alive = true;
     api.getVoyage(Number(heroId)).then((v) => {
       if (!alive) return;
-      if (v && v.mode === 'island' && v.ashore === Number(id)) {
-        setIsland({ onIsland: true, islandName: v.island?.name || null, searched: false });
-      } else if (v && v.ashore === Number(id)) {
-        setIsland({ elsewhere: true });
+      const places = v?.islandPlaces || [];
+      const herePlace = v?.mode === 'island' ? places.find((p) => p.id === Number(id)) : null;
+      if (herePlace) {
+        setIsland({
+          onIsland: true,
+          islandName: v.island?.name || null,
+          placeName: herePlace.name,
+          isAnchor: v.ashore === Number(id),
+          places,
+        });
       } else setIsland(null);
     }).catch(() => setIsland(null));
     return () => { alive = false; };
@@ -83,12 +90,14 @@ export default function LocationPage() {
     setSearching(true); setError('');
     try {
       const res = await api.searchIsland(Number(heroId));
-      setIsland((cur) => ({ ...(cur || {}), onIsland: true, searched: true, lastGold: res.gold, lastFound: res.found, already: res.alreadySearched }));
+      setIsland((cur) => ({ ...(cur || {}), searched: true, lastGold: res.gold, lastFound: res.found, already: res.alreadySearched }));
     } catch (err) { setError(err.message); }
     finally { setSearching(false); }
   };
 
   // The party is ashore; push off and put back to sea (the voyage carries on).
+  // Only from the shore: an island is walked like a continent, and the ship waits
+  // at its landing place.
   const sailOff = async () => {
     if (!heroId) return;
     setCastOff(true); setError('');
@@ -200,20 +209,28 @@ export default function LocationPage() {
 
       {island?.onIsland && (
         <div className="card">
-          <h2>Остров</h2>
+          <h2>Остров: {island.islandName}</h2>
           <p className="muted small">
-            Отряд сошёл на берег с корабля. Здесь можно осмотреться и обыскать остров —
-            а после снова выйти в море, чтобы продолжить путь.
+            Отряд сошёл на берег острова и стоит в месте «{island.placeName}». Остров можно
+            пройти насквозь по тропам — обыскать каждое место, — а корабль ждёт у берега,
+            откуда отряд и вышел в море.
           </p>
+          {(island.places || []).length > 1 && (
+            <p className="muted small">
+              Места острова: {(island.places || []).map((p) => p.name).join(' · ')}.
+            </p>
+          )}
           {island.lastGold != null && !island.already && (
             <p className="good-tag">Найдено: {island.lastGold} золота{(island.lastFound || []).length > 0 ? ' и кое-что ещё' : ''}.</p>
           )}
           {island.lastGold != null && island.already && (
-            <p className="muted small">Здесь уже всё обобрано — остров больше ничего не отдаёт.</p>
+            <p className="muted small">Здесь уже всё обобрано — это место больше ничего не отдаёт.</p>
           )}
           <div className="actions">
-            <button type="button" disabled={searching || castOff} onClick={searchHoard}>Обыскать остров</button>
-            <button type="button" disabled={searching || castOff} className="ghost" onClick={sailOff}>Выйти в море</button>
+            <button type="button" disabled={searching || castOff} onClick={searchHoard}>Обыскать место</button>
+            {island.isAnchor
+              ? <button type="button" disabled={searching || castOff} className="ghost" onClick={sailOff}>Выйти в море</button>
+              : <span className="muted small">Корабль ждёт на берегу — вернитесь туда, чтобы выйти в море.</span>}
           </div>
         </div>
       )}

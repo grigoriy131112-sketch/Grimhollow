@@ -543,6 +543,9 @@ CREATE TABLE IF NOT EXISTS island_discoveries (
   island_id      INTEGER NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
   from_id        INTEGER REFERENCES locations(id) ON DELETE SET NULL,
   searched       INTEGER NOT NULL DEFAULT 0,
+  -- The ids of the island's places whose cache has already been emptied; an
+  -- island hides a hoard in each place, and each pays once.
+  searched_places TEXT NOT NULL DEFAULT '[]',
   found_at       TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (character_id, island_id)
 );

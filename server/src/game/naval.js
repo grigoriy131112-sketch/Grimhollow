@@ -544,7 +544,7 @@ export function rollVoyage({ seed = 'voyage', tier = 1, danger = 1 } = {}) {
     else if (r < 0.7) stops.push({ kind: 'sea_monster', tier, title: 'Из глубины поднимается тень' });
     else {
       const isle = pickIsland(`${seed}:${i}`);
-      stops.push({ kind: 'island', island: { key: isle.key, name: isle.name, description: isle.description }, title: 'Неизвестный остров' });
+      stops.push({ kind: 'island', island: { key: isle.key, name: isle.name, description: isle.anchor.description }, title: 'Неизвестный остров' });
     }
   }
   return { seed, tier, stops };

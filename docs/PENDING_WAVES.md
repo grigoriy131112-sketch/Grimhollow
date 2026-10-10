@@ -56,7 +56,7 @@ Post-G12 shell/UX waves, also merged:
 | W-ISLES | Sea islands: hidden, the sea asks whether to dock, entry/exit mirrors continents | this branch |
 
 `main` after #22: **338 pass / 0 fail**. `main` after the W-WIRE/W-ACTIONS-CRAFT/
-W-ISLES follow-ons: **400 pass / 0 fail**.
+W-ISLES follow-ons: **401 pass / 0 fail**.
 
 ---
 
@@ -149,29 +149,45 @@ them back into the party at any moment. Built as **one system**:
 
 User asked: islands scattered across the ocean that the player is **asked whether
 to dock at** (может причалить или отказаться, only on accept does he enter), that
-are **not visible on the map**, and whose entry/exit mirrors continents.
+are **not visible on the map**, and whose entry/exit mirrors continents — and,
+when the first cut shipped one place per island, «надо несколько локаций и больше,
+намного больше островов».
 
-- **Hidden, by construction.** Six islands live on a hidden continent
+- **Many islands, many places each.** **30 islands** in `game/islands.js`, built
+  from six authored island *types* (salt / drowned / bone / ash / coral / frozen),
+  each island holding **three walkable places** — a shore, an interior and a heart
+  — named from its type (`<роль> острова <имя>`). So there are **90 island
+  locations**, every one hidden and every one with its own scene, biome, danger
+  and three beasts (drawn from the bestiary band of its danger).
+- **An island is walked like a continent.** The shore, interior and heart are
+  joined by **ordinary roads** (`db/seed_islands.js` lays shore→interior→heart
+  plus a shore→heart shortcut, minutes derived from the drawn distance), so the
+  party crosses an island exactly as it crosses a continent. Only the shore is
+  ever "entered from the sea"; the ship waits there to put back to sea, and the
+  party must return to it before it can sail on.
+- **Hidden, by construction.** The islands live on a hidden continent
   (`Море Осколков`) as `locations` with `hidden = 1`; every reader — the map
   (`getMap`), the world list (`getWorld`), the continent list/detail
   (`listContinents`/`getContinent`), the bestiary and the monster spawner — filters
-  `hidden = 0`, so an island never appears in any atlas, list, count or spawn pool.
-  `continents`/`locations` gained a `hidden` column (schema + additive migration).
+  `hidden = 0`, so no island place appears in any atlas, list, count or spawn
+  pool. `continents`/`locations` carry the `hidden` column (schema + additive
+  migration).
 - **The sea asks.** A voyage that reaches an island stop no longer logs a note: a
-  voyage now carries a `mode` and the stop is held at `cursor` until the party
-  answers with `POST /naval/:id/voyage/put-in` (accept) or `.../sail-past`
-  (refuse). `Voyage.jsx` shows «Причалить» / «Пройти мимо».
-- **Docking mirrors continents.** On accept the stop's island becomes a real
-  location the party *stands on* (`characters.location_id`, `character_visits`) —
-  a full screen with its own scene, monsters and a hoard. Ashore, the party may
-  `.../search` (a one-time loot roll) and `.../leave-island` to put back to sea,
-  exactly like landing on and leaving a continent. The voyage then carries on and
-  lands at the far port when the stops run out. `island_discoveries` records each
-  first landing and remembers which shore the party left.
-- **Tests:** `server/test/islands.test.js` (9) — hiddenness across map/list/
-  continent, the ask, refuse, accept-and-stand-there, search-once, put-back-to-sea
-  and the deterministic island draw; the voyage test was updated to the new
-  "at sea until answered, landed at the end" semantics. Suite **400 pass / 0 fail**.
+  voyage carries a `mode` and the stop is held at `cursor` until the party answers
+  with `POST /naval/:id/voyage/put-in` (accept) or `.../sail-past` (refuse).
+  `Voyage.jsx` shows «Причалить» / «Пройти мимо».
+- **Docking mirrors continents.** On accept the shore becomes a real location the
+  party *stands on* (`characters.location_id`, `character_visits`) — a full screen
+  with its own scene and monsters and its roads into the island. Ashore the party
+  may `.../search` **each place** (its own cache, paid once, kept in
+  `island_discoveries.searched_places`) and `.../leave-island` from the shore to
+  put back to sea; the voyage then carries on and lands at the far port when the
+  stops run out. `island_discoveries` records each first landing.
+- **Tests:** `server/test/islands.test.js` (10) — hiddenness across map/list/
+  continent, "three places and the roads between them", the ask, refuse,
+  accept-and-stand-on-the-shore, walking the island on foot, per-place search paid
+  once, sailing only from the shore, and the deterministic island draw. Suite
+  **401 pass / 0 fail**.
 
 ---
 

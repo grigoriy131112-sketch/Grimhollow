@@ -22,7 +22,7 @@ import {
   createSeaBattle, takeSeaAction, previewAction,
   seaPoints, playerSide, enemySideOf, rollVoyage, LORE_NOTES,
 } from '../game/naval.js';
-import { islandByKey, islandGold, islandItem, ISLANDS } from '../game/islands.js';
+import { islandByKey, lootGold, lootItem, ISLANDS } from '../game/islands.js';
 
 const SEA_DEFEAT_GOLD_PENALTY = 0.25;
 
@@ -337,9 +337,9 @@ function voyageView(row) {
   const stop = !resolved && row.cursor < stops.length ? stops[row.cursor] : null;
   const mode = voyageMode(row);
   const active = activeBattleRow(row.character_id);
-  // The island the stop points at, resolved to the real seeded location the
-  // party goes ashore on. Null for a pirate / monster stop.
-  const island = stop?.kind === 'island' ? islandLocation(stop.island?.key) : null;
+  // The island the stop points at, as a small country: its anchor (the shore the
+  // party lands on) and every place it holds. Null for a pirate / monster stop.
+  const island = stop?.kind === 'island' ? islandPlaces(stop.island?.key) : null;
   return {
     id: row.id,
     characterId: row.character_id,
@@ -352,19 +352,27 @@ function voyageView(row) {
     mode,
     done: resolved,
     ashore: row.ashore_id || null,
-    islandId: island?.id || null,
-    island: island ? { id: island.id, name: island.name, description: island.description } : (stop?.island || null),
+    islandId: island?.anchor?.id || null,
+    island: island ? { id: island.anchor.id, name: island.name, description: island.anchor.description } : (stop?.island || null),
+    islandPlaces: island?.places || [],
+    // While ashore, which of the island's places the party now stands on.
+    ashoreAt: row.mode === 'island' ? row.ashore_id : null,
     inBattle: !!active,
     battleId: active ? active.id : null,
   };
 }
 
-// The seeded hidden location a stop's island key points at.
-function islandLocation(key) {
-  if (!key) return null;
+// The seeded locations of one island, keyed by the island's authored place
+// order, plus the anchor (the shore the party lands on).
+function islandPlaces(key) {
   const isle = islandByKey(key);
   if (!isle) return null;
-  return getDb().prepare('SELECT * FROM locations WHERE name = ? AND hidden = 1').get(isle.name) || null;
+  const places = isle.locations.map((loc) => {
+    const row = getDb().prepare('SELECT * FROM locations WHERE name = ? AND hidden = 1').get(loc.name);
+    return row ? { id: row.id, name: row.name, description: row.description, danger: row.danger, biome: row.biome, scene: row.scene, role: loc.role, index: loc.index } : null;
+  }).filter(Boolean);
+  if (!places.length) return null;
+  return { key, name: isle.name, anchor: places[0], places };
 }
 
 // Resolve the stop the voyage has reached. A fight is opened at once; an island
@@ -420,9 +428,10 @@ export function sailPastIsland(characterId) {
   return { voyage: voyageView(voyageRow(row.id)), sailedPast: true };
 }
 
-// The party accepts: it puts in and steps ashore. The stop's island becomes the
-// place the character stands (a real location), the discovery is recorded, and
-// the shore it left is remembered so it can put back to sea from here.
+// The party accepts: it puts in and steps ashore -- on the island's shore, the
+// anchor place. From there the island is walked like a continent: the shore's
+// roads lead into the interior and the heart. The discovery is recorded, and the
+// shore it left is remembered so it can put back to sea from here.
 export function putInIsland(characterId) {
   const row = activeVoyageRow(characterId);
   if (!row) throw new Error('Нет активного плавания');
@@ -430,36 +439,32 @@ export function putInIsland(characterId) {
   const stops = parseJson(row.stops, []);
   const stop = row.cursor < stops.length ? stops[row.cursor] : null;
   if (!stop || stop.kind !== 'island') throw new Error('Сейчас некуда причаливать');
-  const isle = islandByKey(stop.island?.key);
-  const island = isleLocation(isle);
+  const island = islandPlaces(stop.island?.key);
   if (!island) throw new Error('Этот остров море не отдаёт');
 
   const from = getDb().prepare('SELECT location_id FROM characters WHERE id = ?').get(characterId)?.location_id;
-  const db = getDb();
   transaction((d) => {
     d.prepare("UPDATE voyages SET mode = 'island', ashore_id = ?, island_ref = ?, updated_at = datetime('now') WHERE id = ?")
-      .run(island.id, stop.island?.key || null, row.id);
+      .run(island.anchor.id, stop.island?.key || null, row.id);
     d.prepare('INSERT OR IGNORE INTO island_discoveries (character_id, island_id, from_id) VALUES (?, ?, ?)')
-      .run(characterId, island.id, from ?? null);
+      .run(characterId, island.anchor.id, from ?? null);
   });
-  recordVisit(characterId, island.id);
+  recordVisit(characterId, island.anchor.id);
   logPaper(characterId, { kind: 'island', text: `Причалили к острову: ${island.name}.` });
   try { advanceQuest(characterId, { type: 'visit', target: `остров:${stop.island?.key || ''}` }); } catch { /* optional */ }
-  return { voyage: voyageView(voyageRow(row.id)), landed: true, locationId: island.id };
+  return { voyage: voyageView(voyageRow(row.id)), landed: true, locationId: island.anchor.id };
 }
 
-function isleLocation(isle) {
-  if (!isle) return null;
-  return getDb().prepare('SELECT * FROM locations WHERE name = ? AND hidden = 1').get(isle.name) || null;
-}
-
-// Push off the island and put back to sea. The party returns to the water beside
-// the island (mode 'voyage'), the island stop is passed, and the voyage carries
-// on -- the party is no longer stranded ashore.
+// Push off the island and put back to sea. The party must be back on the shore
+// (its anchor) to reach the ship -- an island is walked like a continent, so the
+// heart does not sail away. The island stop is then passed and the voyage carries
+// on; the party is no longer stranded ashore.
 export function leaveIsland(characterId) {
   const row = activeVoyageRow(characterId);
   if (!row) throw new Error('Нет активного плавания');
   if (row.mode !== 'island' || !row.ashore_id) throw new Error('Отряд не на острове');
+  const island = islandPlaces(row.island_ref);
+  if (island && row.ashore_id !== island.anchor.id) throw new Error('Сначала вернитесь на берег — корабль ждёт у причала');
   const stops = parseJson(row.stops, []);
   const stop = row.cursor < stops.length ? stops[row.cursor] : null;
 
@@ -471,30 +476,36 @@ export function leaveIsland(characterId) {
   return { voyage: voyageView(voyageRow(row.id)), afloat: true };
 }
 
-// Search the hoard of the island the party stands on: one roll, once. Returns the
-// spoils. Searching a second time finds only what was already taken -- so the
-// discovery row remembers, and the answer is honest.
+// Search the cache of the place the party now stands on. An island hides a hoard
+// in each of its places -- the shore, the interior and the heart -- and each pays
+// once, kept in island_discoveries.searched as a set of searched location ids. So
+// crossing the island is rewarded, not just landing on it.
 export function searchIsland(characterId) {
   const row = activeVoyageRow(characterId);
   if (!row || row.mode !== 'island' || !row.ashore_id) throw new Error('Отряд не на острове');
-  const isle = islandByKey(row.island_ref);
-  const island = isleLocation(isle);
+  const island = islandPlaces(row.island_ref);
   if (!island) throw new Error('Этот остров море не отдаёт');
+  const here = island.places.find((p) => p.id === row.ashore_id);
+  if (!here) throw new Error('Отряд не на острове');
 
+  const place = islandByKey(row.island_ref)?.locations.find((l) => l.index === here.index);
   const db = getDb();
-  const disc = db.prepare('SELECT * FROM island_discoveries WHERE character_id = ? AND island_id = ?').get(characterId, island.id);
-  if (disc?.searched) return { alreadySearched: true, found: [], gold: 0 };
+  const disc = db.prepare('SELECT * FROM island_discoveries WHERE character_id = ? AND island_id = ?').get(characterId, island.anchor.id);
+  const searched = new Set(parseJson(disc?.searched_places, []));
+  if (searched.has(here.id)) return { alreadySearched: true, found: [], gold: 0 };
 
-  const gold = islandGold(isle, Math.random());
-  const item = islandItem(isle, Math.random());
+  const gold = lootGold(place, Math.random());
+  const item = lootItem(place, Math.random());
+  searched.add(here.id);
   transaction((d) => {
-    d.prepare('UPDATE island_discoveries SET searched = 1 WHERE character_id = ? AND island_id = ?').run(characterId, island.id);
+    d.prepare('UPDATE island_discoveries SET searched = 1, searched_places = ? WHERE character_id = ? AND island_id = ?')
+      .run(JSON.stringify([...searched]), characterId, island.anchor.id);
     d.prepare("UPDATE characters SET gold = gold + ?, updated_at = datetime('now') WHERE id = ?").run(gold, characterId);
   });
   const found = [];
   if (item && item.qty > 0) { grantItem(characterId, item.key, item.qty); found.push(item); }
-  logPaper(characterId, { kind: 'island_loot', text: `Обыскали остров ${island.name}: ${gold} золота.` });
-  return { alreadySearched: false, gold, found, island: { id: island.id, name: island.name } };
+  logPaper(characterId, { kind: 'island_loot', text: `Обыскали место на острове ${island.name}: ${gold} золота.` });
+  return { alreadySearched: false, gold, found, island: { id: island.anchor.id, name: island.name }, place: here.name };
 }
 
 // The claim the ship's papers carry for this island, learned on a first landing.
@@ -516,7 +527,7 @@ export function normalizeVoyageStop(stop) {
   if (stop.island?.key) return stop;
   const name = stop.island?.name;
   const isle = name ? ISLANDS.find((i) => i.name === name) : null;
-  if (isle) return { ...stop, island: { key: isle.key, name: isle.name, description: isle.description } };
+  if (isle) return { ...stop, island: { key: isle.key, name: isle.name, description: isle.anchor.description } };
   return stop;
 }
 

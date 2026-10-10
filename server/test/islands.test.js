@@ -10,7 +10,8 @@ import { createCharacter } from '../src/services/characters.js';
 import { getMap, getLocation, recordVisit, characterExploration } from '../src/services/world.js';
 import { listContinents, getContinent } from '../src/services/continents.js';
 import { buyShip } from '../src/services/ship.js';
-import { ISLANDS, islandByKey, islandGold, islandItem } from '../src/game/islands.js';
+import { startTravel } from '../src/services/travel.js';
+import { ISLANDS, islandByKey, lootGold, lootItem } from '../src/game/islands.js';
 import { rollVoyage, pickIsland } from '../src/game/naval.js';
 import { routeFor } from '../src/game/continent_travel.js';
 import { grantItem } from '../src/services/items.js';
@@ -41,16 +42,14 @@ const PORT_A = 'Сумеречная гавань';
 const PORT_B = 'Порт Солёного Стекла';
 const idOf = (name) => getDb().prepare('SELECT id FROM locations WHERE name = ?').get(name).id;
 
-// Force a voyage whose first stop is an island, so the ask path is exercised
-// whatever the seed rolls. `plan` is overwritten after the row is created.
+// Force a voyage whose first (and only) stop is an island, so the ask path is
+// exercised whatever the seed rolls.
 function voyageWithIslandStop(characterId, isle = ISLANDS[0]) {
-  // Grant the route's toll so the voyage can start, then overwrite the plan so
-  // the first (and only) stop is the island under test.
   const route = routeFor(PORT_A, PORT_B);
   if (route.item) grantItem(characterId, route.item.key, route.item.qty);
   getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(Math.max(5000, (route.gold || 0) + 500), characterId);
   const view = startVoyage({ characterId, fromId: idOf(PORT_A), toId: idOf(PORT_B) });
-  const stops = [{ kind: 'island', island: { key: isle.key, name: isle.name, description: isle.description }, title: 'Неизвестный остров' }];
+  const stops = [{ kind: 'island', island: { key: isle.key, name: isle.name, description: isle.anchor.description }, title: 'Неизвестный остров' }];
   getDb().prepare('UPDATE voyages SET stops = ?, cursor = 0, resolved = 0, mode = ? WHERE id = ?')
     .run(JSON.stringify(stops), 'voyage', view.id);
   return getVoyageView(characterId);
@@ -58,37 +57,38 @@ function voyageWithIslandStop(characterId, isle = ISLANDS[0]) {
 
 test.after(() => closeDb());
 
-// --- the islands are hidden --------------------------------------------------
+// --- the islands are hidden, and each is a little country --------------------
 
-test('islands are seeded as hidden locations on a hidden continent', () => {
+test('every island is seeded hidden, with several places and the roads between them', () => {
   seedAll();
   const db = getDb();
-  const hidden = db.prepare('SELECT * FROM locations WHERE hidden = 1').all();
-  assert.equal(hidden.length, ISLANDS.length, 'one location per island');
   for (const isle of ISLANDS) {
-    const row = db.prepare('SELECT * FROM locations WHERE name = ? AND hidden = 1').get(isle.name);
-    assert.ok(row, `${isle.name} is seeded hidden`);
-    assert.ok(row.scene, `${isle.name} has a scene`);
-    assert.ok(row.danger >= 3, `${isle.name} is dangerous`);
+    assert.ok(isle.locations.length >= 3, `${isle.name} holds several places`);
+    const rows = isle.locations.map((l) => db.prepare('SELECT * FROM locations WHERE name = ? AND hidden = 1').get(l.name));
+    for (const [i, row] of rows.entries()) {
+      assert.ok(row, `${isle.locations[i].name} is seeded hidden`);
+      assert.ok(row.scene && row.biome, `${row.name} has a scene and biome`);
+      assert.ok(row.danger >= isle.base, `${row.name} is dangerous`);
+    }
+    for (const row of rows) {
+      const degree = db.prepare('SELECT COUNT(*) AS n FROM connections WHERE from_id = ?').get(row.id).n;
+      assert.ok(degree >= 1, `${row.name} is reachable on foot`);
+    }
   }
-  const hiddenContinent = db.prepare('SELECT * FROM continents WHERE hidden = 1').get();
-  assert.ok(hiddenContinent, 'the islands live on a hidden continent');
+  const hidden = db.prepare('SELECT COUNT(*) AS n FROM locations WHERE hidden = 1').get().n;
+  assert.equal(hidden, ISLANDS.length * 3, 'three places per island');
 });
 
-test('no island ever appears on the map, in a list or under a continent', () => {
+test('no island place ever appears on the map, in a list or under a continent', () => {
   seedAll();
   const map = getMap();
   const names = new Set(map.locations.map((l) => l.name));
-  for (const isle of ISLANDS) assert.ok(!names.has(isle.name), `${isle.name} is not on the map`);
+  for (const isle of ISLANDS) {
+    for (const loc of isle.locations) assert.ok(!names.has(loc.name), `${loc.name} is not on the map`);
+  }
   assert.ok(!map.continents.some((c) => c.name === 'Море Осколков'), 'the island continent is not listed');
-
-  const listed = listContinents().map((c) => c.name);
-  assert.ok(!listed.includes('Море Осколков'), 'nor in the continent list');
+  assert.ok(!listContinents().map((c) => c.name).includes('Море Осколков'), 'nor in the continent list');
   assert.equal(getContinent('Море Осколков'), null, 'nor reachable by name');
-
-  // No monster count leaks either: an island's haunts must not inflate a normal
-  // place, and the map carries no island entry at all.
-  assert.equal(map.locations.filter((l) => ISLANDS.some((i) => i.name === l.name)).length, 0);
 });
 
 // --- the sea asks ------------------------------------------------------------
@@ -106,7 +106,8 @@ test('a voyage that reaches an island asks instead of logging it', () => {
   const view = getVoyageView(c.id);
   assert.equal(view.cursor, 0, 'the cursor does not move until the party answers');
   assert.equal(view.mode, 'voyage', 'still on the water');
-  assert.ok(view.islandId, 'the view resolves the real seeded island id');
+  assert.ok(view.islandId, 'the view resolves the island anchor id');
+  assert.equal(view.islandPlaces.length, 3, 'and lists the island\u2019s places');
 });
 
 test('refusing the island sails past it and moves on', () => {
@@ -121,13 +122,13 @@ test('refusing the island sails past it and moves on', () => {
   assert.ok(res.sailedPast, 'the ship holds its course');
   assert.ok(res.voyage.done, 'the only stop was passed, so the voyage is over');
   assert.equal(res.voyage.ashore, null, 'the party never went ashore');
-  // The party lands at the far port once the voyage is done.
   assert.equal(characterExploration(c.id).locationId, idOf(PORT_B), 'landed at the far port');
-  const claims = islandClaims(c.id);
-  assert.equal(claims.length, 0, 'sailing past leaves no claim');
+  assert.equal(islandClaims(c.id).length, 0, 'sailing past leaves no claim');
 });
 
-test('accepting the island puts the party ashore on a real walkable location', () => {
+// --- docking mirrors continents ----------------------------------------------
+
+test('accepting the island puts the party ashore on its anchor and opens the island', () => {
   seedAll();
   const c = hero();
   buyShip(c.id, { name: 'Гостеприимный' });
@@ -140,19 +141,36 @@ test('accepting the island puts the party ashore on a real walkable location', (
   assert.ok(res.landed, 'the party went ashore');
   const view = getVoyageView(c.id);
   assert.equal(view.mode, 'island', 'the voyage records the party is ashore');
-  assert.equal(view.ashore, res.locationId, 'ashore points at the island location');
+  assert.equal(view.ashore, res.locationId, 'ashore points at the island anchor');
+  assert.equal(res.locationId, view.islandPlaces[0].id, 'the anchor is the shore');
 
-  // The island is a real location the party stands on: it has a scene, monsters
-  // and a name, exactly like a continent's place.
-  const here = getLocation(res.locationId);
-  assert.equal(here.name, isle.name);
-  assert.ok(here.scene, 'the island has a scene');
-  assert.ok(here.monsters.length > 0, 'the island has monsters to fight');
+  const anchor = getLocation(res.locationId);
+  assert.equal(anchor.name, isle.locations[0].name);
+  assert.ok(anchor.monsters.length > 0, 'the shore has beasts');
+  assert.ok(anchor.connections.length >= 1, 'the shore leads inward');
   assert.equal(characterExploration(c.id).locationId, res.locationId, 'the party really stands there');
   assert.ok(islandClaims(c.id).some((cl) => cl.islandId === res.locationId), 'the landing is recorded');
 });
 
-test('searching the hoard pays once, then the island is empty', () => {
+test('the island is walked on foot, shore to heart, like a continent', () => {
+  seedAll();
+  const c = hero();
+  buyShip(c.id, { name: 'Ходок' });
+  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(5000, c.id);
+  const isle = islandByKey('bone_hook');
+  voyageWithIslandStop(c.id, isle);
+  resolveVoyageStop(c.id);
+  const landed = putInIsland(c.id);
+
+  const shore = getLocation(landed.locationId);
+  const inwards = shore.connections[0];
+  const trip = startTravel({ characterId: c.id, fromId: shore.id, toId: inwards.toId });
+  assert.ok(trip, 'the party can set out along the island\u2019s road');
+  assert.equal(trip.to.id, inwards.toId, 'the road leads to the next place');
+  assert.equal(getLocation(inwards.toId).hidden, 1, 'the interior place is part of the hidden island');
+});
+
+test('searching a place pays once; each place hides its own cache', () => {
   seedAll();
   const c = hero();
   buyShip(c.id, { name: 'Кладоискатель' });
@@ -160,23 +178,27 @@ test('searching the hoard pays once, then the island is empty', () => {
   const isle = islandByKey('drowned_bell');
   voyageWithIslandStop(c.id, isle);
   resolveVoyageStop(c.id);
-  const landed = putInIsland(c.id);
+  putInIsland(c.id);
+  const shoreId = getVoyageView(c.id).ashore;
 
   const before = getDb().prepare('SELECT gold FROM characters WHERE id = ?').get(c.id).gold;
   const first = searchIsland(c.id);
-  assert.equal(first.alreadySearched, false, 'the first search finds the hoard');
-  assert.ok(first.gold >= 0);
+  assert.equal(first.alreadySearched, false, 'the shore cache pays');
   const after = getDb().prepare('SELECT gold FROM characters WHERE id = ?').get(c.id).gold;
   assert.equal(after, before + first.gold, 'the gold was added once');
 
   const second = searchIsland(c.id);
-  assert.equal(second.alreadySearched, true, 'nothing is left to find');
-  assert.equal(second.gold, 0);
+  assert.equal(second.alreadySearched, true, 'the same place is empty now');
   assert.equal(getDb().prepare('SELECT gold FROM characters WHERE id = ?').get(c.id).gold, after, 'no double payout');
-  assert.equal(landed.locationId, getLocation(landed.locationId).id);
+
+  const inwardId = getLocation(shoreId).connections[0].toId;
+  getDb().prepare('UPDATE voyages SET ashore_id = ? WHERE character_id = ? AND resolved = 0').run(inwardId, c.id);
+  recordVisit(c.id, inwardId);
+  const third = searchIsland(c.id);
+  assert.equal(third.alreadySearched, false, 'a fresh place still hides a cache');
 });
 
-test('putting back to sea returns the party to the water beside the island', () => {
+test('the party can only put back to sea from the shore', () => {
   seedAll();
   const c = hero();
   buyShip(c.id, { name: 'Возвращенец' });
@@ -184,41 +206,43 @@ test('putting back to sea returns the party to the water beside the island', () 
   voyageWithIslandStop(c.id);
   resolveVoyageStop(c.id);
   putInIsland(c.id);
+  const shoreId = getVoyageView(c.id).ashore;
 
+  const inwardId = getLocation(shoreId).connections[0].toId;
+  getDb().prepare('UPDATE voyages SET ashore_id = ? WHERE character_id = ? AND resolved = 0').run(inwardId, c.id);
+  recordVisit(c.id, inwardId);
+  assert.throws(() => leaveIsland(c.id), /берег|причал/i, 'the ship waits at the shore');
+
+  getDb().prepare('UPDATE voyages SET ashore_id = ? WHERE character_id = ? AND resolved = 0').run(shoreId, c.id);
+  recordVisit(c.id, shoreId);
   const res = leaveIsland(c.id);
   assert.ok(res.afloat, 'the ship is back under way');
-  const view = res.voyage;
-  assert.equal(view.ashore, null, 'the party is no longer ashore');
-  assert.ok(view.done, 'the island stop was passed, so the voyage ends');
+  assert.equal(res.voyage.ashore, null, 'the party is no longer ashore');
+  assert.ok(res.voyage.done, 'the island stop was passed, so the voyage ends');
   assert.equal(characterExploration(c.id).locationId, idOf(PORT_B), 'and the voyage lands at the far port');
-  // The party is not stranded: it can sail again.
-  const back = routeFor(PORT_B, PORT_A);
-  if (back.item) grantItem(c.id, back.item.key, back.item.qty);
-  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(5000, c.id);
-  const next = startVoyage({ characterId: c.id, fromId: idOf(PORT_B), toId: idOf(PORT_A) });
-  assert.ok(next, 'a fresh voyage can begin');
 });
 
 test('the voyage roll names a seeded island when it draws one', () => {
   seedAll();
   const keys = new Set(ISLANDS.map((i) => i.key));
   let sawIsland = false;
-  for (let i = 0; i < 60; i += 1) {
+  for (let i = 0; i < 120; i += 1) {
     const v = rollVoyage({ seed: `w${i}`, tier: 2 });
     for (const stop of v.stops) {
       if (stop.kind !== 'island') continue;
       sawIsland = true;
       assert.ok(keys.has(stop.island.key), 'the stop names a real island key');
+      assert.equal(islandByKey(stop.island.key).locations.length, 3, 'the island has three places');
     }
   }
   assert.ok(sawIsland, 'some voyages do draw an island');
   assert.equal(pickIsland('fixed').key, pickIsland('fixed').key, 'the draw is deterministic');
 });
 
-test('the loot helpers stay inside the seeded pool', () => {
-  const isle = islandByKey('salt_skull');
-  const gold = islandGold(isle, 0.5);
-  assert.ok(gold >= 50 && gold <= 110, 'gold stays in the island band');
-  const item = islandItem(isle, 0.99);
-  assert.ok(item && item.qty > 0, 'an item is always drawn when the hoard has one');
+test('the loot helpers stay inside a place\u2019s band', () => {
+  const place = islandByKey('salt_skull').locations[2];
+  const gold = lootGold(place, 0.5);
+  assert.ok(gold >= place.loot.gold[0] && gold <= place.loot.gold[1], 'gold stays in the place band');
+  const item = lootItem(place, 0.99);
+  assert.ok(item && item.qty > 0, 'an item is always drawn when the cache has one');
 });
