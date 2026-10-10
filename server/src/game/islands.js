@@ -336,10 +336,12 @@ export function lootItem(location, fraction = Math.random()) {
 }
 
 // The reward of a landmark, drawn fresh for the given seed. Returns
-// { gold, items: [{ key, qty }] }. `raid` is the big haul, `explored` the small gift.
-export function landmarkReward(location, seed) {
+// { gold, items: [{ key, qty }] }. `mode` selects which way the place was
+// resolved: 'explored' is the small gift, 'raided' the big haul. `location.raid`
+// used to win for both paths, so exploring a landmark paid the raid's huge haul.
+export function landmarkReward(location, seed, mode = 'raided') {
   const reward = location?.kind === 'landmark'
-    ? (location.raid || location.explored)
+    ? (mode === 'explored' ? location.explored : location.raid)
     : null;
   if (!reward) return { gold: 0, items: [] };
   const rng = rngFrom(`reward:${seed}`);

@@ -336,6 +336,11 @@ test('exploring a landmark pays a gift, once, and closes it to raiding', () => {
   const res = exploreIslandLandmark(c.id);
   assert.equal(res.explored, true, 'the place is explored');
   assert.ok(res.note, 'the place shares its story');
+  // The quiet way pays the small gift, never the raid's big haul.
+  const [glo, ghi] = isle.landmark.explored.gold;
+  assert.ok(res.gold >= glo && res.gold <= ghi, `the gift stays the explored band (${res.gold} in ${glo}..${ghi})`);
+  assert.ok(res.found.every((it) => isle.landmark.explored.items.some(([k]) => k === it.key)),
+    'the gift items are the explored ones');
   const after = getDb().prepare('SELECT gold FROM characters WHERE id = ?').get(c.id).gold;
   assert.equal(after, before + res.gold, 'the small gift was paid once');
   assert.equal(getVoyageView(c.id).landmarkState, 'explored', 'the island remembers the peace');

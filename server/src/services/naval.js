@@ -584,7 +584,7 @@ export function exploreIslandLandmark(characterId) {
 
   const isle = islandByKey(row.island_ref);
   const place = isle?.landmark;
-  const reward = landmarkReward(place, `${row.island_ref}:explored`);
+  const reward = landmarkReward(place, `${row.island_ref}:explored`, 'explored');
   transaction((d) => {
     d.prepare('UPDATE island_discoveries SET landmark_state = ? WHERE character_id = ? AND island_id = ?')
       .run('explored', characterId, island.anchor.id);
@@ -625,7 +625,7 @@ export function raidIslandLandmark(characterId) {
     'SELECT m.* FROM location_monsters lm JOIN monsters m ON m.id = lm.monster_id WHERE lm.location_id = ? ORDER BY RANDOM() LIMIT 1',
   ).get(island.landmark.id);
   if (!keeper) throw new Error('Некому дать отпор');
-  const reward = landmarkReward(place, `${row.island_ref}:raid`);
+  const reward = landmarkReward(place, `${row.island_ref}:raid`, 'raided');
   const loot = { gold: reward.gold, items: reward.items.map((it) => ({ key: it.key, qty: it.qty })) };
   const battle = startBattle({
     characterId, locationId: island.landmark.id, monsterId: keeper.id, kind: 'island_raid', loot,
