@@ -25,6 +25,7 @@ export default function LocationPage() {
   const [island, setIsland] = useState(null);
   const [searching, setSearching] = useState(false);
   const [castOff, setCastOff] = useState(false);
+  const [acting, setActing] = useState(false);
 
   useEffect(() => { if (location) hintScene({ location }); }, [location]);
 
@@ -73,12 +74,17 @@ export default function LocationPage() {
       const places = v?.islandPlaces || [];
       const herePlace = v?.mode === 'island' ? places.find((p) => p.id === Number(id)) : null;
       if (herePlace) {
+        const lm = v.islandLandmark || null;
         setIsland({
           onIsland: true,
           islandName: v.island?.name || null,
           placeName: herePlace.name,
           isAnchor: v.ashore === Number(id),
           places,
+          landmark: lm,
+          onLandmark: !!lm && lm.id === Number(id),
+          landmarkState: v.landmarkState || '',
+          landmarkKind: lm?.landmarkKind || null,
         });
       } else setIsland(null);
     }).catch(() => setIsland(null));
@@ -93,6 +99,28 @@ export default function LocationPage() {
       setIsland((cur) => ({ ...(cur || {}), searched: true, lastGold: res.gold, lastFound: res.found, already: res.alreadySearched }));
     } catch (err) { setError(err.message); }
     finally { setSearching(false); }
+  };
+
+  // The island's landmark: the party may explore it (the quiet way) or raid it
+  // (the loud way, which opens a battle). The choice is exclusive and final.
+  const exploreLandmark = async () => {
+    if (!heroId) return;
+    setActing(true); setError('');
+    try {
+      const res = await api.exploreIslandLandmark(Number(heroId));
+      setIsland((cur) => ({ ...(cur || {}), landmarkState: 'explored', lastExplore: res }));
+    } catch (err) { setError(err.message); }
+    finally { setActing(false); }
+  };
+
+  const raidLandmark = async () => {
+    if (!heroId) return;
+    setActing(true); setError('');
+    try {
+      const res = await api.raidIslandLandmark(Number(heroId));
+      navigate(`/battles/${res.battleId}`);
+    } catch (err) { setError(err.message); }
+    finally { setActing(false); }
   };
 
   // The party is ashore; push off and put back to sea (the voyage carries on).
@@ -232,6 +260,51 @@ export default function LocationPage() {
               ? <button type="button" disabled={searching || castOff} className="ghost" onClick={sailOff}>Выйти в море</button>
               : <span className="muted small">Корабль ждёт на берегу — вернитесь туда, чтобы выйти в море.</span>}
           </div>
+
+          {island.landmark && !island.onLandmark && (
+            <p className="muted small">
+              В сердце острова — «{island.landmark.name}». Дойдите туда, чтобы решить его судьбу.
+            </p>
+          )}
+
+          {island.onLandmark && (
+            <div className="good-tag" style={{ marginTop: '0.6rem' }}>
+              <h3>{island.landmark.name}</h3>
+              {island.landmarkKind === 'village' && (
+                <p className="muted small">Племя живёт здесь: у него есть торг, таверна и общий дом.</p>
+              )}
+              {island.landmarkState === '' && (
+                <>
+                  <p className="muted small">
+                    Место можно <b>исследовать</b> — тихо, миром: узнать его, принять дар и уйти
+                    с добром. А можно <b>разграбить</b> — взять силой всё, что оно прячет.
+                    Исследовать и грабить — на выбор одно, и решать здесь и сейчас.
+                  </p>
+                  <div className="actions">
+                    <button type="button" disabled={acting} onClick={exploreLandmark}>Исследовать</button>
+                    <button type="button" disabled={acting} className="ghost" onClick={raidLandmark}>Разграбить</button>
+                  </div>
+                </>
+              )}
+              {island.landmarkState === 'explored' && (
+                <p className="muted small">Место исследовано и принято мирно. Грабить его больше нельзя.</p>
+              )}
+              {island.landmarkState === 'raided' && (
+                <p className="muted small">Место разорено: жители мертвы, и договариваться больше не с кем.</p>
+              )}
+              {island.lastExplore && (
+                <p className="muted small">
+                  {island.lastExplore.note}
+                  {island.lastExplore.gold ? ` Дар: ${island.lastExplore.gold} золота.` : ''}
+                </p>
+              )}
+              {island.landmarkKind === 'village' && island.landmarkState === 'explored' && settlement && (
+                <Link to={`/settlements/${settlement.id}`}>
+                  <button type="button">Войти в племя</button>
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       )}
 

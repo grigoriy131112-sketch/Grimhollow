@@ -546,6 +546,9 @@ CREATE TABLE IF NOT EXISTS island_discoveries (
   -- The ids of the island's places whose cache has already been emptied; an
   -- island hides a hoard in each place, and each pays once.
   searched_places TEXT NOT NULL DEFAULT '[]',
+  -- What the party did with the island's landmark: '' (untouched), 'explored' or
+  -- 'raided'. Exploring and raiding are mutually exclusive; the choice stands.
+  landmark_state TEXT NOT NULL DEFAULT '',
   found_at       TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (character_id, island_id)
 );

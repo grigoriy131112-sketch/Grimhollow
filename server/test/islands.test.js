@@ -17,8 +17,10 @@ import { routeFor } from '../src/game/continent_travel.js';
 import { grantItem } from '../src/services/items.js';
 import {
   startVoyage, getVoyageView, resolveVoyageStop, putInIsland, sailPastIsland,
-  leaveIsland, searchIsland, islandClaims,
+  leaveIsland, searchIsland, islandClaims, exploreIslandLandmark, raidIslandLandmark,
 } from '../src/services/naval.js';
+import { getBattleView, recordIslandRaid } from '../src/services/battles.js';
+import { getSettlementByLocation } from '../src/services/settlements.js';
 
 let n = 0;
 function hero({ gold = 5000 } = {}) {
@@ -68,7 +70,11 @@ test('every island is seeded hidden, with several places and the roads between t
     for (const [i, row] of rows.entries()) {
       assert.ok(row, `${isle.locations[i].name} is seeded hidden`);
       assert.ok(row.scene && row.biome, `${row.name} has a scene and biome`);
-      assert.ok(row.danger >= isle.base, `${row.name} is dangerous`);
+      if (isle.locations[i].kind === 'place') {
+        assert.ok(row.danger >= isle.base, `${row.name} is dangerous`);
+      } else {
+        assert.ok(row.danger >= 1, `${row.name} can bite`);
+      }
     }
     for (const row of rows) {
       const degree = db.prepare('SELECT COUNT(*) AS n FROM connections WHERE from_id = ?').get(row.id).n;
@@ -76,7 +82,7 @@ test('every island is seeded hidden, with several places and the roads between t
     }
   }
   const hidden = db.prepare('SELECT COUNT(*) AS n FROM locations WHERE hidden = 1').get().n;
-  assert.equal(hidden, ISLANDS.length * 3, 'three places per island');
+  assert.equal(hidden, ISLANDS.length * 4, 'four places per island');
 });
 
 test('no island place ever appears on the map, in a list or under a continent', () => {
@@ -107,7 +113,7 @@ test('a voyage that reaches an island asks instead of logging it', () => {
   assert.equal(view.cursor, 0, 'the cursor does not move until the party answers');
   assert.equal(view.mode, 'voyage', 'still on the water');
   assert.ok(view.islandId, 'the view resolves the island anchor id');
-  assert.equal(view.islandPlaces.length, 3, 'and lists the island\u2019s places');
+  assert.equal(view.islandPlaces.length, 4, 'and lists the island\u2019s places');
 });
 
 test('refusing the island sails past it and moves on', () => {
@@ -222,6 +228,88 @@ test('the party can only put back to sea from the shore', () => {
   assert.equal(characterExploration(c.id).locationId, idOf(PORT_B), 'and the voyage lands at the far port');
 });
 
+// --- the island's landmark: explore it, or raid it ---------------------------
+
+test('every island carries one distinct landmark reachable from the heart', () => {
+  seedAll();
+  const db = getDb();
+  const kinds = new Set();
+  for (const isle of ISLANDS) {
+    const row = db.prepare('SELECT * FROM locations WHERE name = ? AND hidden = 1').get(isle.landmark.name);
+    assert.ok(row, `${isle.landmark.name} is seeded hidden`);
+    const degree = db.prepare('SELECT COUNT(*) AS n FROM connections WHERE from_id = ?').get(row.id).n;
+    assert.ok(degree >= 1, 'the landmark is reachable on foot');
+    kinds.add(isle.landmark.landmarkKind);
+  }
+  assert.ok(kinds.size >= 3, 'islands differ: villages, temples, shrines and camps all appear');
+});
+
+test('a native village landmark carries a settlement with a tavern and a shop', () => {
+  seedAll();
+  const villages = ISLANDS.filter((i) => i.landmark.landmarkKind === 'village');
+  assert.ok(villages.length > 0, 'some islands are peopled');
+  for (const isle of villages) {
+    const row = getDb().prepare('SELECT * FROM locations WHERE name = ? AND hidden = 1').get(isle.landmark.name);
+    assert.equal(row.is_safe, 1, 'a village is a safe haven');
+    const settlement = getSettlementByLocation(row.id);
+    assert.ok(settlement, `${isle.name} has a settlement at its village`);
+    const types = new Set(settlement.buildings.map((b) => b.type));
+    for (const t of ['tavern', 'shop', 'market', 'temple']) assert.ok(types.has(t), `the village has a ${t}`);
+    assert.equal(settlement.kind, 'native_village');
+  }
+});
+
+test('exploring a landmark pays a gift, once, and closes it to raiding', () => {
+  seedAll();
+  const c = hero();
+  buyShip(c.id, { name: 'Миротворец' });
+  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(5000, c.id);
+  const isle = islandByKey('salt_skull');
+  voyageWithIslandStop(c.id, isle);
+  resolveVoyageStop(c.id);
+  putInIsland(c.id);
+  const lmRow = getDb().prepare('SELECT * FROM locations WHERE name = ? AND hidden = 1').get(isle.landmark.name);
+  getDb().prepare('UPDATE voyages SET ashore_id = ? WHERE character_id = ? AND resolved = 0').run(lmRow.id, c.id);
+  recordVisit(c.id, lmRow.id);
+
+  const before = getDb().prepare('SELECT gold FROM characters WHERE id = ?').get(c.id).gold;
+  const res = exploreIslandLandmark(c.id);
+  assert.equal(res.explored, true, 'the place is explored');
+  assert.ok(res.note, 'the place shares its story');
+  const after = getDb().prepare('SELECT gold FROM characters WHERE id = ?').get(c.id).gold;
+  assert.equal(after, before + res.gold, 'the small gift was paid once');
+  assert.equal(getVoyageView(c.id).landmarkState, 'explored', 'the island remembers the peace');
+
+  assert.throws(() => exploreIslandLandmark(c.id), /исследован/i, 'it cannot be explored twice');
+  assert.throws(() => raidIslandLandmark(c.id), /грабить/i, 'an explored place cannot be raided');
+});
+
+test('raiding a landmark opens a real fight, and a win marks the island raided', () => {
+  seedAll();
+  const c = hero();
+  buyShip(c.id, { name: 'Разоритель' });
+  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(5000, c.id);
+  const isle = islandByKey('frost_maw');
+  voyageWithIslandStop(c.id, isle);
+  resolveVoyageStop(c.id);
+  putInIsland(c.id);
+  const lmRow = getDb().prepare('SELECT * FROM locations WHERE name = ? AND hidden = 1').get(isle.landmark.name);
+  getDb().prepare('UPDATE voyages SET ashore_id = ? WHERE character_id = ? AND resolved = 0').run(lmRow.id, c.id);
+  recordVisit(c.id, lmRow.id);
+
+  const res = raidIslandLandmark(c.id);
+  assert.ok(res.battleId, 'a fight is opened');
+  assert.ok(res.potentialLoot.gold > 0, 'the raid promises a real haul');
+  const battle = getBattleView(res.battleId);
+  assert.equal(battle.kind, 'island_raid', 'the fight is a raid');
+  assert.equal(battle.locationId, lmRow.id, 'over the landmark itself');
+
+  const stake = recordIslandRaid(c.id, lmRow.id);
+  assert.equal(stake.staked, true, 'a won raid is recorded');
+  assert.equal(getVoyageView(c.id).landmarkState, 'raided', 'the island closed its peace');
+  assert.equal(recordIslandRaid(c.id, lmRow.id).staked, false, 'and is not recorded twice');
+});
+
 test('the voyage roll names a seeded island when it draws one', () => {
   seedAll();
   const keys = new Set(ISLANDS.map((i) => i.key));
@@ -232,7 +320,7 @@ test('the voyage roll names a seeded island when it draws one', () => {
       if (stop.kind !== 'island') continue;
       sawIsland = true;
       assert.ok(keys.has(stop.island.key), 'the stop names a real island key');
-      assert.equal(islandByKey(stop.island.key).locations.length, 3, 'the island has three places');
+      assert.equal(islandByKey(stop.island.key).locations.length, 4, 'the island has four places');
     }
   }
   assert.ok(sawIsland, 'some voyages do draw an island');

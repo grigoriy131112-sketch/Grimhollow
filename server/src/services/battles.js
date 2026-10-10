@@ -172,6 +172,25 @@ export function takeTurn(id, action) {
   return { ...getBattleView(id), events, rewards };
 }
 
+// Record a won raid on an island's landmark. The landmark's location is a
+// hidden island place whose region is the island; the anchor is the first place
+// of that region. There is no direct import of the island catalogue, so this
+// finds the anchor by the region itself -- which keeps battles free of a cycle.
+export function recordIslandRaid(characterId, locationId) {
+  const anchor = getDb().prepare(
+    `SELECT a.id AS anchor_id FROM locations lm
+     JOIN regions lr ON lr.id = lm.region_id
+     JOIN locations a ON a.region_id = lr.id AND a.hidden = 1
+     WHERE lm.id = ? AND lm.scene LIKE 'isle_%'
+     ORDER BY a.sort_order LIMIT 1`,
+  ).get(locationId);
+  if (!anchor) return { staked: false };
+  const info = getDb().prepare(
+    "UPDATE island_discoveries SET landmark_state = 'raided' WHERE character_id = ? AND island_id = ? AND landmark_state = ''",
+  ).run(characterId, anchor.anchor_id);
+  return { staked: info.changes > 0 };
+}
+
 // Persist everything that happened in the fight: the leader's resources and XP,
 // each companion's HP and XP, and permanent death for anyone who fell.
 function settle(battle, state, status) {
@@ -266,6 +285,12 @@ function settle(battle, state, status) {
   let loot = null;
   if (won && battle.loot) {
     loot = applyBattleLoot(battle.id, battle.character_id, battle.loot);
+  }
+
+  // An island raid: a won fight over a landmark records it as raided, so the
+  // island knows the natives are gone and exploring it is no longer an option.
+  if (won && battle.kind === 'island_raid' && battle.location_id) {
+    recordIslandRaid(battle.character_id, battle.location_id);
   }
 
   // Quests: a won fight reports the kill and, for a death-realm ritual, the

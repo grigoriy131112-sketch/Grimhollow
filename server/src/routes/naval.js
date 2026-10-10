@@ -3,6 +3,7 @@ import {
   startNavalBattle, getNavalView, getNavalPreview, takeNavalTurn, fleeNavalBattle,
   getPapers, setPapersNotes, startVoyage, getVoyageView, resolveVoyageStop,
   putInIsland, sailPastIsland, leaveIsland, searchIsland,
+  exploreIslandLandmark, raidIslandLandmark,
 } from '../services/naval.js';
 
 const router = Router();
@@ -103,6 +104,18 @@ router.post('/:characterId/voyage/leave-island', (req, res) => {
 // Search the island's hoard (once).
 router.post('/:characterId/voyage/search', (req, res) => {
   try { res.json(searchIsland(Number(req.params.characterId))); }
+  catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// Explore the island's landmark (the quiet way).
+router.post('/:characterId/voyage/explore', (req, res) => {
+  try { res.json(exploreIslandLandmark(Number(req.params.characterId))); }
+  catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// Raid the island's landmark (the loud way; opens a battle).
+router.post('/:characterId/voyage/raid', (req, res) => {
+  try { res.json(raidIslandLandmark(Number(req.params.characterId))); }
   catch (err) { res.status(400).json({ error: err.message }); }
 });
 

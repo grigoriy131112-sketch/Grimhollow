@@ -56,7 +56,7 @@ Post-G12 shell/UX waves, also merged:
 | W-ISLES | Sea islands: hidden, the sea asks whether to dock, entry/exit mirrors continents | this branch |
 
 `main` after #22: **338 pass / 0 fail**. `main` after the W-WIRE/W-ACTIONS-CRAFT/
-W-ISLES follow-ons: **401 pass / 0 fail**.
+W-ISLES follow-ons: **405 pass / 0 fail**.
 
 ---
 
@@ -155,16 +155,31 @@ when the first cut shipped one place per island, «надо несколько �
 
 - **Many islands, many places each.** **30 islands** in `game/islands.js`, built
   from six authored island *types* (salt / drowned / bone / ash / coral / frozen),
-  each island holding **three walkable places** — a shore, an interior and a heart
-  — named from its type (`<роль> острова <имя>`). So there are **90 island
-  locations**, every one hidden and every one with its own scene, biome, danger
-  and three beasts (drawn from the bestiary band of its danger).
-- **An island is walked like a continent.** The shore, interior and heart are
-  joined by **ordinary roads** (`db/seed_islands.js` lays shore→interior→heart
-  plus a shore→heart shortcut, minutes derived from the drawn distance), so the
-  party crosses an island exactly as it crosses a continent. Only the shore is
-  ever "entered from the sea"; the ship waits there to put back to sea, and the
-  party must return to it before it can sail on.
+  each island holding **four walkable places** — a shore, an interior, a heart and
+  a **landmark** — named from its type (`<роль> острова <имя>`). So there are
+  **120 island locations**, every one hidden and every one with its own scene,
+  biome, danger and beasts (drawn from the bestiary band of its danger).
+- **Every island has one landmark** — the thing it is known for: a **native
+  village**, a **temple of the drowned god**, a **shrine** or a wreckers' **camp**
+  (salt/ash islands hold villages, drowned/coral hold temples, bone holds a
+  shrine, frozen holds a camp). A landmark is reachable from the heart by road and
+  the party chooses its fate there:
+  - **Explore** it (the quiet way): learn its story, take a small gift, and — at a
+    village — open a **settlement** (tavern, temple, shop, market, inn) to trade
+    and rest in.
+  - **Raid** it (the loud way): a real fight against its keepers for a much bigger
+    haul. A won raid records the island as raided.
+  Exploring and raiding are **mutually exclusive**: once explored, a place cannot
+  be raided, and a raided place has no one left to talk to. `island_discoveries`
+  `.landmark_state` (`''`/`explored`/`raided`) remembers the choice; the fight is
+  a `kind: 'island_raid'` battle and `recordIslandRaid()` in `services/battles.js`
+  settles the win without importing the island catalogue (no import cycle).
+- **An island is walked like a continent.** The shore, interior, heart and
+  landmark are joined by **ordinary roads** (`db/seed_islands.js` lays
+  shore→interior→heart→landmark plus shortcuts, minutes derived from the drawn
+  distance), so the party crosses an island exactly as it crosses a continent.
+  Only the shore is ever "entered from the sea"; the ship waits there to put back
+  to sea, and the party must return to it before it can sail on.
 - **Hidden, by construction.** The islands live on a hidden continent
   (`Море Осколков`) as `locations` with `hidden = 1`; every reader — the map
   (`getMap`), the world list (`getWorld`), the continent list/detail
@@ -183,11 +198,13 @@ when the first cut shipped one place per island, «надо несколько �
   `island_discoveries.searched_places`) and `.../leave-island` from the shore to
   put back to sea; the voyage then carries on and lands at the far port when the
   stops run out. `island_discoveries` records each first landing.
-- **Tests:** `server/test/islands.test.js` (10) — hiddenness across map/list/
-  continent, "three places and the roads between them", the ask, refuse,
-  accept-and-stand-on-the-shore, walking the island on foot, per-place search paid
-  once, sailing only from the shore, and the deterministic island draw. Suite
-  **401 pass / 0 fail**.
+- **Tests:** `server/test/islands.test.js` (14) — hiddenness across map/list/
+  continent, "four places and the roads between them", the landmark kinds and the
+  village's settlement, the ask, refuse, accept-and-stand-on-the-shore, walking the
+  island on foot, per-place search paid once, exploring a landmark (gift once, then
+  closed to raiding), raiding it (a real `island_raid` fight, recorded once on a
+  win), sailing only from the shore, and the deterministic island draw. Suite
+  **405 pass / 0 fail**.
 
 ---
 

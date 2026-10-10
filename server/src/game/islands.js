@@ -1,14 +1,20 @@
 // The sea's scattered islands (Wave W-ISLES). A voyage may raise one out of the
 // mist: the party is asked whether to put in, and if it accepts, it goes ashore
 // on a real, walkable place -- and, like a continent, an island is not one rock
-// but a little country of its own: a shore to land on, an interior to cross and a
-// heart to search, joined by ordinary roads.
+// but a little country of its own: a shore to land on, an interior to cross, a
+// heart to search, and one **landmark** that gives the island its character.
+//
+// The landmark is the island's soul: a native village, a temple of the drowned
+// god, a shrine, or a camp of wreckers. The party may **explore** it (the quiet
+// way: lore, a small gift, and -- at a village -- a settlement with a tavern, a
+// shop and a market) or **raid** it (the loud way: a real fight against its
+// keepers, for a much bigger haul). Exploring and raiding are mutually
+// exclusive; the choice stands.
 //
 // The islands are deliberately invisible: they are hidden locations on a hidden
-// continent, never drawn on the atlas and never listed, so the sea stays a blank
-// chart and an island stays a discovery. Everything here is data + pure helpers,
-// no I/O; the seed (db/seed_islands.js) writes these rows and the service
-// (services/naval.js) drives them.
+// continent, never drawn on the atlas and never listed. Everything here is data
+// + pure helpers, no I/O; the seed (db/seed_islands.js) writes these rows and the
+// service (services/naval.js) drives them.
 
 import { hashString } from './travel.js';
 
@@ -17,10 +23,19 @@ export const ISLAND_CONTINENT = {
   description: 'Открытая вода за всеми берегами: острова, что море показывает лишь тому, кто идёт вслепую.',
 };
 
-// Each island is built from a type: the palette of biomes, the three places it
-// holds (shore / interior / heart), the words they are named by, and the caches
-// every place can hide. A type keeps thirty islands readable without thirty
-// hand-written essays.
+// The four marks of a landmark. `scene` is the accent a place draws on the map
+// legends/room art; `label` is what the player reads.
+export const LANDMARK_TYPES = {
+  village: { label: 'Племя', scene: 'isle_village' },
+  temple: { label: 'Храм', scene: 'isle_temple' },
+  shrine: { label: 'Святилище', scene: 'isle_shrine' },
+  camp: { label: 'Стан', scene: 'isle_camp' },
+  mine: { label: 'Копи', scene: 'isle_mine' },
+};
+
+// Each island TYPE fixes the shore/interior/heart flavours, and carries one
+// authored LANDMARK (name, story, danger, keepers, the camps' cache and the
+// explored reward). A type keeps thirty islands readable without thirty essays.
 const TYPES = {
   salt: {
     biomes: ['coast', 'marsh', 'bonefield'],
@@ -37,6 +52,13 @@ const TYPES = {
         [['salt_lump', 2], ['tide_shard', 1]],
         [['ossuary_heart', 1], ['memory_fragment', 1], ['tide_shard', 2]],
       ],
+    },
+    landmark: {
+      kind: 'village', name: 'Соляное Племя', danger: 2,
+      story: 'Племя, что живёт с соли: выпаривает её из топи, режет в бруски и меняет на рыбу. Оно не любит чужих, но не гонит их первым.',
+      keepers: ['Пустой крестьянин', 'Терновый охотник', 'Костяной рыцарь'],
+      raid: { gold: [220, 400], items: [['bone_shard', 4], ['rusty_sword', 1], ['salt_lump', 3]] },
+      explored: { gold: [25, 55], items: [['salt_lump', 3], ['clean_water', 2]], unlock: 'salt_pact', note: 'Соляное племя поит отряд рассолом на дорогу и просит не трогать крипту.' },
     },
   },
   drowned: {
@@ -55,6 +77,13 @@ const TYPES = {
         [['ossuary_heart', 1], ['grave_moss_salve', 1], ['memory_fragment', 1]],
       ],
     },
+    landmark: {
+      kind: 'temple', name: 'Храм Утонувших', danger: 4,
+      story: 'Храм, ушедший под воду вместе с городом, а теперь поднявшийся с илом на стенах. В нём служат те, кто утонул и всё ещё слышит зов.',
+      keepers: ['Призрак хора', 'Костяной рыцарь', 'Хор безгласых', 'Триединый утопленник'],
+      raid: { gold: [300, 520], items: [['tide_shard', 3], ['memory_fragment', 2], ['grave_moss_salve', 1]] },
+      explored: { gold: [30, 60], items: [['tide_shard', 3], ['memory_fragment', 1]], unlock: 'drowned_hymn', note: 'Хор поёт один такт — и в ушах остаётся мокрый запах глубины.' },
+    },
   },
   bone: {
     biomes: ['coast', 'bonefield', 'waste'],
@@ -71,6 +100,13 @@ const TYPES = {
         [['bone_shard', 2], ['grave_moss', 2]],
         [['ossuary_heart', 1], ['memory_fragment', 1], ['bone_shard', 2]],
       ],
+    },
+    landmark: {
+      kind: 'shrine', name: 'Костяное Святилище', danger: 4,
+      story: 'Святилище из черепов, которым молятся те, кто остался на острове умирать. Кто постоит у алтаря, тот услышит, как счёт ведут за него.',
+      keepers: ['Костяная вдова', 'Курганный титан', 'Пожиратель имён', 'Костяной рыцарь'],
+      raid: { gold: [280, 500], items: [['ossuary_heart', 2], ['bone_shard', 4], ['memory_fragment', 1]] },
+      explored: { gold: [30, 65], items: [['ossuary_heart', 1], ['bone_shard', 3]], unlock: 'bone_ledger', note: 'У алтаря счёт ведут за каждого, кто однажды сюда вернётся. И твоё имя уже вписано.' },
     },
   },
   ash: {
@@ -89,6 +125,13 @@ const TYPES = {
         [['grave_moss_salve', 1], ['ash_flake', 3], ['memory_fragment', 1]],
       ],
     },
+    landmark: {
+      kind: 'village', name: 'Пепельное Племя', danger: 2,
+      story: 'Племя, что жжёт мёртвых и живёт у их костров: оно верит, что имя, брошенное в огонь, вернётся домой. Здесь рады тем, кто приносит пепел, а не огонь.',
+      keepers: ['Пустой крестьянин', 'Терновый охотник', 'Фонарный упырь'],
+      raid: { gold: [200, 380], items: [['ash_flake', 5], ['crow_feather', 3], ['grave_moss_salve', 1]] },
+      explored: { gold: [25, 50], items: [['ash_flake', 4], ['bread_loaf', 3]], unlock: 'ash_hearth', note: 'У костра тебя назвали другом — и записали твоё имя в пепле, чтобы вернулось.' },
+    },
   },
   coral: {
     biomes: ['coast', 'marsh', 'bonefield'],
@@ -105,6 +148,13 @@ const TYPES = {
         [['tide_shard', 2], ['mana_lichen', 2]],
         [['ossuary_heart', 1], ['mana_lichen', 3], ['tide_shard', 2]],
       ],
+    },
+    landmark: {
+      kind: 'temple', name: 'Коралловый Храм', danger: 4,
+      story: 'Храм, чей престол — живой коралл. Он растёт вверх, пока в него верят, и глотает тех, кто перестал. Жрецы тут не говорят, а дышат.',
+      keepers: ['Плакальщица на костях', 'Хор безгласых', 'Костяная вдова'],
+      raid: { gold: [320, 540], items: [['ossuary_heart', 2], ['mana_lichen', 4], ['tide_shard', 2]] },
+      explored: { gold: [30, 60], items: [['mana_lichen', 3], ['tide_shard', 2]], unlock: 'coral_breath', note: 'Жрец выдыхает тебе в лицо тёплый воздух — и ты можешь задержать дыхание дольше.' },
     },
   },
   frozen: {
@@ -123,12 +173,19 @@ const TYPES = {
         [['ossuary_heart', 1], ['memory_fragment', 2], ['clean_water', 3]],
       ],
     },
+    landmark: {
+      kind: 'camp', name: 'Ледяной Стан', danger: 4,
+      story: 'Стан тех, кто раньше ходил в эти воды за добычей, а теперь сам стал добычей. Здесь делят чужое и не спрашивают, откуда оно.',
+      keepers: ['Ржавый колосс', 'Триединый утопленник', 'Костяная вдова', 'Хор безгласых'],
+      raid: { gold: [320, 560], items: [['memory_fragment', 2], ['ossuary_heart', 2], ['clean_water', 4]] },
+      explored: { gold: [25, 55], items: [['clean_water', 4], ['memory_fragment', 1]], unlock: 'frozen_cache', note: 'Стан отдаёт флягу за то, что ты не поднял на них оружие, и уходит во льды.' },
+    },
   },
 };
 
 // Thirty islands, keyed latin. `base` is the shore's danger; the interior is one
-// step worse and the heart two, so walking inward bites harder -- the same shape
-// as a continent's coast-to-interior spread.
+// step worse, the heart two and the landmark three, so walking inward bites
+// harder -- the same shape as a continent's coast-to-interior spread.
 const ISLAND_SEEDS = [
   { key: 'salt_skull', name: 'Соляной Череп', type: 'salt', base: 3 },
   { key: 'drowned_bell', name: 'Утонувший Колокол', type: 'drowned', base: 3 },
@@ -181,40 +238,66 @@ function rngFrom(seed) {
   };
 }
 
-// Three beasts for a place: drawn from the band of its danger, never repeating,
-// stable per place so a reload cannot reroll the island's wildlife.
-function monstersFor(seed, danger) {
+// The dead of an island are the same wherever one stands on it: one beast pool
+// per island, drawn from its band, so the wildlife reads as one place, kept
+// stable per island so a reload cannot reroll it.
+function islandBeasts(key, danger) {
   const pool = MONSTER_BANDS[Math.max(2, Math.min(5, danger))] || MONSTER_BANDS[3];
-  const rng = rngFrom(`beasts:${seed}`);
+  const rng = rngFrom(`isle-beasts:${key}`);
   const start = Math.floor(rng() * pool.length);
-  const out = [];
-  for (let i = 0; i < Math.min(3, pool.length); i += 1) out.push(pool[(start + i) % pool.length]);
-  return out;
+  return pool.map((_, i) => pool[(start + i) % pool.length]);
 }
 
 function buildIsland(seed) {
   const type = TYPES[seed.type];
+  const beasts = islandBeasts(seed.key, seed.base);
   const locations = type.roles.map((role, i) => {
     const danger = Math.min(5, seed.base + i);
+    const b = (k) => beasts[(i + k) % beasts.length];
     return {
       index: i,
       role,
+      kind: 'place',
       name: `${role} острова ${seed.name}`,
       description: type.descriptions[i],
       biome: type.biomes[i],
       scene: `isle_${seed.key}_${i}`,
       danger,
-      monsters: monstersFor(`${seed.key}:${i}`, danger),
+      monsters: [b(0), b(1), b(2)],
       loot: { gold: type.loot.gold[i], items: type.loot.items[i] },
     };
   });
+  // The landmark: the island's character, reachable from the heart.
+  const lm = type.landmark;
+  const ltype = LANDMARK_TYPES[lm.kind];
+  const landmark = {
+    index: locations.length,
+    role: lm.name,
+    kind: 'landmark',
+    landmarkKind: lm.kind,
+    name: `${lm.name} острова ${seed.name}`,
+    description: lm.story,
+    biome: 'coast',
+    scene: ltype.scene,
+    danger: lm.danger,
+    monsters: lm.keepers.slice(),
+    // A landmark hides nothing to a simple search: its reward is the choosing --
+    // explore it for a gift, or raid it for the haul. Searching here pays nothing.
+    loot: { gold: [0, 0], items: [] },
+    raid: lm.raid || null,
+    explored: lm.explored || null,
+    settlementKind: lm.kind === 'village' ? 'native_village' : null,
+  };
+  const all = [...locations, landmark];
   return {
     key: seed.key,
     name: seed.name,
     type: seed.type,
     base: seed.base,
-    danger: Math.min(5, seed.base + 2),
-    locations,
+    danger: Math.min(5, seed.base + 3),
+    locations: all,
+    places: locations,
+    landmark,
     // The shore is the anchor: the place the party lands on and the island's
     // stable identity for a discovery.
     anchor: locations[0],
@@ -229,23 +312,38 @@ export function islandByKey(key) {
   return ISLAND_BY_KEY.get(key) || null;
 }
 
-// Every place an island holds, shore to heart.
+// Every place an island holds, shore to heart and then its landmark.
 export function islandLocations(island) {
   return island?.locations || [];
 }
 
-// How much gold a place's cache holds, given a random fraction 0..1. Pure, so
-// the service can roll and a test can pin.
+// How much gold a cache holds, given a random fraction 0..1. Pure, so the
+// service can roll and a test can pin.
 export function lootGold(location, fraction = Math.random()) {
   const [lo, hi] = location?.loot?.gold || [0, 0];
   return Math.round(lo + (hi - lo) * Math.min(1, Math.max(0, fraction)));
 }
 
-// One item from a place's cache, chosen by a random fraction. Returns
-// { key, qty } or null when the place hides nothing.
+// One item from a cache, chosen by a random fraction. Returns { key, qty } or
+// null when the cache hides nothing. `cache` may be a location's `loot` or a
+// reward blob ({ items: [[key, qty], ...] }).
 export function lootItem(location, fraction = Math.random()) {
   const items = location?.loot?.items || [];
   if (!items.length) return null;
   const [key, qty] = items[Math.min(items.length - 1, Math.floor(fraction * items.length))];
   return { key, qty };
+}
+
+// The reward of a landmark, drawn fresh for the given seed. Returns
+// { gold, items: [{ key, qty }] }. `raid` is the big haul, `explored` the small gift.
+export function landmarkReward(location, seed) {
+  const reward = location?.kind === 'landmark'
+    ? (location.raid || location.explored)
+    : null;
+  if (!reward) return { gold: 0, items: [] };
+  const rng = rngFrom(`reward:${seed}`);
+  const [glo, ghi] = reward.gold || [0, 0];
+  const gold = Math.round(glo + (ghi - glo) * rng());
+  const items = (reward.items || []).map(([key, qty]) => ({ key, qty }));
+  return { gold, items };
 }

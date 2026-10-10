@@ -16,13 +16,14 @@ import { activeMembers, getMember } from './party.js';
 import { getLocation, recordVisit } from './world.js';
 import { getShipBonuses, awardShipPoints } from './ship.js';
 import { hasItem, takeItem, grantItem } from './items.js';
-import { advanceQuest, listUnlocks } from './quests.js';
+import { advanceQuest, listUnlocks, addUnlock } from './quests.js';
+import { startBattle } from './battles.js';
 import { routeFor, CROSSING_GATES } from '../game/continent_travel.js';
 import {
   createSeaBattle, takeSeaAction, previewAction,
   seaPoints, playerSide, enemySideOf, rollVoyage, LORE_NOTES,
 } from '../game/naval.js';
-import { islandByKey, lootGold, lootItem, ISLANDS } from '../game/islands.js';
+import { islandByKey, lootGold, lootItem, landmarkReward, ISLANDS } from '../game/islands.js';
 
 const SEA_DEFEAT_GOLD_PENALTY = 0.25;
 
@@ -339,7 +340,7 @@ function voyageView(row) {
   const active = activeBattleRow(row.character_id);
   // The island the stop points at, as a small country: its anchor (the shore the
   // party lands on) and every place it holds. Null for a pirate / monster stop.
-  const island = stop?.kind === 'island' ? islandPlaces(stop.island?.key) : null;
+  const island = stop?.kind === 'island' ? islandPlaces(stop.island?.key, row.character_id) : null;
   return {
     id: row.id,
     characterId: row.character_id,
@@ -355,6 +356,8 @@ function voyageView(row) {
     islandId: island?.anchor?.id || null,
     island: island ? { id: island.anchor.id, name: island.name, description: island.anchor.description } : (stop?.island || null),
     islandPlaces: island?.places || [],
+    islandLandmark: island?.landmark || null,
+    landmarkState: island?.landmarkState || '',
     // While ashore, which of the island's places the party now stands on.
     ashoreAt: row.mode === 'island' ? row.ashore_id : null,
     inBattle: !!active,
@@ -363,16 +366,26 @@ function voyageView(row) {
 }
 
 // The seeded locations of one island, keyed by the island's authored place
-// order, plus the anchor (the shore the party lands on).
-function islandPlaces(key) {
+// order, plus the anchor (the shore the party lands on) and the landmark (the
+// island's character). `landmarkState` says what the party did with it.
+function islandPlaces(key, characterId) {
   const isle = islandByKey(key);
   if (!isle) return null;
   const places = isle.locations.map((loc) => {
     const row = getDb().prepare('SELECT * FROM locations WHERE name = ? AND hidden = 1').get(loc.name);
-    return row ? { id: row.id, name: row.name, description: row.description, danger: row.danger, biome: row.biome, scene: row.scene, role: loc.role, index: loc.index } : null;
+    return row ? {
+      id: row.id, name: row.name, description: row.description, danger: row.danger,
+      biome: row.biome, scene: row.scene, role: loc.role, index: loc.index,
+      kind: loc.kind, landmarkKind: loc.landmarkKind || null,
+    } : null;
   }).filter(Boolean);
   if (!places.length) return null;
-  return { key, name: isle.name, anchor: places[0], places };
+  const landmark = places.find((p) => p.kind === 'landmark') || null;
+  const state = characterId && landmark
+    ? getDb().prepare('SELECT landmark_state FROM island_discoveries WHERE character_id = ? AND island_id = ?')
+      .get(characterId, places[0].id)?.landmark_state || ''
+    : '';
+  return { key, name: isle.name, anchor: places[0], places, landmark, landmarkState: state };
 }
 
 // Resolve the stop the voyage has reached. A fight is opened at once; an island
@@ -506,6 +519,73 @@ export function searchIsland(characterId) {
   if (item && item.qty > 0) { grantItem(characterId, item.key, item.qty); found.push(item); }
   logPaper(characterId, { kind: 'island_loot', text: `Обыскали место на острове ${island.name}: ${gold} золота.` });
   return { alreadySearched: false, gold, found, island: { id: island.anchor.id, name: island.name }, place: here.name };
+}
+
+// The party stands on the island's landmark. Exploring is the quiet way: the
+// natives (or the keepers) share a little, the party learns the place's story,
+// and nothing is killed. It pays a small gift and remembers a note in the
+// papers. Mutually exclusive with raiding -- once explored, the landmark is
+// closed to violence, and the other way round.
+export function exploreIslandLandmark(characterId) {
+  const row = activeVoyageRow(characterId);
+  if (!row || row.mode !== 'island' || !row.ashore_id) throw new Error('Отряд не на острове');
+  const island = islandPlaces(row.island_ref, characterId);
+  if (!island?.landmark) throw new Error('Этот остров море не отдаёт');
+  if (row.ashore_id !== island.landmark.id) throw new Error('Отряд не у этого места');
+  const state = getDb().prepare('SELECT landmark_state FROM island_discoveries WHERE character_id = ? AND island_id = ?')
+    .get(characterId, island.anchor.id)?.landmark_state || '';
+  if (state === 'raided') throw new Error('Племя уже разорено — говорить больше не с кем');
+  if (state === 'explored') throw new Error('Это место уже исследовано');
+
+  const isle = islandByKey(row.island_ref);
+  const place = isle?.landmark;
+  const reward = landmarkReward(place, `${row.island_ref}:explored`);
+  transaction((d) => {
+    d.prepare('UPDATE island_discoveries SET landmark_state = ? WHERE character_id = ? AND island_id = ?')
+      .run('explored', characterId, island.anchor.id);
+    d.prepare("UPDATE characters SET gold = gold + ?, updated_at = datetime('now') WHERE id = ?").run(reward.gold, characterId);
+  });
+  for (const it of reward.items) grantItem(characterId, it.key, it.qty);
+  if (place?.explored?.unlock) { try { addUnlock(characterId, place.explored.unlock); } catch { /* optional */ } }
+  logPaper(characterId, { kind: 'island_explore', text: `Исследовали ${place.name} на острове ${island.name}. ${place.explored?.note || ''}` });
+  return {
+    explored: true, gold: reward.gold, found: reward.items,
+    note: place?.explored?.note || null, unlock: place?.explored?.unlock || null,
+    island: { id: island.anchor.id, name: island.name }, landmark: island.landmark,
+  };
+}
+
+// Raiding is the loud way: the party falls on the landmark's keepers. A real
+// battle is opened against one of them, and its loot is the big haul. The fight
+// itself is a normal battle; when it settles, `stakeIslandRaid` records the win.
+// A landmark already explored is left alone (the natives were friends), and a
+// landmark already raided has nothing left to take.
+export function raidIslandLandmark(characterId) {
+  const row = activeVoyageRow(characterId);
+  if (!row || row.mode !== 'island' || !row.ashore_id) throw new Error('Отряд не на острове');
+  const island = islandPlaces(row.island_ref, characterId);
+  if (!island?.landmark) throw new Error('Этот остров море не отдаёт');
+  if (row.ashore_id !== island.landmark.id) throw new Error('Отряд не у этого места');
+  const state = getDb().prepare('SELECT landmark_state FROM island_discoveries WHERE character_id = ? AND island_id = ?')
+    .get(characterId, island.anchor.id)?.landmark_state || '';
+  if (state === 'explored') throw new Error('Это место уже стало дружеским — грабить некого');
+  if (state === 'raided') throw new Error('Здесь уже всё разорено');
+
+  const isle = islandByKey(row.island_ref);
+  const place = isle?.landmark;
+  const db = getDb();
+  // The keepers are seeded on the landmark location, so the battle is a normal
+  // hunt there; the raid's big haul rides as the battle loot, paid on a win.
+  const keeper = db.prepare(
+    'SELECT m.* FROM location_monsters lm JOIN monsters m ON m.id = lm.monster_id WHERE lm.location_id = ? ORDER BY RANDOM() LIMIT 1',
+  ).get(island.landmark.id);
+  if (!keeper) throw new Error('Некому дать отпор');
+  const reward = landmarkReward(place, `${row.island_ref}:raid`);
+  const loot = { gold: reward.gold, items: reward.items.map((it) => ({ key: it.key, qty: it.qty })) };
+  const battle = startBattle({
+    characterId, locationId: island.landmark.id, monsterId: keeper.id, kind: 'island_raid', loot,
+  });
+  return { battleId: battle.id, landmark: island.landmark, island: { id: island.anchor.id, name: island.name }, potentialLoot: loot };
 }
 
 // The claim the ship's papers carry for this island, learned on a first landing.
