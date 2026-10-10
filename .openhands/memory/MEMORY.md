@@ -524,3 +524,14 @@ stale chat brief was wrong. `gh` is not authed - use
 - Suite: 400 pass / 0 fail. Gotcha: routeFor(A,B) may demand an item toll; grant
   it in tests before startVoyage. Push gotcha: refresh the origin remote URL with
   the GITHUB_TOKEN env var if a push prompts for a password.
+
+## W-ISLES bug hunt (2026-10-08, commit 5d78739)
+
+- `voyageView.from/to` are NAME strings for display; routing needs `fromId`/`toId`
+  (added). Never interpolate a voyage endpoint into a location URL by name.
+- A voyage may draw 0 stops (`rollVoyage` 0..2). The client only calls
+  `resolve` on a raised stop, so a calm voyage hung; the exhausted-cursor branch
+  now lands the party (advanceVoyageCursor) and the view flags `canLand`.
+- Island places take beasts from their OWN danger band (islandBeasts per place),
+  not the shore band; seedIslands rewrites island spawns every boot.
+- `listSettlements()` must join `locations.hidden = 0` or native isle villages leak.
