@@ -169,6 +169,29 @@ long detail in the daily logs.
   the test env (`npm test` runs on node:sqlite only). Do not add an app-level
   route test unless express is added as a dependency.
 
+## Publishing (verified 2026-10-08, PR #31)
+
+- `main` pushes trigger `.github/workflows/publish.yml` → image
+  `ghcr.io/grigoriy131112-sketch/grimhollow:latest` (+ `main`, `sha-*`). The
+  `test` job and the `publish` job are separate; a red run is usually only
+  `publish`.
+- **Docker Hub is unreliable from GitHub runners** — repeated
+  `auth.docker.io 504` / `context deadline exceeded`, both for the base image
+  *and* for buildx's own `moby/buildkit` pull (so `docker/setup-buildx-action`
+  itself fails before the build starts). The package is public: an anonymous
+  `ghcr.io` token can pull `manifests/latest` (HTTP 200).
+- **The fix (in main):** point `NODE_BASE` at the AWS mirror
+  `public.ecr.aws/docker/library/node:24-bookworm-slim` (byte-identical to
+  `docker.io/library/node`, stays reachable) and build with the **daemon's
+  built-in builder** (`docker build` + `docker push`), NOT buildx — the daemon
+  pulls nothing from Docker Hub here. arm64 leg dropped; amd64 covers hosts.
+- The sandbox's `GITHUB_TOKEN` lacks `write:packages`, so it can build+run the
+  image locally (`sudo dockerd`, then `sudo docker build …`) but **cannot push**
+  to GHCR (`permission_denied`). Push must go through Actions.
+- Run anywhere: `docker run -d -p 3001:3001 -v grimhollow-data:/data
+  ghcr.io/grigoriy131112-sketch/grimhollow:latest`. Verified anonymous pull +
+  run: `/api/health`, `/`, `/api/world/map`, `/quests/1` all 200.
+
 ## G9 clan (added on `wave/g9-clan`, PR #11)
 
 - Built the player's clan (`docs/lore/clan.md`). `npm test` is now **251 pass /
@@ -480,3 +503,41 @@ stale chat brief was wrong. `gh` is not authed - use
     Codex.jsx CHAPTERS now 5.
 - Tests: server/test/bestiary.test.js (7). Full suite **345 pass / 0 fail**.
 - Merged 2026-10-08; the whole queue (N1-N5) is now in main.
+
+## W-ISLES (branch wave/w-isles, PR #32) — hidden sea islands
+
+- Islands are hidden by a column, not by convention: `locations.hidden` and
+  `continents.hidden` (schema + additive migration). Every reader filters
+  `hidden = 0`: getMap, getWorld, listContinents, getContinent, getBestiary
+  haunts, and seed_monsters_extra's eligibleLocationIds. Never list island
+  locations from a new query without that filter.
+- Voyage semantics: `voyages.mode` (voyage/island/aside/done), `ashore_id`,
+  `island_ref`; `island_discoveries` (UNIQUE character_id+island_id, from_id,
+  searched). An island stop is held at `cursor` until the party answers
+  POST /naval/:id/voyage/put-in (accept) or /sail-past (refuse).
+- Landing at the far port happens in `advanceVoyageCursor` on completion, not in
+  `startVoyage`. That invariant lets an island hold the party ashore mid-voyage
+  while a finished voyage still reaches port.
+- Content: game/islands.js (6 islands, loot keys checked against items.js) +
+  db/seed_islands.js (hidden continent `Море Осколков`, idempotent, links
+  monsters by name). Wired into index.js after seedMonstersExtra.
+- Suite: 400 pass / 0 fail. Gotcha: routeFor(A,B) may demand an item toll; grant
+  it in tests before startVoyage. Push gotcha: refresh the origin remote URL with
+  the GITHUB_TOKEN env var if a push prompts for a password.
+
+## W-ISLES bug hunt (2026-10-08, commit 5d78739)
+
+- `voyageView.from/to` are NAME strings for display; routing needs `fromId`/`toId`
+  (added). Never interpolate a voyage endpoint into a location URL by name.
+- A voyage may draw 0 stops (`rollVoyage` 0..2). The client only calls
+  `resolve` on a raised stop, so a calm voyage hung; the exhausted-cursor branch
+  now lands the party (advanceVoyageCursor) and the view flags `canLand`.
+- Island places take beasts from their OWN danger band (islandBeasts per place),
+  not the shore band; seedIslands rewrites island spawns every boot.
+- `listSettlements()` must join `locations.hidden = 0` or native isle villages leak.
+- Battle guards (rounds 5-6): `startBattle` refuses while a LAND battle is active
+  too (not only a sea one); `putInIsland`/`sailPastIsland` use `anyBattleOpen()`
+  like the ashore errands. `SeaBattle.jsx` needs a «Продолжить плавание» button
+  when `view.voyageId` is set, or a won voyage fight dead-ends. `locationInfo()`
+  exposes `hidden` so `Settlement.jsx` sends an island village back to its place,
+  not to the atlas (where it is not drawn). Suite now 413.

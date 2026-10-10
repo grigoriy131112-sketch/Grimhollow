@@ -22,7 +22,7 @@ function bandFor(monster) {
 
 function eligibleLocationIds(db, monster) {
   const band = bandFor(monster);
-  const rows = db.prepare('SELECT id, danger, biome FROM locations').all();
+  const rows = db.prepare('SELECT id, danger, biome FROM locations WHERE hidden = 0').all();
   return rows
     .filter((l) => l.danger >= band.min && l.danger <= band.max)
     .filter((l) => (monster.biomes || []).includes(l.biome))

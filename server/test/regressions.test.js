@@ -194,3 +194,17 @@ test('equipment, buffs and needs reach the combatant that fights', () => {
   // The effective stat the engine uses is genuinely higher.
   assert.equal(effectiveStat(p, 'defense'), p.base.defense + defMods);
 });
+
+// --- 5. one land fight at a time --------------------------------------------
+
+test('a hero cannot open a second land battle while one is still active', () => {
+  seedWorld();
+  const hero = leader('fighter');
+  const weak = getDb().prepare('SELECT id FROM monsters ORDER BY level ASC LIMIT 1').get();
+  startBattle({ characterId: hero.id, monsterId: weak.id, locationId: 1 });
+  assert.throws(
+    () => startBattle({ characterId: hero.id, monsterId: weak.id, locationId: 1 }),
+    /закончите бой/i,
+    'the party must finish the fight it is in',
+  );
+});
