@@ -4,7 +4,10 @@
   "private": true,
   "description": "Grimhollow - a dark-fantasy RPG without dice: classes, abilities, turn-based battles, a world of continents and locations.",
   "type": "module",
-  "workspaces": ["server", "client"],
+  "workspaces": [
+    "server",
+    "client"
+  ],
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "npm --workspace server run dev",
@@ -14,7 +17,8 @@
     "start": "npm --workspace server run start",
     "test": "npm --workspace server run test",
     "llm:setup": "bash scripts/setup-llm.sh",
-    "llm:start": "bash scripts/start-llm.sh"
+    "llm:start": "bash scripts/start-llm.sh",
+    "build:static": "npm --workspace client run build:static"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
