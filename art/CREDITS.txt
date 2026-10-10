@@ -1,0 +1,581 @@
+Art credits
+===========
+
+Icons (abilities and monsters) are from the game-icons.net collection,
+released under the Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+license. Each icon is by its original author (e.g. Lorc, Delapouite, Skoll,
+Willdabeast, Sbed, Caro Asercion, DarkZaitzev).
+
+  https://game-icons.net/
+  License: https://creativecommons.org/licenses/by/3.0/
+
+The icons copied into client/public/art/{abilities,monsters}/ keep their
+original filenames' authorship as listed on game-icons.net. If you redistribute
+this project, keep this credit file.
+
+No paid or API-generated art is used in this project.
+
+Per-file sources (Wave 2 ability icons)
+======================================
+Each file client/public/art/abilities/<id>.svg is derived from the game-icons.net
+icon named below (<author>/<icon>). The same author/name pairs also apply to the
+Wave 1 ability icons; their filenames already match the game-icons.net names.
+
+  rage.svg  <-  delapouite/enrage
+  reckless_strike.svg  <-  lorc/axe-swing
+  wide_swing.svg  <-  lorc/battle-axe
+  thick_skin.svg  <-  delapouite/animal-hide
+  brutal_blow.svg  <-  lorc/hammer-drop
+  blood_rage.svg  <-  lorc/bloody-sword
+  rampage.svg  <-  delapouite/charging-bull
+  wild_heal.svg  <-  sbed/regeneration
+  executioner.svg  <-  lorc/guillotine
+  berserker.svg  <-  lorc/barbute
+  vicious_mockery.svg  <-  lorc/imp-laugh
+  inspiring_song.svg  <-  skoll/sound-waves
+  healing_ballad.svg  <-  lorc/heart-inside
+  discordant_note.svg  <-  delapouite/stabbed-note
+  mesmerizing_tune.svg  <-  lorc/lyre
+  soothing_melody.svg  <-  delapouite/harp
+  heroic_anthem.svg  <-  delapouite/trumpet
+  shatter_cry.svg  <-  lorc/sonic-screech
+  requiem.svg  <-  zajkonur/violin
+  master_maestro.svg  <-  delapouite/musical-notes
+  thorn_whip.svg  <-  lorc/thorny-vine
+  regrowth.svg  <-  lorc/sprout
+  entangling_roots.svg  <-  delapouite/tree-roots
+  bark_skin.svg  <-  delapouite/wood-pile
+  venom_bloom.svg  <-  lorc/mushroom
+  rejuvenate.svg  <-  lorc/pollen-dust
+  sunbeam.svg  <-  lorc/sun
+  nature_ward.svg  <-  delapouite/oak-leaf
+  wildfire.svg  <-  lorc/flame-tunnel
+  one_with_nature.svg  <-  lorc/oak
+  flurry_of_blows.svg  <-  lorc/fist
+  patient_defense.svg  <-  lorc/meditation
+  pressure_point.svg  <-  lorc/palm
+  ki_focus.svg  <-  lorc/water-splash
+  roundhouse.svg  <-  delapouite/high-kick
+  flowing_water.svg  <-  lorc/water-splash
+  quivering_palm.svg  <-  lorc/magic-palm
+  inner_peace.svg  <-  lorc/lotus
+  dragon_kick.svg  <-  lorc/boot-kick
+  perfect_body.svg  <-  delapouite/yin-yang
+  holy_strike.svg  <-  lorc/holy-symbol
+  lay_on_hands.svg  <-  delapouite/hand-of-god
+  shield_of_faith.svg  <-  delapouite/cross-shield
+  divine_favor.svg  <-  lorc/prayer
+  consecrate.svg  <-  delapouite/holy-water
+  aura_of_warding.svg  <-  lorc/aura
+  avenging_smite.svg  <-  lorc/hammer-drop
+  greater_blessing.svg  <-  lorc/holy-grail
+  divine_judgment.svg  <-  lorc/scales
+  aura_mastery.svg  <-  lorc/beams-aura
+  precise_shot.svg  <-  lorc/on-target
+  hunters_mark.svg  <-  skoll/bullseye
+  twin_shot.svg  <-  delapouite/split-arrows
+  camouflage.svg  <-  darkzaitzev/smoke-bomb
+  venom_arrow.svg  <-  lorc/poison-bottle
+  natural_recovery.svg  <-  lorc/leaf-swirl
+  volley.svg  <-  lorc/arrow-flights
+  beasts_bond.svg  <-  lorc/wolf-head
+  piercing_shot.svg  <-  lorc/pierced-body
+  eagle_eye.svg  <-  delapouite/eagle-head
+  chaos_bolt.svg  <-  lorc/spiral-thrust
+  draconic_ward.svg  <-  delapouite/dragon-shield
+  scorching_ray.svg  <-  lorc/sunbeams
+  sorcerous_restore.svg  <-  lorc/magic-swirl
+  lightning_arc.svg  <-  lorc/lightning-arc
+  mirror_image.svg  <-  lorc/mirror-mirror
+  fireball.svg  <-  lorc/fireball
+  empowered_spell.svg  <-  delapouite/spell-book
+  meteor_swarm.svg  <-  lorc/meteor-impact
+  innate_power.svg  <-  delapouite/radiations
+  eldritch_blast.svg  <-  lorc/interlaced-tentacles
+  dark_pact.svg  <-  lorc/scroll-unfurled
+  hex.svg  <-  lorc/candle-flame
+  siphon_life.svg  <-  lorc/bleeding-heart
+  curse_of_weakness.svg  <-  lorc/skull-crack
+  shadow_heal.svg  <-  lorc/shadow-grasp
+  soul_rend.svg  <-  lorc/screaming
+  infernal_shield.svg  <-  lorc/fire-shield
+  doom_bolt.svg  <-  lorc/magic-portal
+  dark_blessing.svg  <-  delapouite/soul-vessel
+
+
+Per-file sources (Wave 3A companion portraits)
+==========================================
+Each file client/public/art/portraits/<slug>.svg is derived from the game-icons.net
+icon named on the right.
+
+  marta_veil.svg  <-  lorc/visored-helm
+  rayven.svg  <-  darkzaitzev/hooded-figure
+  dorin_stone.svg  <-  cathelineau/nun-face
+  kael_vane.svg  <-  delapouite/wizard-face
+  gorr.svg  <-  delapouite/orc-head
+  lute.svg  <-  delapouite/portrait
+  yara_thorn.svg  <-  cathelineau/witch-face
+  bo.svg  <-  delapouite/monk-face
+  sera_dawn.svg  <-  delapouite/black-knight-helm
+  fin.svg  <-  delapouite/eagle-head
+  ember.svg  <-  delapouite/woman-elf-face
+  vashek.svg  <-  delapouite/warlock-hood
+  old_pell.svg  <-  lorc/beard
+  nyla.svg  <-  darkzaitzev/ninja-head
+  brann.svg  <-  delapouite/sun-priest
+  ash.svg  <-  delapouite/kenku-head
+  morrigan.svg  <-  delapouite/executioner-hood
+  tob.svg  <-  delapouite/hoodie
+  iris.svg  <-  delapouite/oak-leaf
+  cass.svg  <-  delapouite/viking-head
+  hale.svg  <-  delapouite/person
+  sable.svg  <-  darkzaitzev/hooded-assassin
+  pious_odo.svg  <-  delapouite/spartan-helmet
+  wolf.svg  <-  lorc/wolf-head
+
+
+Per-file sources (Wave 7A world-map landmarks)
+==============================================
+Each file client/public/art/landmarks/<name>.svg is derived from the
+game-icons.net icon named on the right (the black background square has been
+removed so the icon can sit on the map).
+
+  crossroads.svg    <-  delapouite/crossroad
+  swamp.svg         <-  delapouite/swamp
+  drowned_road.svg  <-  delapouite/road
+  ash_forest.svg    <-  delapouite/burning-forest
+  harbor.svg        <-  delapouite/harbor-dock
+  tide_caves.svg    <-  delapouite/mountain-cave
+  sunken_chapel.svg <-  delapouite/byzantin-temple
+  bonefield.svg     <-  lorc/crossed-bones
+  black_spire.svg   <-  delapouite/evil-tower
+  mountains.svg     <-  lorc/mountains
+  forest.svg        <-  delapouite/forest
+  hills.svg         <-  delapouite/hills
+  desert.svg        <-  delapouite/desert
+  graveyard.svg     <-  delapouite/graveyard
+  village.svg       <-  delapouite/huts-village
+  watchtower.svg    <-  delapouite/watchtower
+  well.svg          <-  delapouite/well
+  windmill.svg      <-  delapouite/windmill
+  volcano.svg       <-  lorc/volcano
+  sea.svg           <-  delapouite/black-sea
+  island.svg        <-  delapouite/island
+  lighthouse.svg    <-  delapouite/lighthouse
+  obelisk.svg       <-  delapouite/obelisk
+  caravan.svg       <-  delapouite/caravan
+  camp.svg          <-  delapouite/camping-tent
+  ruins.svg         <-  delapouite/ancient-ruins
+
+Per-file sources (Wave 8 extra world-map landmarks)
+===================================================
+Second batch of CC BY 3.0 game-icons.net icons for the livelier atlas (terrain
+accents, road stamps and the re-skinned named places).
+
+  stone_bridge.svg      <-  delapouite/stone-bridge
+  dead_wood.svg         <-  lorc/dead-wood
+  cave_entrance.svg     <-  delapouite/cave-entrance
+  church.svg            <-  delapouite/church
+  ship_wreck.svg        <-  delapouite/ship-wreck
+  sinking_ship.svg      <-  delapouite/sinking-ship
+  guarded_tower.svg     <-  lorc/guarded-tower
+  direction_signs.svg   <-  delapouite/direction-signs
+  dinosaur_bones.svg    <-  lorc/dinosaur-bones
+  pine_tree.svg         <-  lorc/pine-tree
+  quicksand.svg         <-  lorc/quicksand
+  campfire.svg          <-  lorc/campfire
+  tombstone.svg         <-  lorc/tombstone
+  waterfall.svg         <-  delapouite/waterfall
+  ancient_columns.svg   <-  delapouite/ancient-columns
+  castle_ruins.svg      <-  delapouite/castle-ruins
+  kraken_tentacle.svg   <-  delapouite/kraken-tentacle
+  mountain_road.svg     <-  delapouite/mountain-road
+  rock.svg              <-  delapouite/stone-pile
+  reeds.svg             <-  lorc/water-splash
+
+World map (one generated plate)
+===============================
+The world chart is a single generated fantasy map, reduced to its coastlines
+and recoloured to the house style in code by tools/gen_world_map.mjs. The
+global map and a continent map are the same plate at different zooms, so a
+continent is a part of one picture rather than a separate image, and there is
+exactly one style. The land/sea mask the server tests against is cut from the
+very same file, so a marker can never drift out to sea without the picture
+moving with it.
+
+  maps/world-chart.svg
+    Source: a fictional world generated with Azgaar's Fantasy Map Generator
+    https://azgaar.github.io/Fantasy-Map-Generator/
+    Author: generated by the project authors (the generator is MIT-licensed by
+    Azgaar; generated maps may be used freely, including commercially).
+    Derived work: only the drawn landmasses and the ocean are kept; the
+    political/cultural layers, labels, rivers and decorative frames are
+    dropped, and the coastlines are recoloured to the near-black house palette.
+    The world is fictional — it is not Earth and not derived from any real
+    chart.
+
+  The interactive layer (roads, seals, labels, party marker) is ours.
+
+  Earlier waves placed the chart on public-domain engravings (Vaugondy 1784,
+  Boero c. 1753 and four per-continent sheets) and then on our own vector
+  coastlines (tools/gen_world_geo.mjs). Those were replaced in the W-MAP
+  rework; the credits are kept here for provenance only.
+
+    maps/world-antique.jpg
+      Source: Wikimedia Commons, "1784 Vaugondy Map of the World on Mercator
+      Projection" (Geographicus)
+      Author: Robert de Vaugondy
+      Date: 1784 — License: Public domain
+
+    maps/isle-antique.jpg
+      Source: Wikimedia Commons, "AMH-7996-KB Map of the island of Boero.jpg"
+      Author: Jakob van der Schley / Pieter de Hondt; after François Valentyn
+      Date: circa 1753 — License: Public domain
+
+    maps/continent-frozen.jpg   — Homann Heirs, "Insulae Islandiae", 1761 — Public domain
+    maps/continent-glass.jpg    — John Pinkerton, Northern Africa, 1818 — Public domain
+    maps/continent-havens.jpg   — G. A. Rizzi Zannoni, West Indies, 1762 — Public domain
+    maps/continent-forest.jpg   — Willem Blaeu, Guiana, 1635 — Public domain
+
+Textures (licensed rasters, deliberate exceptions)
+==================================================
+The world map is otherwise pure vector, but the parchment paper itself is a
+single raster texture. It is public domain, so no attribution is legally
+required; the credit is kept anyway.
+
+  textures/parchment.jpg
+    Source: Wikimedia Commons, "Pergament.1.jpg"
+    https://commons.wikimedia.org/wiki/File:Pergament.1.jpg
+    Author: Membeth
+    License: CC0 1.0 (public domain dedication)
+    https://creativecommons.org/publicdomain/zero/1.0/
+
+  Derived work: the luminance gradient of the original (one side was much
+  darker) was flattened in code, and the tone was normalised to a uniform aged
+  paper colour; only the fibre grain remains. Do not replace this with a
+  paid or non-free texture.
+
+Per-file sources (Wave 15 epic ability icons)
+=============================================
+
+Each file client/public/art/abilities/<id>.svg (levels 6-15) is derived from
+the game-icons.net icon named below (<author>/<icon>).
+
+  fighter_strike_6.svg  <-  cathelineau/swordman.svg
+  fighter_buffAttack_6.svg  <-  caro-asercion/french-horn.svg
+  fighter_heal_7.svg  <-  delapouite/healing-shield.svg
+  fighter_debuffDefense_7.svg  <-  lorc/cracked-alien-skull.svg
+  fighter_heavy_8.svg  <-  delapouite/3d-hammer.svg
+  fighter_buffDefense_8.svg  <-  delapouite/american-shield.svg
+  fighter_dot_9.svg  <-  lorc/bloody-stash.svg
+  fighter_restore_9.svg  <-  caro-asercion/water-mill.svg
+  fighter_leech_10.svg  <-  delapouite/brain-tentacle.svg
+  fighter_debuffAttack_10.svg  <-  lorc/cursed-star.svg
+  fighter_strike_11.svg  <-  cathelineau/swordwoman.svg
+  fighter_buffEvasion_11.svg  <-  caro-asercion/windchimes.svg
+  fighter_heal_12.svg  <-  delapouite/healing.svg
+  fighter_debuffSpeed_12.svg  <-  lorc/cobweb.svg
+  fighter_execute_13.svg  <-  lorc/guillotine.svg
+  fighter_buffAttack_13.svg  <-  delapouite/beer-horn.svg
+  fighter_ultimate_14.svg  <-  lorc/burning-meteor.svg
+  fighter_buffDefense_14.svg  <-  delapouite/attached-shield.svg
+  fighter_ultimate_15.svg  <-  lorc/fragmented-meteor.svg
+  fighter_passive_15.svg  <-  delapouite/yin-yang.svg
+  wizard_strike_6.svg  <-  delapouite/ancient-sword.svg
+  wizard_buffAttack_6.svg  <-  delapouite/horned-reptile.svg
+  wizard_heal_7.svg  <-  delapouite/health-capsule.svg
+  wizard_debuffDefense_7.svg  <-  lorc/cracked-ball-dunk.svg
+  wizard_heavy_8.svg  <-  delapouite/hammer-break.svg
+  wizard_buffDefense_8.svg  <-  delapouite/cross-shield.svg
+  wizard_dot_9.svg  <-  lorc/bloody-sword.svg
+  wizard_restore_9.svg  <-  delapouite/holy-water.svg
+  wizard_leech_10.svg  <-  delapouite/floating-tentacles.svg
+  wizard_debuffAttack_10.svg  <-  darkzaitzev/skull-sabertooth.svg
+  wizard_strike_11.svg  <-  delapouite/axe-sword.svg
+  wizard_buffEvasion_11.svg  <-  delapouite/paper-windmill.svg
+  wizard_heal_12.svg  <-  delapouite/health-potion.svg
+  wizard_debuffSpeed_12.svg  <-  lorc/spider-web.svg
+  wizard_execute_13.svg  <-  delapouite/skull-staff.svg
+  wizard_buffAttack_13.svg  <-  delapouite/mighty-horn.svg
+  wizard_ultimate_14.svg  <-  lorc/meteor-impact.svg
+  wizard_buffDefense_14.svg  <-  delapouite/dice-shield.svg
+  wizard_ultimate_15.svg  <-  caro-asercion/tarot-17-the-star.svg
+  wizard_passive_15.svg  <-  lorc/aura.svg
+  rogue_strike_6.svg  <-  delapouite/hook-swords.svg
+  rogue_buffAttack_6.svg  <-  delapouite/rhinoceros-horn.svg
+  rogue_heal_7.svg  <-  sbed/health-decrease.svg
+  rogue_debuffDefense_7.svg  <-  lorc/cracked-disc.svg
+  rogue_heavy_8.svg  <-  delapouite/hammer-sickle.svg
+  rogue_buffDefense_8.svg  <-  delapouite/dragon-shield.svg
+  rogue_dot_9.svg  <-  skoll/blood.svg
+  rogue_restore_9.svg  <-  delapouite/manual-water-pump.svg
+  rogue_leech_10.svg  <-  delapouite/kraken-tentacle.svg
+  rogue_debuffAttack_10.svg  <-  delapouite/t-rex-skull.svg
+  rogue_strike_11.svg  <-  delapouite/rusty-sword.svg
+  rogue_buffEvasion_11.svg  <-  delapouite/wind-turbine.svg
+  rogue_heal_12.svg  <-  sbed/health-increase.svg
+  rogue_debuffSpeed_12.svg  <-  lorc/web-spit.svg
+  rogue_execute_13.svg  <-  lorc/alien-skull.svg
+  rogue_buffAttack_13.svg  <-  lorc/bull-horns.svg
+  rogue_ultimate_14.svg  <-  darkzaitzev/north-star-shuriken.svg
+  rogue_buffDefense_14.svg  <-  delapouite/griffin-shield.svg
+  rogue_ultimate_15.svg  <-  darkzaitzev/star-shuriken.svg
+  rogue_passive_15.svg  <-  lorc/beams-aura.svg
+  cleric_strike_6.svg  <-  delapouite/sword-altar.svg
+  cleric_buffAttack_6.svg  <-  lorc/crown-of-thorns.svg
+  cleric_heal_7.svg  <-  sbed/health-normal.svg
+  cleric_debuffDefense_7.svg  <-  lorc/cracked-glass.svg
+  cleric_heavy_8.svg  <-  delapouite/stake-hammer.svg
+  cleric_buffDefense_8.svg  <-  delapouite/heart-shield.svg
+  cleric_dot_9.svg  <-  lorc/poison-bottle.svg
+  cleric_restore_9.svg  <-  delapouite/plant-watering.svg
+  cleric_leech_10.svg  <-  delapouite/purple-tentacle.svg
+  cleric_debuffAttack_10.svg  <-  lorc/animal-skull.svg
+  cleric_strike_11.svg  <-  delapouite/sword-brandish.svg
+  cleric_buffEvasion_11.svg  <-  delapouite/windmill.svg
+  cleric_heal_12.svg  <-  aussiesim/card-10-hearts.svg
+  cleric_debuffSpeed_12.svg  <-  caro-asercion/clarinet.svg
+  cleric_execute_13.svg  <-  lorc/broken-skull.svg
+  cleric_buffAttack_13.svg  <-  lorc/heavy-thorny-triskelion.svg
+  cleric_ultimate_14.svg  <-  delapouite/death-star.svg
+  cleric_buffDefense_14.svg  <-  delapouite/ribbon-shield.svg
+  cleric_ultimate_15.svg  <-  delapouite/falling-star.svg
+  cleric_passive_15.svg  <-  lorc/book-aura.svg
+  barbarian_strike_6.svg  <-  delapouite/sword-mold.svg
+  barbarian_buffAttack_6.svg  <-  lorc/horn-internal.svg
+  barbarian_heal_7.svg  <-  aussiesim/card-2-hearts.svg
+  barbarian_debuffDefense_7.svg  <-  lorc/cracked-helm.svg
+  barbarian_heavy_8.svg  <-  delapouite/thor-hammer.svg
+  barbarian_buffDefense_8.svg  <-  delapouite/roman-shield.svg
+  barbarian_dot_9.svg  <-  lorc/poison-gas.svg
+  barbarian_restore_9.svg  <-  delapouite/water-bottle.svg
+  barbarian_leech_10.svg  <-  delapouite/ringed-tentacle.svg
+  barbarian_debuffAttack_10.svg  <-  lorc/candle-skull.svg
+  barbarian_strike_11.svg  <-  delapouite/swords-power.svg
+  barbarian_buffEvasion_11.svg  <-  delapouite/window-bars.svg
+  barbarian_heal_12.svg  <-  aussiesim/card-3-hearts.svg
+  barbarian_debuffSpeed_12.svg  <-  delapouite/bug-net.svg
+  barbarian_execute_13.svg  <-  lorc/chewed-skull.svg
+  barbarian_buffAttack_13.svg  <-  lorc/horned-helm.svg
+  barbarian_ultimate_14.svg  <-  delapouite/flower-star.svg
+  barbarian_buffDefense_14.svg  <-  delapouite/shield-bash.svg
+  barbarian_ultimate_15.svg  <-  delapouite/knocked-out-stars.svg
+  barbarian_passive_15.svg  <-  lorc/icicles-aura.svg
+  bard_strike_6.svg  <-  delapouite/two-handed-sword.svg
+  bard_buffAttack_6.svg  <-  lorc/horned-skull.svg
+  bard_heal_7.svg  <-  aussiesim/card-4-hearts.svg
+  bard_debuffDefense_7.svg  <-  lorc/cracked-mask.svg
+  bard_heavy_8.svg  <-  delapouite/warhammer.svg
+  bard_buffDefense_8.svg  <-  delapouite/shield-impact.svg
+  bard_dot_9.svg  <-  sbed/poison-cloud.svg
+  bard_restore_9.svg  <-  delapouite/water-diviner-stick.svg
+  bard_leech_10.svg  <-  delapouite/tentacles-barrier.svg
+  bard_debuffAttack_10.svg  <-  lorc/chopped-skull.svg
+  bard_strike_11.svg  <-  lorc/bouncing-sword.svg
+  bard_buffEvasion_11.svg  <-  delapouite/window.svg
+  bard_heal_12.svg  <-  aussiesim/card-5-hearts.svg
+  bard_debuffSpeed_12.svg  <-  delapouite/exploding-planet.svg
+  bard_execute_13.svg  <-  lorc/condylura-skull.svg
+  bard_buffAttack_13.svg  <-  lorc/hunting-horn.svg
+  bard_ultimate_14.svg  <-  delapouite/polar-star.svg
+  bard_buffDefense_14.svg  <-  delapouite/shield-opposition.svg
+  bard_ultimate_15.svg  <-  delapouite/round-star.svg
+  bard_passive_15.svg  <-  lorc/rear-aura.svg
+  druid_strike_6.svg  <-  lorc/broadsword.svg
+  druid_buffAttack_6.svg  <-  lorc/light-thorny-triskelion.svg
+  druid_heal_7.svg  <-  aussiesim/card-6-hearts.svg
+  druid_debuffDefense_7.svg  <-  lorc/cracked-saber.svg
+  druid_heavy_8.svg  <-  lorc/claw-hammer.svg
+  druid_buffDefense_8.svg  <-  delapouite/spiked-shield.svg
+  druid_dot_9.svg  <-  sbed/poison.svg
+  druid_restore_9.svg  <-  delapouite/water-flask.svg
+  druid_leech_10.svg  <-  lorc/curled-tentacle.svg
+  druid_debuffAttack_10.svg  <-  lorc/crowned-skull.svg
+  druid_strike_11.svg  <-  lorc/croc-sword.svg
+  druid_buffEvasion_11.svg  <-  delapouite/windpump.svg
+  druid_heal_12.svg  <-  aussiesim/card-7-hearts.svg
+  druid_debuffSpeed_12.svg  <-  delapouite/lorgnette.svg
+  druid_execute_13.svg  <-  lorc/daemon-skull.svg
+  druid_buffAttack_13.svg  <-  lorc/thorn-helix.svg
+  druid_ultimate_14.svg  <-  delapouite/sea-star.svg
+  druid_buffDefense_14.svg  <-  delapouite/templar-shield.svg
+  druid_ultimate_15.svg  <-  delapouite/seven-pointed-star.svg
+  druid_passive_15.svg  <-  delapouite/all-seeing-eye.svg
+  monk_strike_6.svg  <-  lorc/crossed-swords.svg
+  monk_buffAttack_6.svg  <-  lorc/thorned-arrow.svg
+  monk_heal_7.svg  <-  aussiesim/card-8-hearts.svg
+  monk_debuffDefense_7.svg  <-  lorc/cracked-shield.svg
+  monk_heavy_8.svg  <-  lorc/flat-hammer.svg
+  monk_buffDefense_8.svg  <-  delapouite/temporary-shield.svg
+  monk_dot_9.svg  <-  delapouite/medical-drip.svg
+  monk_restore_9.svg  <-  delapouite/water-fountain.svg
+  monk_leech_10.svg  <-  lorc/interlaced-tentacles.svg
+  monk_debuffAttack_10.svg  <-  lorc/desert-skull.svg
+  monk_strike_11.svg  <-  lorc/dervish-swords.svg
+  monk_buffEvasion_11.svg  <-  delapouite/windsock.svg
+  monk_heal_12.svg  <-  aussiesim/card-9-hearts.svg
+  monk_debuffSpeed_12.svg  <-  delapouite/magnet-man.svg
+  monk_execute_13.svg  <-  lorc/diablo-skull.svg
+  monk_buffAttack_13.svg  <-  lorc/thorny-tentacle.svg
+  monk_ultimate_14.svg  <-  delapouite/star-altar.svg
+  monk_buffDefense_14.svg  <-  delapouite/tribal-shield.svg
+  monk_ultimate_15.svg  <-  delapouite/star-flag.svg
+  monk_passive_15.svg  <-  delapouite/angry-eyes.svg
+  paladin_strike_6.svg  <-  lorc/dripping-sword.svg
+  paladin_buffAttack_6.svg  <-  lorc/thorny-vine.svg
+  paladin_heal_7.svg  <-  aussiesim/card-ace-hearts.svg
+  paladin_debuffDefense_7.svg  <-  lorc/earth-crack.svg
+  paladin_heavy_8.svg  <-  lorc/gear-hammer.svg
+  paladin_buffDefense_8.svg  <-  delapouite/trident-shield.svg
+  paladin_dot_9.svg  <-  lorc/dripping-blade.svg
+  paladin_restore_9.svg  <-  delapouite/water-gallon.svg
+  paladin_leech_10.svg  <-  lorc/spiked-tentacle.svg
+  paladin_debuffAttack_10.svg  <-  lorc/dread-skull.svg
+  paladin_strike_11.svg  <-  lorc/energy-sword.svg
+  paladin_buffEvasion_11.svg  <-  lorc/whirlwind.svg
+  paladin_heal_12.svg  <-  aussiesim/card-jack-hearts.svg
+  paladin_debuffSpeed_12.svg  <-  delapouite/mesh-network.svg
+  paladin_execute_13.svg  <-  lorc/fanged-skull.svg
+  paladin_buffAttack_13.svg  <-  delapouite/knight-banner.svg
+  paladin_ultimate_14.svg  <-  delapouite/star-formation.svg
+  paladin_buffDefense_14.svg  <-  delapouite/vibrating-shield.svg
+  paladin_ultimate_15.svg  <-  delapouite/star-gate.svg
+  paladin_passive_15.svg  <-  delapouite/cyber-eye.svg
+  ranger_strike_6.svg  <-  lorc/fragmented-sword.svg
+  ranger_buffAttack_6.svg  <-  delapouite/vertical-banner.svg
+  ranger_heal_7.svg  <-  aussiesim/card-king-hearts.svg
+  ranger_debuffDefense_7.svg  <-  lorc/edge-crack.svg
+  ranger_heavy_8.svg  <-  lorc/hammer-drop.svg
+  ranger_buffDefense_8.svg  <-  delapouite/viking-shield.svg
+  ranger_dot_9.svg  <-  lorc/dripping-goo.svg
+  ranger_restore_9.svg  <-  delapouite/water-gun.svg
+  ranger_leech_10.svg  <-  lorc/spiral-tentacle.svg
+  ranger_debuffAttack_10.svg  <-  lorc/goo-skull.svg
+  ranger_strike_11.svg  <-  lorc/gooey-sword.svg
+  ranger_buffEvasion_11.svg  <-  lorc/wind-hole.svg
+  ranger_heal_12.svg  <-  aussiesim/card-queen-hearts.svg
+  ranger_debuffSpeed_12.svg  <-  delapouite/network-bars.svg
+  ranger_execute_13.svg  <-  lorc/happy-skull.svg
+  ranger_buffAttack_13.svg  <-  lorc/tattered-banner.svg
+  ranger_ultimate_14.svg  <-  delapouite/star-key.svg
+  ranger_buffDefense_14.svg  <-  lorc/arrows-shield.svg
+  ranger_ultimate_15.svg  <-  delapouite/star-medal.svg
+  ranger_passive_15.svg  <-  delapouite/egg-eye.svg
+  sorcerer_strike_6.svg  <-  lorc/piercing-sword.svg
+  sorcerer_buffAttack_6.svg  <-  lorc/lightning-shout.svg
+  sorcerer_heal_7.svg  <-  delapouite/centaur-heart.svg
+  sorcerer_debuffDefense_7.svg  <-  lorc/skull-crack.svg
+  sorcerer_heavy_8.svg  <-  lorc/hammer-nails.svg
+  sorcerer_buffDefense_8.svg  <-  lorc/bell-shield.svg
+  sorcerer_dot_9.svg  <-  lorc/dripping-honey.svg
+  sorcerer_restore_9.svg  <-  delapouite/water-polo.svg
+  sorcerer_leech_10.svg  <-  lorc/suckered-tentacle.svg
+  sorcerer_debuffAttack_10.svg  <-  lorc/harry-potter-skull.svg
+  sorcerer_strike_11.svg  <-  lorc/pointy-sword.svg
+  sorcerer_buffEvasion_11.svg  <-  lorc/wind-slap.svg
+  sorcerer_heal_12.svg  <-  delapouite/heart-armor.svg
+  sorcerer_debuffSpeed_12.svg  <-  delapouite/planet-conquest.svg
+  sorcerer_execute_13.svg  <-  lorc/leaky-skull.svg
+  sorcerer_buffAttack_13.svg  <-  lorc/shouting.svg
+  sorcerer_ultimate_14.svg  <-  delapouite/star-struck.svg
+  sorcerer_buffDefense_14.svg  <-  lorc/black-hand-shield.svg
+  sorcerer_ultimate_15.svg  <-  delapouite/starfighter.svg
+  sorcerer_passive_15.svg  <-  delapouite/eye-of-horus.svg
+  warlock_strike_6.svg  <-  lorc/rune-sword.svg
+  warlock_buffAttack_6.svg  <-  lorc/sonic-shout.svg
+  warlock_heal_7.svg  <-  delapouite/heart-battery.svg
+  warlock_debuffDefense_7.svg  <-  catsu/broken-arrow.svg
+  warlock_heavy_8.svg  <-  delapouite/bullet-impacts.svg
+  warlock_buffDefense_8.svg  <-  lorc/bolt-shield.svg
+  warlock_dot_9.svg  <-  lorc/dripping-knife.svg
+  warlock_restore_9.svg  <-  delapouite/water-recycling.svg
+  warlock_leech_10.svg  <-  lorc/tentacle-heart.svg
+  warlock_debuffAttack_10.svg  <-  lorc/medal-skull.svg
+  warlock_strike_11.svg  <-  lorc/shard-sword.svg
+  warlock_buffEvasion_11.svg  <-  lorc/windy-stripes.svg
+  warlock_heal_12.svg  <-  delapouite/heart-beats.svg
+  warlock_debuffSpeed_12.svg  <-  delapouite/planet-core.svg
+  warlock_execute_13.svg  <-  lorc/piece-skull.svg
+  warlock_buffAttack_13.svg  <-  delapouite/enrage.svg
+  warlock_ultimate_14.svg  <-  delapouite/stars-stack.svg
+  warlock_buffDefense_14.svg  <-  lorc/bordered-shield.svg
+  warlock_ultimate_15.svg  <-  faithtoken/ninja-star.svg
+  warlock_passive_15.svg  <-  delapouite/eye-target.svg
+
+Per-file sources (Wave G2 item icons)
+===================================
+Each file client/public/art/items/<key>.svg is derived from the game-icons.net
+icon named below (<author>/<icon>), same CC BY 3.0 license as the rest.
+
+  shepherd_key.svg  <-  delapouite/boss-key.svg
+  shepherd_crook.svg  <-  generalace135/shepherds-crook.svg
+  rusty_sword.svg  <-  delapouite/rusty-sword.svg
+  hunter_bow.svg  <-  delapouite/bow-arrow.svg
+  ashen_dagger.svg  <-  lorc/plain-dagger.svg
+  gravewarden_maul.svg  <-  delapouite/warhammer.svg
+  worn_leathers.svg  <-  lorc/leather-vest.svg
+  iron_hauberk.svg  <-  willdabeast/chain-mail.svg
+  dusk_hood.svg  <-  lorc/hood.svg
+  pallid_gauntlets.svg  <-  delapouite/gauntlet.svg
+  gravedigger_boots.svg  <-  lorc/boots.svg
+  bone_buckler.svg  <-  delapouite/cross-shield.svg
+  moonstone_ring.svg  <-  delapouite/diamond-ring.svg
+  wolf_fang_amulet.svg  <-  lorc/bestial-fangs.svg
+  bread_loaf.svg  <-  delapouite/bread.svg
+  clean_water.svg  <-  delapouite/water-flask.svg
+  bitter_herb.svg  <-  delapouite/plant-roots.svg
+  mana_lichen.svg  <-  delapouite/herbs-bundle.svg
+  glowcap.svg  <-  lorc/spotted-mushroom.svg
+  shadow_draught.svg  <-  lorc/standing-potion.svg
+  iron_brew.svg  <-  delapouite/health-potion.svg
+  wolfsblood.svg  <-  lorc/potion-ball.svg
+  hex_vial.svg  <-  sbed/vial.svg
+  crow_feather.svg  <-  lorc/feather.svg
+  ossuary_heart.svg  <-  delapouite/heart-armor.svg
+  pale_lantern.svg  <-  lorc/lantern.svg
+
+Forge-loot icons (Wave W-SMITH). Same style and license; regenerated by
+`node tools/gen_item_icons.mjs` (idempotent).
+  forgeblade.svg  <-  lorc/pointy-sword.svg
+  ashen_plate.svg  <-  lorc/breastplate.svg
+  bone_buckler_forged.svg  <-  lorc/checked-shield.svg
+  grave_moss_salve.svg  <-  lorc/round-bottom-flask.svg
+  ember_draught.svg  <-  lorc/potion-ball.svg
+  tempered_edge.svg  <-  lorc/broadsword.svg
+  salted_hide.svg  <-  delapouite/leather-armor.svg
+
+--------------------------------------------------------------------------------
+Audio credits (Wave W-AUDIO)
+
+Every music loop and sound effect is CC0 / public domain, taken from
+OpenGameArt.org. CC0 needs no attribution, but the source is named here so a
+track can always be traced. Files were re-encoded to mono OGG Vorbis and, for
+music, trimmed to a ~72s loop with short fades and loudness-normalised; the
+music engine crossfades between them. One file per game context.
+
+Music:
+  menu.ogg        - haeldb        - "Tragic ambient main menu"    https://opengameart.org/content/tragic-ambient-main-menu
+  world.ogg       - pauliuw       - "The Field Of Dreams"         https://opengameart.org/content/the-field-of-dreams
+  location.ogg    - yd            - "Dungeon Ambience"            https://opengameart.org/content/dungeon-ambience
+  settlement.ogg  - cynicmusic    - "Town Theme RPG"              https://opengameart.org/content/town-theme-rpg
+  battle.ogg      - bonsaiheldin  - "Fast fight / battle music"   https://opengameart.org/content/fast-fight-battle-music
+  sea.ogg         - Cleyton RX    - "Underwater Theme"            https://opengameart.org/content/underwater-theme
+  port.ogg        - randommind    - "Medieval: The Old Tower Inn" https://opengameart.org/content/medieval-the-old-tower-inn
+  tavern.ogg      - mrpoly        - "Menu Music"                  https://opengameart.org/content/menu-music
+  temple.ogg      - tokyogeisha   - "Creepy"                      https://opengameart.org/content/creepy
+  forest.ogg      - haeldb        - "Cave Theme"                  https://opengameart.org/content/cave-theme
+  marsh.ogg       - haeldb        - "Creepy Forest (F)"           https://opengameart.org/content/creepy-forest-f
+  waste.ogg       - yd            - "Desert theme"                https://opengameart.org/content/desert-theme
+  coast.ogg       - kindland      - "Forgoten tomb ambience"      https://opengameart.org/content/forgoten-tomb-ambience
+  bonefield.ogg   - subspaceaudio - "Boss Battle Music"           https://opengameart.org/content/boss-battle-music
+  snow.ogg        - kistol        - "Snowfall"                    https://opengameart.org/content/snowfall
+  campaign.ogg    - Alexander Ehlers - "Free Music Pack"          https://opengameart.org/content/free-music-pack
+
+Sound effects:
+  ui_click.ogg, ui_back.ogg - Kenney      - "51 UI sound effects"  https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks
+  open.ogg                  - Kenney      - "50 RPG sound effects" https://opengameart.org/content/50-rpg-sound-effects
+  splash.ogg                - artisticdude - "RPG Sound Pack"      https://opengameart.org/content/rpg-sound-pack
+  miss.ogg                  - ogrebane    - "Battle Sound Effects" https://opengameart.org/content/battle-sound-effects
+  level_up.ogg              - wobbleboxx  - "Level up, power up, Coin get" https://opengameart.org/content/level-up-power-up-coin-get-13-sounds
+  hit.ogg, crit.ogg, loot.ogg, death.ogg, coin.ogg, cannon.ogg
+                            - Hellfire    - "80 CC0 RPG SFX"       https://opengameart.org/content/80-cc0-rpg-sfx
