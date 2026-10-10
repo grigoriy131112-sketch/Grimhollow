@@ -344,14 +344,21 @@ function voyageView(row) {
   return {
     id: row.id,
     characterId: row.character_id,
+    // Names for the player to read, ids for the client to route on -- the client
+    // used to interpolate the name into `/world/locations/:id` and 404.
     from: getLocation(row.from_id)?.name || null,
     to: getLocation(row.to_id)?.name || null,
+    fromId: row.from_id,
+    toId: row.to_id,
     seed: row.seed,
     stops,
     cursor: row.cursor,
     stop,
     mode,
     done: resolved,
+    // A voyage with no stops never raises a stop to answer, so the client has to
+    // be offered the landing directly instead of waiting for a turn it can't take.
+    canLand: !resolved && mode === 'voyage' && stops.length === 0,
     ashore: row.ashore_id || null,
     islandId: island?.anchor?.id || null,
     island: island ? { id: island.anchor.id, name: island.name, description: island.anchor.description } : (stop?.island || null),
@@ -399,7 +406,10 @@ export function resolveVoyageStop(characterId) {
   if (activeBattleRow(characterId)) throw new Error('Сначала закончите морской бой');
   if (row.mode === 'island') throw new Error('Сначала вернитесь на корабль');
   if (row.cursor >= stops.length) {
-    getDb().prepare("UPDATE voyages SET resolved = 1, updated_at = datetime('now') WHERE id = ?").run(row.id);
+    // The list is already exhausted (e.g. a voyage drawn with no stops at all):
+    // land the party at the far port instead of only flipping `resolved`, which
+    // used to leave the trip ended with the party still standing at the origin.
+    advanceVoyageCursor(row, stops.length);
     return { voyage: voyageView(voyageRow(row.id)), battleId: null };
   }
 
@@ -536,6 +546,10 @@ export function exploreIslandLandmark(characterId) {
     .get(characterId, island.anchor.id)?.landmark_state || '';
   if (state === 'raided') throw new Error('Племя уже разорено — говорить больше не с кем');
   if (state === 'explored') throw new Error('Это место уже исследовано');
+  // Talking is a peaceable act: not while a blade is already out somewhere.
+  if (getDb().prepare("SELECT id FROM battles WHERE character_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1").get(characterId)) {
+    throw new Error('Сначала закончите бой — сейчас не до разговоров');
+  }
 
   const isle = islandByKey(row.island_ref);
   const place = isle?.landmark;

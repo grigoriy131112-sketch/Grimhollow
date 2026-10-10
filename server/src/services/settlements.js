@@ -107,7 +107,10 @@ function deriveSettlement(row, { withBuildings = true } = {}) {
 
 // Every settlement in the world, without their buildings (the list view).
 export function listSettlements() {
-  return getDb().prepare('SELECT * FROM settlements ORDER BY sort_order, id')
+  return getDb().prepare(
+    `SELECT s.* FROM settlements s JOIN locations l ON l.id = s.location_id
+      WHERE l.hidden = 0 ORDER BY s.sort_order, s.id`,
+  )
     .all()
     .map((r) => deriveSettlement(r, { withBuildings: false }));
 }

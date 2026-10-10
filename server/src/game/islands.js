@@ -238,21 +238,22 @@ function rngFrom(seed) {
   };
 }
 
-// The dead of an island are the same wherever one stands on it: one beast pool
-// per island, drawn from its band, so the wildlife reads as one place, kept
-// stable per island so a reload cannot reroll it.
-function islandBeasts(key, danger) {
-  const pool = MONSTER_BANDS[Math.max(2, Math.min(5, danger))] || MONSTER_BANDS[3];
-  const rng = rngFrom(`isle-beasts:${key}`);
+// Beasts for a place, drawn from the band of its own danger and kept stable per
+// place, so a reload cannot reroll an island's wildlife and a deadly heart does
+// not get the shore's vermin.
+function islandBeasts(seed, danger) {
+  const band = Math.max(2, Math.min(5, danger));
+  const pool = MONSTER_BANDS[band] || MONSTER_BANDS[3];
+  const rng = rngFrom(`isle-beasts:${seed}`);
   const start = Math.floor(rng() * pool.length);
   return pool.map((_, i) => pool[(start + i) % pool.length]);
 }
 
 function buildIsland(seed) {
   const type = TYPES[seed.type];
-  const beasts = islandBeasts(seed.key, seed.base);
   const locations = type.roles.map((role, i) => {
     const danger = Math.min(5, seed.base + i);
+    const beasts = islandBeasts(`${seed.key}:${i}`, danger);
     const b = (k) => beasts[(i + k) % beasts.length];
     return {
       index: i,

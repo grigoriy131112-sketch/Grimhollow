@@ -308,7 +308,10 @@ export default function LocationPage() {
         </div>
       )}
 
-      {settlement && (
+      {/* A settlement the island holds is opened by the island card itself, and
+          only after the party explores its village -- so the stand-alone card
+          never spoils (or duplicates) it. */}
+      {settlement && !island?.onLandmark && (
         <div className="card">
           <h2>Поселение</h2>
           <p className="muted small">

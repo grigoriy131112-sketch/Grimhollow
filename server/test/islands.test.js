@@ -20,7 +20,7 @@ import {
   leaveIsland, searchIsland, islandClaims, exploreIslandLandmark, raidIslandLandmark,
 } from '../src/services/naval.js';
 import { getBattleView, recordIslandRaid } from '../src/services/battles.js';
-import { getSettlementByLocation } from '../src/services/settlements.js';
+import { getSettlementByLocation, listSettlements } from '../src/services/settlements.js';
 
 let n = 0;
 function hero({ gold = 5000 } = {}) {
@@ -257,6 +257,9 @@ test('a native village landmark carries a settlement with a tavern and a shop', 
     for (const t of ['tavern', 'shop', 'market', 'temple']) assert.ok(types.has(t), `the village has a ${t}`);
     assert.equal(settlement.kind, 'native_village');
   }
+  // The public list of settlements must never give away a hidden island village.
+  const listed = listSettlements();
+  assert.ok(!listed.some((s) => s.kind === 'native_village'), 'island villages stay off the public list');
 });
 
 test('exploring a landmark pays a gift, once, and closes it to raiding', () => {
@@ -325,6 +328,37 @@ test('the voyage roll names a seeded island when it draws one', () => {
   }
   assert.ok(sawIsland, 'some voyages do draw an island');
   assert.equal(pickIsland('fixed').key, pickIsland('fixed').key, 'the draw is deterministic');
+});
+
+test('a calm voyage with no stops still lands the party at the far port', () => {
+  seedAll();
+  const c = hero();
+  buyShip(c.id, { name: 'Тихий' });
+  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(5000, c.id);
+  const route = routeFor(PORT_A, PORT_B);
+  if (route.item) grantItem(c.id, route.item.key, route.item.qty);
+  const view = startVoyage({ characterId: c.id, fromId: idOf(PORT_A), toId: idOf(PORT_B) });
+  // Force the calm sea: a voyage the roll drew with no stops at all.
+  getDb().prepare("UPDATE voyages SET stops = '[]', cursor = 0, resolved = 0, mode = 'voyage' WHERE id = ?").run(view.id);
+
+  const v = getVoyageView(c.id);
+  assert.equal(v.stops.length, 0, 'no stops to answer');
+  assert.equal(v.canLand, true, 'but the port is offered');
+  const res = resolveVoyageStop(c.id);
+  assert.equal(res.voyage.done, true, 'resolving a calm voyage lands the party');
+  assert.equal(characterExploration(c.id).locationId, idOf(PORT_B), 'at the far port');
+});
+
+test('each place carries beasts of its own danger, so a deadly heart is not vermin', () => {
+  seedAll();
+  const db = getDb();
+  const salt = islandByKey('salt_skull'); // base 3: shore 3, interior 4, heart 5
+  const heart = salt.locations[2];
+  const shore = salt.locations[0];
+  assert.ok(heart.monsters.length > 0 && shore.monsters.length > 0, 'both places hold beasts');
+  const level = (name) => db.prepare('SELECT level FROM monsters WHERE name = ?').get(name)?.level ?? 0;
+  const minOf = (loc) => Math.min(...loc.monsters.map(level));
+  assert.ok(minOf(heart) > minOf(shore), 'the deadlier heart fields the deadlier beasts');
 });
 
 test('the loot helpers stay inside a place\u2019s band', () => {

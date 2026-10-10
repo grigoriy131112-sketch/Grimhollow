@@ -260,6 +260,8 @@ test('a voyage charges the fare, keeps the party at sea, and lands it at the far
 
   const view = startVoyage({ characterId: c.id, fromId: portId(), toId: portBId() });
   assert.equal(view.to, PORT_B);
+  assert.equal(view.toId, portBId(), 'the view carries the destination id, not just the name');
+  assert.equal(view.fromId, portId(), 'and the origin id');
   assert.equal(view.mode, 'voyage', 'the party is on the open water, not landed yet');
   assert.ok(view.stops.length <= 2, 'zero to two stops');
 

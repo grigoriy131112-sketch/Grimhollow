@@ -66,7 +66,7 @@ export default function VoyagePage() {
 
   return (
     <div>
-      <Link to={`/world/locations/${voyage.to}`} className="muted">← Порт</Link>
+      <Link to={`/world/locations/${voyage.toId ?? voyage.to}`} className="muted">← Порт</Link>
       <div className="scene-hero">
         <SceneBackdrop scene="sea" biome="coast" danger={2} name={`Море: ${voyage.from} → ${voyage.to}`} />
         <div className="scene-caption">
@@ -79,7 +79,16 @@ export default function VoyagePage() {
 
       <div className="card">
         <h2>Плавание</h2>
-        {total === 0 && <p className="muted">Море спокойно — ни паруса, ни тени на горизонте.</p>}
+        {total === 0 && (
+          <p className="muted">Море спокойно — ни паруса, ни тени на горизонте.</p>
+        )}
+        {total === 0 && voyage.canLand && (
+          <div className="road-arrived">
+            <div className="actions">
+              <button type="button" disabled={busy} onClick={resolve}>Войти в порт</button>
+            </div>
+          </div>
+        )}
         {stop && (
           <div className="road-encounter">
             <h3>{stop.title}</h3>
@@ -114,7 +123,7 @@ export default function VoyagePage() {
           <div className="road-arrived">
             <p className="road-outcome">Плавание окончено. Отряд стоит в порту {voyage.to}.</p>
             <div className="actions">
-              <button type="button" onClick={() => navigate(`/world/locations/${voyage.to}`)}>Сойти на берег</button>
+              <button type="button" onClick={() => navigate(`/world/locations/${voyage.toId ?? voyage.to}`)}>Сойти на берег</button>
             </div>
           </div>
         )}

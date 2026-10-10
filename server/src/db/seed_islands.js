@@ -133,20 +133,26 @@ export function seedIslands() {
 
       const coords = islandCluster(isle.key, isle.locations.length);
       isle.locations.forEach((loc, li) => {
-        if (locRow(loc.name)) return;
         const c = coords[li];
         const isSafe = loc.kind === 'landmark' && loc.landmarkKind === 'village' ? 1 : 0;
-        const lid = insLocation.run(
-          regionId, loc.name, loc.description, loc.danger, isSafe, li,
-          c.x, c.y, loc.scene, loc.biome,
-        ).lastInsertRowid;
-        locationsAdded += 1;
+        let lid = locRow(loc.name)?.id;
+        if (!lid) {
+          lid = insLocation.run(
+            regionId, loc.name, loc.description, loc.danger, isSafe, li,
+            c.x, c.y, loc.scene, loc.biome,
+          ).lastInsertRowid;
+          locationsAdded += 1;
+        }
+        // Rewrite the spawns on every boot: a place's beasts are derived from its
+        // danger, so a fix to the band must reach a database seeded before it --
+        // otherwise a live world keeps the vermin an old build gave its heart.
+        d.prepare('DELETE FROM location_monsters WHERE location_id = ?').run(lid);
         (loc.monsters || []).forEach((name, idx) => {
           const mid = byName.get(name);
           if (mid) insSpawn.run(lid, mid, Math.max(1, 4 - idx));
         });
         // A native village carries a settlement: a tavern, a shop, a market.
-        if (loc.settlementKind === 'native_village') {
+        if (loc.settlementKind === 'native_village' && !d.prepare('SELECT id FROM settlements WHERE location_id = ?').get(lid)) {
           const sid = insSettlement.run(lid, `isle_${isle.key}_village`, `${loc.name}`, loc.settlementKind, loc.description, 0).lastInsertRowid;
           nativeBuildings(isle).forEach((b, bi) => {
             const bid = insBuilding.run(sid, b.key, b.name, b.type, b.description ?? '', bi).lastInsertRowid;
