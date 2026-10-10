@@ -114,8 +114,8 @@ export default function App() {
   return (
     <div className="app">
       <Nav />
+      {pathname !== '/' && <Atmosphere tone={tone} />}
       <main className={pathname === '/' ? 'menu-host' : 'container screen-atmos'}>
-        {pathname !== '/' && <Atmosphere tone={tone} />}
         <Routes>
           <Route path="/" element={<MainMenuPage characters={menu.characters} saves={menu.saves} onRefresh={refreshMenu} />} />
           <Route path="/creators" element={<CreatorsPage />} />

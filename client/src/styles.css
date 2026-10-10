@@ -866,7 +866,7 @@ ul.stats span { color: var(--muted); }
    pointer-events: none so it never steals a click. */
 .atmos {
   position: fixed; inset: 0; z-index: 0; overflow: hidden;
-  pointer-events: none; contain: strict;
+  pointer-events: none; contain: layout paint style;
 }
 .atmos-glow {
   position: absolute; inset: -10%;
@@ -995,3 +995,36 @@ button:focus-visible, .btn:focus-visible, a:focus-visible { outline: 2px solid v
   background: linear-gradient(180deg, rgba(255,255,255,0.22), transparent);
   border-radius: inherit;
 }
+
+/* --- W-ATMOSPHERE: screens arrive, headings breathe --- */
+.container { position: relative; z-index: 1; animation: screenIn 0.4s ease-out; }
+@keyframes screenIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .container { animation: none; } }
+
+.page-head { position: relative; padding-bottom: 0.5rem; }
+.page-head::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: linear-gradient(90deg, var(--gold-soft), rgba(207,106,68,0.12) 30%, transparent 75%);
+  opacity: 0.55;
+}
+.page-head h1 { font-weight: 400; }
+
+/* Section headings carry a small ember tick, like a marginal illumination.
+   Kept off the paper Codex book and the centered modal titles. */
+h2 { position: relative; padding-left: 0.85rem; }
+h2::before {
+  content: ''; position: absolute; left: 0; top: 0.15em; bottom: 0.15em; width: 3px;
+  background: linear-gradient(180deg, var(--gold-soft), rgba(207,106,68,0.1));
+  border-radius: 2px;
+}
+.book h2, .menu-sheet h2, .sheet-inner h2 { padding-left: 0; }
+.book h2::before, .menu-sheet h2::before, .sheet-inner h2::before { display: none; }
+
+/* Ember underline for the active tab strips, tying the app together. */
+.tabs button.active, .map-tab.active, .codex-tab.active { box-shadow: 0 0 18px rgba(207,106,68,0.14); }
+
+/* Modal sheets rise and the backdrop dims a touch warmer. */
+.menu-sheet { animation: sheetFade 0.25s ease-out; }
+@keyframes sheetFade { from { opacity: 0; } to { opacity: 1; } }
+.sheet-inner { animation: sheetRise 0.3s cubic-bezier(0.22,1,0.36,1); border-color: rgba(207,106,68,0.2); }
+@keyframes sheetRise { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
