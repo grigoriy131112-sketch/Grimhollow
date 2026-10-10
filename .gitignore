@@ -1,6 +1,7 @@
 node_modules/
 dist/
 build/
+client/dist-static/
 *.log
 .env
 .env.*
