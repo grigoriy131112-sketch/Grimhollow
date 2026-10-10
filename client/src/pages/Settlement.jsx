@@ -220,7 +220,12 @@ export default function SettlementPage() {
   const loc = settlement.location || {};
   return (
     <div>
-      <Link to="/world" className="muted">← Карта мира</Link>
+      {/* An island settlement stands on a hidden place that is not on the atlas,
+          so "back to the map" would drop the player somewhere the village is not
+          drawn. Return to the island place instead. */}
+      {loc.hidden && settlement.locationId
+        ? <Link to={`/world/locations/${settlement.locationId}`} className="muted">← Назад к острову</Link>
+        : <Link to="/world" className="muted">← Карта мира</Link>}
       <div className="scene-hero">
         <SceneBackdrop scene={loc.scene} biome={loc.biome} danger={loc.danger} name={settlement.name} />
         <div className="scene-caption">

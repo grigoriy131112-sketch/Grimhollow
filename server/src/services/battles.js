@@ -53,6 +53,13 @@ export function startBattle({ characterId, monsterId, locationId, kind = 'normal
   if (getDb().prepare("SELECT id FROM naval_battles WHERE character_id = ? AND status = 'active' LIMIT 1").get(characterId)) {
     throw new Error('Сначала закончите морской бой');
   }
+  // One land fight at a time, too. Nothing stopped opening a second battle for
+  // the same hero (a surrendered fight could be re-started mid-turn, and every
+  // hunt from another tab opened its own battle), and both then settle against
+  // the same party. The party must finish the fight it is in.
+  if (getDb().prepare("SELECT id FROM battles WHERE character_id = ? AND status = 'active' LIMIT 1").get(characterId)) {
+    throw new Error('Сначала закончите бой');
+  }
 
   let monster = opponent || (monsterId ? getMonster(monsterId) : null);
   let location = locationId ? getLocation(locationId) : null;

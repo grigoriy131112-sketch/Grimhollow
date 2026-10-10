@@ -84,6 +84,7 @@ function locationInfo(locationId) {
   return {
     id: loc.id, name: loc.name, description: loc.description, danger: loc.danger,
     isSafe: !!loc.is_safe, scene: loc.scene, biome: loc.biome, x: loc.map_x, y: loc.map_y,
+    hidden: !!loc.hidden,
     regionName: region?.name, continentName: continent?.name,
   };
 }
