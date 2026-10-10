@@ -22,9 +22,13 @@ export default function VoyagePage() {
   useEffect(() => { load(); }, [characterId]);
   useEffect(() => { api.getParty(characterId).then(setParty).catch(() => {}); }, [characterId]);
   // Ashore: the party stands on the island itself, so send the player to the
-  // real location screen (it is a walkable place, like a continent's).
+  // real location screen (it is a walkable place, like a continent's). Use
+  // `ashoreAt` (the party's real place) rather than `ashore` (the ship's anchor),
+  // so a reload while inland does not teleport the party back to the shore.
   useEffect(() => {
-    if (voyage?.mode === 'island' && voyage.ashore) navigate(`/world/locations/${voyage.ashore}`);
+    if (voyage?.mode === 'island' && (voyage.ashoreAt || voyage.ashore)) {
+      navigate(`/world/locations/${voyage.ashoreAt || voyage.ashore}`);
+    }
   }, [voyage, navigate]);
 
   const resolve = async () => {
