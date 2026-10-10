@@ -474,6 +474,7 @@ export function sailPastIsland(characterId) {
   const row = activeVoyageRow(characterId);
   if (!row) throw new Error('Нет активного плавания');
   if (row.mode === 'island') throw new Error('Сначала вернитесь на корабль');
+  if (anyBattleOpen(characterId)) throw new Error('Сначала закончите бой');
   const stops = parseJson(row.stops, []);
   const stop = row.cursor < stops.length ? stops[row.cursor] : null;
   if (!stop || stop.kind !== 'island') throw new Error('Сейчас нечего обходить');
@@ -490,6 +491,7 @@ export function putInIsland(characterId) {
   const row = activeVoyageRow(characterId);
   if (!row) throw new Error('Нет активного плавания');
   if (row.mode === 'island') return { voyage: voyageView(row), landed: true };
+  if (anyBattleOpen(characterId)) throw new Error('Сначала закончите бой');
   const stops = parseJson(row.stops, []);
   const stop = row.cursor < stops.length ? stops[row.cursor] : null;
   if (!stop || stop.kind !== 'island') throw new Error('Сейчас некуда причаливать');

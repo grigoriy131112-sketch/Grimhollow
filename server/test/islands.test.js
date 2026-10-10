@@ -263,6 +263,20 @@ test('a peaceful island errand is refused while a sea fight is open', () => {
   assert.throws(() => leaveIsland(c.id), /бой/i, 'no departure under a sea fight');
 });
 
+test('sailing past an island is refused while a sea fight is open', () => {
+  seedAll();
+  const c = hero();
+  buyShip(c.id, { name: 'Стоик' });
+  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(5000, c.id);
+  const isle = islandByKey('frost_maw');
+  voyageWithIslandStop(c.id, isle);
+  resolveVoyageStop(c.id); // the sea asks; the cursor has not moved
+  // A free fight opened at the island prompt must hold the answer too.
+  startNavalBattle(c.id, { kind: 'pirates' });
+  assert.throws(() => sailPastIsland(c.id), /бой/i, 'no sailing past under a sea fight');
+  assert.throws(() => putInIsland(c.id), /бой/i, 'no going ashore under a sea fight');
+});
+
 test('the party can only put back to sea from the shore', () => {
   seedAll();
   const c = hero();
