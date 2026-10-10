@@ -12,6 +12,13 @@ import { registerFile } from '../shims/node-fs.js';
 import { preloadSqlite } from '../shims/node-sqlite.js';
 import { dispatch } from '../shims/express.js';
 import schemaSql from '../../../server/src/db/schema.sql?raw';
+import worldMask from '../../../server/test-support/world-mask.json?raw';
+import loreCanon from '../../../docs/lore/README.md?raw';
+import loreWorld from '../../../docs/lore/world.md?raw';
+import loreContinents from '../../../docs/lore/continents.md?raw';
+import loreCosmology from '../../../docs/lore/cosmology.md?raw';
+import loreCampaign from '../../../docs/lore/campaign.md?raw';
+import loreBestiary from '../../../docs/lore/bestiary.md?raw';
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -20,6 +27,16 @@ import App from '../../src/App.jsx';
 import '../../src/styles.css';
 
 registerFile('schema.sql', schemaSql);
+// The server reads these from disk at import time (world_geo.js) or per request
+// (lore.js). Registering them by basename lets those readFileSync calls succeed
+// without a filesystem, exactly like schema.sql.
+registerFile('world-mask.json', worldMask);
+registerFile('README.md', loreCanon);
+registerFile('world.md', loreWorld);
+registerFile('continents.md', loreContinents);
+registerFile('cosmology.md', loreCosmology);
+registerFile('campaign.md', loreCampaign);
+registerFile('bestiary.md', loreBestiary);
 
 async function buildApp() {
   await preloadSqlite();
