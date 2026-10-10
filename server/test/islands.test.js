@@ -19,6 +19,7 @@ import { grantItem } from '../src/services/items.js';
 import {
   startVoyage, getVoyageView, resolveVoyageStop, putInIsland, sailPastIsland,
   leaveIsland, searchIsland, islandClaims, exploreIslandLandmark, raidIslandLandmark,
+  startNavalBattle,
 } from '../src/services/naval.js';
 import { getBattleView, recordIslandRaid } from '../src/services/battles.js';
 import { getSettlementByLocation, listSettlements } from '../src/services/settlements.js';
@@ -244,6 +245,22 @@ test('searching a place pays once; each place hides its own cache', () => {
   recordVisit(c.id, inwardId);
   const third = searchIsland(c.id);
   assert.equal(third.alreadySearched, false, 'a fresh place still hides a cache');
+});
+
+test('a peaceful island errand is refused while a sea fight is open', () => {
+  seedAll();
+  const c = hero();
+  buyShip(c.id, { name: 'Миролюб' });
+  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(5000, c.id);
+  const isle = islandByKey('drowned_bell');
+  voyageWithIslandStop(c.id, isle);
+  resolveVoyageStop(c.id);
+  putInIsland(c.id);
+
+  // A free sea fight can be opened even while ashore; it must hold the party.
+  startNavalBattle(c.id, { kind: 'pirates' });
+  assert.throws(() => searchIsland(c.id), /бой/i, 'no search under a sea fight');
+  assert.throws(() => leaveIsland(c.id), /бой/i, 'no departure under a sea fight');
 });
 
 test('the party can only put back to sea from the shore', () => {

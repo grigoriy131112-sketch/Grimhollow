@@ -66,6 +66,13 @@ function landBattleOpen(characterId) {
   return !!getDb().prepare("SELECT id FROM battles WHERE character_id = ? AND status = 'active' LIMIT 1").get(characterId);
 }
 
+// Either fight holds the party. Island errands are peaceful acts, so neither a
+// land battle nor a sea battle (a free one can be opened while ashore) may be
+// running while the party searches or talks.
+function anyBattleOpen(characterId) {
+  return landBattleOpen(characterId) || !!activeBattleRow(characterId);
+}
+
 // The place the party actually stands on while ashore. `ashore_id` names only
 // the shore the ship landed on; walking the island uses the normal roads, which
 // update characters.location_id. Reading ashore_id for "where am I" left the
@@ -510,7 +517,7 @@ export function leaveIsland(characterId) {
   const row = activeVoyageRow(characterId);
   if (!row) throw new Error('Нет активного плавания');
   if (row.mode !== 'island' || !row.ashore_id) throw new Error('Отряд не на острове');
-  if (landBattleOpen(characterId)) throw new Error('Сначала закончите бой');
+  if (anyBattleOpen(characterId)) throw new Error('Сначала закончите бой');
   const island = islandPlaces(row.island_ref);
   if (island && ashoreNowId(characterId, row, island) !== island.anchor.id) throw new Error('Сначала вернитесь на берег — корабль ждёт у причала');
   const stops = parseJson(row.stops, []);
@@ -533,7 +540,7 @@ export function searchIsland(characterId) {
   if (!row || row.mode !== 'island' || !row.ashore_id) throw new Error('Отряд не на острове');
   const island = islandPlaces(row.island_ref);
   if (!island) throw new Error('Этот остров море не отдаёт');
-  if (landBattleOpen(characterId)) throw new Error('Сначала закончите бой');
+  if (anyBattleOpen(characterId)) throw new Error('Сначала закончите бой');
   const here = island.places.find((p) => p.id === ashoreNowId(characterId, row, island));
   if (!here) throw new Error('Отряд не на острове');
 
@@ -573,7 +580,7 @@ export function exploreIslandLandmark(characterId) {
   if (state === 'raided') throw new Error('Племя уже разорено — говорить больше не с кем');
   if (state === 'explored') throw new Error('Это место уже исследовано');
   // Talking is a peaceable act: not while a blade is already out somewhere.
-  if (landBattleOpen(characterId)) throw new Error('Сначала закончите бой — сейчас не до разговоров');
+  if (anyBattleOpen(characterId)) throw new Error('Сначала закончите бой — сейчас не до разговоров');
 
   const isle = islandByKey(row.island_ref);
   const place = isle?.landmark;
