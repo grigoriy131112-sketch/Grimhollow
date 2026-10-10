@@ -22,6 +22,9 @@ export default function LocationPage() {
   const [settlement, setSettlement] = useState(null);
   const [survival, setSurvival] = useState(null);
   const [resting, setResting] = useState(false);
+  const [island, setIsland] = useState(null);
+  const [searching, setSearching] = useState(false);
+  const [castOff, setCastOff] = useState(false);
 
   useEffect(() => { if (location) hintScene({ location }); }, [location]);
 
@@ -56,6 +59,45 @@ export default function LocationPage() {
       .then((s) => setSettlement(s && s.id ? s : null))
       .catch(() => setSettlement(null));
   }, [id]);
+
+  // W-ISLES: is the party standing on a sea island, or is a voyage still open
+  // for this hero (so this port can offer to sail, or hold her)? The voyage view
+  // carries the mode: on an island the party may search the hoard and put back to
+  // sea; at a port a voyage still open means the ship is out there, not here.
+  useEffect(() => {
+    if (!heroId) { setIsland(null); return; }
+    let alive = true;
+    api.getVoyage(Number(heroId)).then((v) => {
+      if (!alive) return;
+      if (v && v.mode === 'island' && v.ashore === Number(id)) {
+        setIsland({ onIsland: true, islandName: v.island?.name || null, searched: false });
+      } else if (v && v.ashore === Number(id)) {
+        setIsland({ elsewhere: true });
+      } else setIsland(null);
+    }).catch(() => setIsland(null));
+    return () => { alive = false; };
+  }, [id, heroId]);
+
+  const searchHoard = async () => {
+    if (!heroId) return;
+    setSearching(true); setError('');
+    try {
+      const res = await api.searchIsland(Number(heroId));
+      setIsland((cur) => ({ ...(cur || {}), onIsland: true, searched: true, lastGold: res.gold, lastFound: res.found, already: res.alreadySearched }));
+    } catch (err) { setError(err.message); }
+    finally { setSearching(false); }
+  };
+
+  // The party is ashore; push off and put back to sea (the voyage carries on).
+  const sailOff = async () => {
+    if (!heroId) return;
+    setCastOff(true); setError('');
+    try {
+      await api.leaveIsland(Number(heroId));
+      navigate(`/voyage/${heroId}`);
+    } catch (err) { setError(err.message); }
+    finally { setCastOff(false); }
+  };
 
   // The survival meters for the hero standing here. Hidden when no hero.
   useEffect(() => {
@@ -153,6 +195,26 @@ export default function LocationPage() {
         <div className="card">
           <p className="good-tag">🔑 Найдено: «{found.name}»</p>
           <p className="muted small">{found.description}</p>
+        </div>
+      )}
+
+      {island?.onIsland && (
+        <div className="card">
+          <h2>Остров</h2>
+          <p className="muted small">
+            Отряд сошёл на берег с корабля. Здесь можно осмотреться и обыскать остров —
+            а после снова выйти в море, чтобы продолжить путь.
+          </p>
+          {island.lastGold != null && !island.already && (
+            <p className="good-tag">Найдено: {island.lastGold} золота{(island.lastFound || []).length > 0 ? ' и кое-что ещё' : ''}.</p>
+          )}
+          {island.lastGold != null && island.already && (
+            <p className="muted small">Здесь уже всё обобрано — остров больше ничего не отдаёт.</p>
+          )}
+          <div className="actions">
+            <button type="button" disabled={searching || castOff} onClick={searchHoard}>Обыскать остров</button>
+            <button type="button" disabled={searching || castOff} className="ghost" onClick={sailOff}>Выйти в море</button>
+          </div>
         </div>
       )}
 

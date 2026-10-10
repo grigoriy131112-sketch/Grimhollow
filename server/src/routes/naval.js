@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   startNavalBattle, getNavalView, getNavalPreview, takeNavalTurn, fleeNavalBattle,
   getPapers, setPapersNotes, startVoyage, getVoyageView, resolveVoyageStop,
+  putInIsland, sailPastIsland, leaveIsland, searchIsland,
 } from '../services/naval.js';
 
 const router = Router();
@@ -76,6 +77,32 @@ router.get('/:characterId/voyage', (req, res) => {
 
 router.post('/:characterId/voyage/resolve', (req, res) => {
   try { res.json(resolveVoyageStop(Number(req.params.characterId))); }
+  catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// --- islands (W-ISLES) -------------------------------------------------------
+
+// Accept the sea's offer and put in at the stop's island.
+router.post('/:characterId/voyage/put-in', (req, res) => {
+  try { res.json(putInIsland(Number(req.params.characterId))); }
+  catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// Refuse the island and hold the course.
+router.post('/:characterId/voyage/sail-past', (req, res) => {
+  try { res.json(sailPastIsland(Number(req.params.characterId))); }
+  catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// Push off the island and put back to sea.
+router.post('/:characterId/voyage/leave-island', (req, res) => {
+  try { res.json(leaveIsland(Number(req.params.characterId))); }
+  catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// Search the island's hoard (once).
+router.post('/:characterId/voyage/search', (req, res) => {
+  try { res.json(searchIsland(Number(req.params.characterId))); }
   catch (err) { res.status(400).json({ error: err.message }); }
 });
 

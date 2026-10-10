@@ -53,8 +53,10 @@ Post-G12 shell/UX waves, also merged:
 | W-SEA | Sea crossing: pirates, sea monsters, islands, papers, sea battle | #20 |
 | W-THEME | Dark Dark Fantasy palette (cold ash + embers), cyrillic display type, grain/vignette | #21 |
 | W-HERO-TABS | One tab strip across every per-hero screen | #22 |
+| W-ISLES | Sea islands: hidden, the sea asks whether to dock, entry/exit mirrors continents | this branch |
 
-`main` after #22: **338 pass / 0 fail**.
+`main` after #22: **338 pass / 0 fail**. `main` after the W-WIRE/W-ACTIONS-CRAFT/
+W-ISLES follow-ons: **400 pass / 0 fail**.
 
 ---
 
@@ -142,6 +144,34 @@ them back into the party at any moment. Built as **one system**:
   a deeper fight pays more.
 - The balance is pinned by a deterministic regression test (injectable `rng`),
   and the fights last 5–14 rounds with real hull risk at every tier.
+
+### 2.7 Sea islands — ✅ done in `wave/w-isles` (W-ISLES)
+
+User asked: islands scattered across the ocean that the player is **asked whether
+to dock at** (может причалить или отказаться, only on accept does he enter), that
+are **not visible on the map**, and whose entry/exit mirrors continents.
+
+- **Hidden, by construction.** Six islands live on a hidden continent
+  (`Море Осколков`) as `locations` with `hidden = 1`; every reader — the map
+  (`getMap`), the world list (`getWorld`), the continent list/detail
+  (`listContinents`/`getContinent`), the bestiary and the monster spawner — filters
+  `hidden = 0`, so an island never appears in any atlas, list, count or spawn pool.
+  `continents`/`locations` gained a `hidden` column (schema + additive migration).
+- **The sea asks.** A voyage that reaches an island stop no longer logs a note: a
+  voyage now carries a `mode` and the stop is held at `cursor` until the party
+  answers with `POST /naval/:id/voyage/put-in` (accept) or `.../sail-past`
+  (refuse). `Voyage.jsx` shows «Причалить» / «Пройти мимо».
+- **Docking mirrors continents.** On accept the stop's island becomes a real
+  location the party *stands on* (`characters.location_id`, `character_visits`) —
+  a full screen with its own scene, monsters and a hoard. Ashore, the party may
+  `.../search` (a one-time loot roll) and `.../leave-island` to put back to sea,
+  exactly like landing on and leaving a continent. The voyage then carries on and
+  lands at the far port when the stops run out. `island_discoveries` records each
+  first landing and remembers which shore the party left.
+- **Tests:** `server/test/islands.test.js` (9) — hiddenness across map/list/
+  continent, the ask, refuse, accept-and-stand-there, search-once, put-back-to-sea
+  and the deterministic island draw; the voyage test was updated to the new
+  "at sea until answered, landed at the end" semantics. Suite **400 pass / 0 fail**.
 
 ---
 
@@ -252,3 +282,7 @@ follow-on queue (W-WIRE #28, W-ACTIONS-CRAFT #29) is merged too. The roadmap is
   захотеть вступить. Ну и само собой эти ребята, которые будут в клане, будут
   пассивно приносить доход от походов и ресурсы, а также в любой момент Игрок
   может взять из клана любого персонажа» (done in W-CLAN-ROSTER).
+- **Sea islands:** «Острова в море… игрок должен быть спрошен, причалить ли;
+  может отказаться или согласиться; только при согласии он попадает на остров.
+  Острова НЕ должны быть видны на карте. Вход и выход должен работать так же, как
+  на континентах» (done in W-ISLES, §2.7).

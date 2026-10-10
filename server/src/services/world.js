@@ -22,9 +22,10 @@ function statsOf(locs) {
 
 export function getWorld() {
   const db = getDb();
-  const continents = db.prepare('SELECT * FROM continents ORDER BY sort_order, id').all();
+  // Hidden continents/locations (the sea's islands, W-ISLES) are never listed.
+  const continents = db.prepare('SELECT * FROM continents WHERE hidden = 0 ORDER BY sort_order, id').all();
   const regions = db.prepare('SELECT * FROM regions ORDER BY sort_order, id').all();
-  const locations = db.prepare('SELECT * FROM locations ORDER BY sort_order, id').all();
+  const locations = db.prepare('SELECT * FROM locations WHERE hidden = 0 ORDER BY sort_order, id').all();
   const connections = db.prepare('SELECT * FROM connections ORDER BY id').all();
   return continents.map((c) => ({
     ...c,
@@ -60,11 +61,15 @@ function seaLanes(locations) {
 // have seen, and any road they are currently walking.
 export function getMap(characterId) {
   const db = getDb();
-  const continents = db.prepare('SELECT * FROM continents ORDER BY sort_order, id').all();
+  const continents = db.prepare('SELECT * FROM continents WHERE hidden = 0 ORDER BY sort_order, id').all();
   const regions = db.prepare('SELECT * FROM regions ORDER BY sort_order, id').all();
-  const locations = db.prepare('SELECT * FROM locations ORDER BY sort_order, id').all();
+  const locations = db.prepare('SELECT * FROM locations WHERE hidden = 0 ORDER BY sort_order, id').all();
   const connections = db.prepare('SELECT * FROM connections ORDER BY id').all();
-  const monsters = db.prepare('SELECT location_id, COUNT(*) AS n FROM location_monsters GROUP BY location_id').all();
+  const monsters = db.prepare(
+    `SELECT lm.location_id, COUNT(*) AS n FROM location_monsters lm
+       JOIN locations l ON l.id = lm.location_id
+      WHERE l.hidden = 0 GROUP BY lm.location_id`,
+  ).all();
   const counts = new Map(monsters.map((m) => [m.location_id, m.n]));
   const map = {
     continents: continents.map((c) => ({ ...c, regions: regions.filter((r) => r.continent_id === c.id).map((r) => ({ ...r })) })),
@@ -107,7 +112,7 @@ export function characterExploration(characterId) {
   if (!row) return null;
 
   if (row.location_id == null) {
-    const start = db.prepare('SELECT id FROM locations ORDER BY is_safe DESC, sort_order, id LIMIT 1').get();
+    const start = db.prepare('SELECT id FROM locations WHERE hidden = 0 ORDER BY is_safe DESC, sort_order, id LIMIT 1').get();
     if (start) recordVisit(characterId, start.id);
   }
 
@@ -193,6 +198,7 @@ export function getBestiary() {
   const links = db.prepare(
     `SELECT lm.monster_id AS id, l.name AS name
        FROM location_monsters lm JOIN locations l ON l.id = lm.location_id
+      WHERE l.hidden = 0
       ORDER BY l.name`,
   ).all();
   for (const link of links) {
