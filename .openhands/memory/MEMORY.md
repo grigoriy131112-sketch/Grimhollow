@@ -535,3 +535,9 @@ stale chat brief was wrong. `gh` is not authed - use
 - Island places take beasts from their OWN danger band (islandBeasts per place),
   not the shore band; seedIslands rewrites island spawns every boot.
 - `listSettlements()` must join `locations.hidden = 0` or native isle villages leak.
+- Battle guards (rounds 5-6): `startBattle` refuses while a LAND battle is active
+  too (not only a sea one); `putInIsland`/`sailPastIsland` use `anyBattleOpen()`
+  like the ashore errands. `SeaBattle.jsx` needs a «Продолжить плавание» button
+  when `view.voyageId` is set, or a won voyage fight dead-ends. `locationInfo()`
+  exposes `hidden` so `Settlement.jsx` sends an island village back to its place,
+  not to the atlas (where it is not drawn). Suite now 413.
