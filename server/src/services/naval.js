@@ -66,6 +66,18 @@ function landBattleOpen(characterId) {
   return !!getDb().prepare("SELECT id FROM battles WHERE character_id = ? AND status = 'active' LIMIT 1").get(characterId);
 }
 
+// The place the party actually stands on while ashore. `ashore_id` names only
+// the shore the ship landed on; walking the island uses the normal roads, which
+// update characters.location_id. Reading ashore_id for "where am I" left the
+// interior and the heart unreachable in play -- the tests passed only because
+// they rewrote ashore_id by hand after each step. Falls back to ashore_id when
+// the character is not on the island (e.g. mid-voyage).
+function ashoreNowId(characterId, row, island) {
+  const loc = getDb().prepare('SELECT location_id FROM characters WHERE id = ?').get(characterId)?.location_id;
+  if (island && loc != null && island.places.some((p) => p.id === loc)) return loc;
+  return row.ashore_id;
+}
+
 // Open a sea fight. Enemies scale with the ship's tier (= its level); a `tier`
 // argument overrides it (a voyage names the tier explicitly).
 export function startNavalBattle(characterId, { kind, tier, voyageId = null, seed } = {}) {
@@ -350,6 +362,7 @@ function voyageView(row) {
   // The island the stop points at, as a small country: its anchor (the shore the
   // party lands on) and every place it holds. Null for a pirate / monster stop.
   const island = stop?.kind === 'island' ? islandPlaces(stop.island?.key, row.character_id) : null;
+  const ashoreNow = mode === 'island' ? ashoreNowId(row.character_id, row, island) : row.ashore_id || null;
   return {
     id: row.id,
     characterId: row.character_id,
@@ -368,6 +381,8 @@ function voyageView(row) {
     // A voyage with no stops never raises a stop to answer, so the client has to
     // be offered the landing directly instead of waiting for a turn it can't take.
     canLand: !resolved && mode === 'voyage' && stops.length === 0,
+    // `ashore` stays the ship's anchor (where the party may put back to sea);
+    // `ashoreAt` follows the party as it walks the island.
     ashore: row.ashore_id || null,
     islandId: island?.anchor?.id || null,
     island: island ? { id: island.anchor.id, name: island.name, description: island.anchor.description } : (stop?.island || null),
@@ -375,7 +390,7 @@ function voyageView(row) {
     islandLandmark: island?.landmark || null,
     landmarkState: island?.landmarkState || '',
     // While ashore, which of the island's places the party now stands on.
-    ashoreAt: row.mode === 'island' ? row.ashore_id : null,
+    ashoreAt: mode === 'island' ? ashoreNow : null,
     inBattle: !!active,
     battleId: active ? active.id : null,
   };
@@ -497,7 +512,7 @@ export function leaveIsland(characterId) {
   if (row.mode !== 'island' || !row.ashore_id) throw new Error('Отряд не на острове');
   if (landBattleOpen(characterId)) throw new Error('Сначала закончите бой');
   const island = islandPlaces(row.island_ref);
-  if (island && row.ashore_id !== island.anchor.id) throw new Error('Сначала вернитесь на берег — корабль ждёт у причала');
+  if (island && ashoreNowId(characterId, row, island) !== island.anchor.id) throw new Error('Сначала вернитесь на берег — корабль ждёт у причала');
   const stops = parseJson(row.stops, []);
   const stop = row.cursor < stops.length ? stops[row.cursor] : null;
 
@@ -519,7 +534,7 @@ export function searchIsland(characterId) {
   const island = islandPlaces(row.island_ref);
   if (!island) throw new Error('Этот остров море не отдаёт');
   if (landBattleOpen(characterId)) throw new Error('Сначала закончите бой');
-  const here = island.places.find((p) => p.id === row.ashore_id);
+  const here = island.places.find((p) => p.id === ashoreNowId(characterId, row, island));
   if (!here) throw new Error('Отряд не на острове');
 
   const place = islandByKey(row.island_ref)?.locations.find((l) => l.index === here.index);
@@ -552,7 +567,7 @@ export function exploreIslandLandmark(characterId) {
   if (!row || row.mode !== 'island' || !row.ashore_id) throw new Error('Отряд не на острове');
   const island = islandPlaces(row.island_ref, characterId);
   if (!island?.landmark) throw new Error('Этот остров море не отдаёт');
-  if (row.ashore_id !== island.landmark.id) throw new Error('Отряд не у этого места');
+  if (ashoreNowId(characterId, row, island) !== island.landmark.id) throw new Error('Отряд не у этого места');
   const state = getDb().prepare('SELECT landmark_state FROM island_discoveries WHERE character_id = ? AND island_id = ?')
     .get(characterId, island.anchor.id)?.landmark_state || '';
   if (state === 'raided') throw new Error('Племя уже разорено — говорить больше не с кем');
@@ -588,7 +603,7 @@ export function raidIslandLandmark(characterId) {
   if (!row || row.mode !== 'island' || !row.ashore_id) throw new Error('Отряд не на острове');
   const island = islandPlaces(row.island_ref, characterId);
   if (!island?.landmark) throw new Error('Этот остров море не отдаёт');
-  if (row.ashore_id !== island.landmark.id) throw new Error('Отряд не у этого места');
+  if (ashoreNowId(characterId, row, island) !== island.landmark.id) throw new Error('Отряд не у этого места');
   const state = getDb().prepare('SELECT landmark_state FROM island_discoveries WHERE character_id = ? AND island_id = ?')
     .get(characterId, island.anchor.id)?.landmark_state || '';
   if (state === 'explored') throw new Error('Это место уже стало дружеским — грабить некого');

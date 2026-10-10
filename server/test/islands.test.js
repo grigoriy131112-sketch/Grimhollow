@@ -10,7 +10,8 @@ import { createCharacter } from '../src/services/characters.js';
 import { getMap, getLocation, recordVisit, characterExploration } from '../src/services/world.js';
 import { listContinents, getContinent } from '../src/services/continents.js';
 import { buyShip } from '../src/services/ship.js';
-import { startTravel } from '../src/services/travel.js';
+import { startTravel, getTravelView, chooseTravel } from '../src/services/travel.js';
+import { MS_PER_MINUTE } from '../src/game/travel.js';
 import { ISLANDS, islandByKey, lootGold, lootItem } from '../src/game/islands.js';
 import { rollVoyage, pickIsland } from '../src/game/naval.js';
 import { routeFor } from '../src/game/continent_travel.js';
@@ -187,6 +188,37 @@ test('the island is walked on foot, shore to heart, like a continent', () => {
   assert.equal(getLocation(inwards.toId).hidden, 1, 'the interior place is part of the hidden island');
 });
 
+test('walking the island roads moves the party, so an inland place can be searched without hand-editing ashore_id', () => {
+  seedAll();
+  const c = hero();
+  buyShip(c.id, { name: 'Разведчик' });
+  getDb().prepare('UPDATE characters SET gold = ? WHERE id = ?').run(5000, c.id);
+  const isle = islandByKey('drowned_bell');
+  voyageWithIslandStop(c.id, isle);
+  resolveVoyageStop(c.id);
+  putInIsland(c.id);
+  const shore = getLocation(getVoyageView(c.id).ashore);
+
+  // Really walk the road; the road is what moves `characters.location_id`.
+  const trip = startTravel({ characterId: c.id, fromId: shore.id, toId: shore.connections[0].toId, now: 0 });
+  let now = 0;
+  for (let g = 0; g < 20; g += 1) {
+    const v = getTravelView(trip.id, now);
+    if (!v || v.arrived) break;
+    if (v.encounter) { chooseTravel(trip.id, 'ignore', now); continue; }
+    now += trip.minutes * MS_PER_MINUTE;
+  }
+  getTravelView(trip.id, now);
+  const inlandId = shore.connections[0].toId;
+  assert.equal(characterExploration(c.id).locationId, inlandId, 'the party now stands inland');
+  assert.equal(getVoyageView(c.id).ashoreAt, inlandId, 'the voyage view follows the party inland');
+
+  // The inland cache must be reachable, and the shore cache must not be paid again.
+  const found = searchIsland(c.id);
+  assert.equal(found.alreadySearched, false, 'the inland place hides its own cache');
+  assert.equal(searchIsland(c.id).alreadySearched, true, 'and pays only once');
+});
+
 test('searching a place pays once; each place hides its own cache', () => {
   seedAll();
   const c = hero();
@@ -209,7 +241,6 @@ test('searching a place pays once; each place hides its own cache', () => {
   assert.equal(getDb().prepare('SELECT gold FROM characters WHERE id = ?').get(c.id).gold, after, 'no double payout');
 
   const inwardId = getLocation(shoreId).connections[0].toId;
-  getDb().prepare('UPDATE voyages SET ashore_id = ? WHERE character_id = ? AND resolved = 0').run(inwardId, c.id);
   recordVisit(c.id, inwardId);
   const third = searchIsland(c.id);
   assert.equal(third.alreadySearched, false, 'a fresh place still hides a cache');
@@ -226,11 +257,9 @@ test('the party can only put back to sea from the shore', () => {
   const shoreId = getVoyageView(c.id).ashore;
 
   const inwardId = getLocation(shoreId).connections[0].toId;
-  getDb().prepare('UPDATE voyages SET ashore_id = ? WHERE character_id = ? AND resolved = 0').run(inwardId, c.id);
   recordVisit(c.id, inwardId);
   assert.throws(() => leaveIsland(c.id), /берег|причал/i, 'the ship waits at the shore');
 
-  getDb().prepare('UPDATE voyages SET ashore_id = ? WHERE character_id = ? AND resolved = 0').run(shoreId, c.id);
   recordVisit(c.id, shoreId);
   const res = leaveIsland(c.id);
   assert.ok(res.afloat, 'the ship is back under way');
