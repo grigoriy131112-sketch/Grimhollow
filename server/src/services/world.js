@@ -26,7 +26,6 @@ export function getWorld() {
   const continents = db.prepare('SELECT * FROM continents WHERE hidden = 0 ORDER BY sort_order, id').all();
   const regions = db.prepare('SELECT * FROM regions ORDER BY sort_order, id').all();
   const locations = db.prepare('SELECT * FROM locations WHERE hidden = 0 ORDER BY sort_order, id').all();
-  const connections = db.prepare('SELECT * FROM connections ORDER BY id').all();
   return continents.map((c) => ({
     ...c,
     regions: regions.filter((r) => r.continent_id === c.id).map((r) => ({
@@ -71,6 +70,7 @@ export function getMap(characterId) {
       WHERE l.hidden = 0 GROUP BY lm.location_id`,
   ).all();
   const counts = new Map(monsters.map((m) => [m.location_id, m.n]));
+  const idSet = new Set(locations.map((l) => l.id));
   const map = {
     continents: continents.map((c) => ({ ...c, regions: regions.filter((r) => r.continent_id === c.id).map((r) => ({ ...r })) })),
     locations: locations.map((l) => {
@@ -84,9 +84,11 @@ export function getMap(characterId) {
         monsterCount: counts.get(l.id) || 0,
       };
     }),
-    // Undirected edges: draw each road once.
+    // Undirected edges: draw each road once. A road that touches a hidden island
+    // place is never handed out -- both endpoints must be visible places, or the
+    // island's geography leaks into the atlas (150 of 208 roads used to).
     connections: connections
-      .filter((c) => c.from_id < c.to_id)
+      .filter((c) => c.from_id < c.to_id && idSet.has(c.from_id) && idSet.has(c.to_id))
       .map((c) => ({ from: c.from_id, to: c.to_id, label: c.label, minutes: c.minutes })),
     // Sea lanes between the port gates. A road is a walk; a lane is a voyage,
     // so its time is in days, not minutes. Both endpoints are real gates, so

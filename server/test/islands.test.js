@@ -97,6 +97,17 @@ test('no island place ever appears on the map, in a list or under a continent', 
   assert.equal(getContinent('Море Осколков'), null, 'nor reachable by name');
 });
 
+test('no road on the map touches a hidden island place', () => {
+  seedAll();
+  const map = getMap();
+  const ids = new Set(map.locations.map((l) => l.id));
+  assert.ok(map.connections.length > 0, 'the visible world still has roads');
+  for (const c of map.connections) {
+    assert.ok(ids.has(c.from), `road from ${c.from} has a visible origin`);
+    assert.ok(ids.has(c.to), `road to ${c.to} has a visible destination`);
+  }
+});
+
 // --- the sea asks ------------------------------------------------------------
 
 test('a voyage that reaches an island asks instead of logging it', () => {

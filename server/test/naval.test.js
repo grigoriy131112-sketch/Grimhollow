@@ -239,8 +239,33 @@ test('a sea battle needs a ship and pays ship points only on a win', async () =>
   assert.ok(points >= POINTS_PER_PIRATE_WIN);
 });
 
-// --- voyage + papers ---------------------------------------------------------
+test('land and sea battles never overlap for one hero', async () => {
+  const { startNavalBattle } = await import('../src/services/naval.js');
+  const { startBattle } = await import('../src/services/battles.js');
+  const c = hero();
+  buyShip(c.id, { name: 'Граница' });
+  const loc = getDb().prepare('SELECT id FROM locations WHERE hidden = 0 AND is_safe = 1 LIMIT 1').get();
+  const monster = getDb().prepare('SELECT id FROM monsters ORDER BY id LIMIT 1').get();
 
+  // A running land battle blocks opening a sea fight.
+  const land = startBattle({ characterId: c.id, monsterId: monster.id, locationId: loc.id });
+  assert.throws(() => startNavalBattle(c.id, { kind: 'pirates', tier: 1 }), /наземный бой/i);
+  const { takeTurn } = await import('../src/services/battles.js');
+  takeTurn(land.id, { type: 'flee' });
+
+  // ...and a running sea fight blocks opening a land battle. A sea fight may be
+  // settled the instant it opens, so plant an active one to test the guard.
+  getDb().prepare(
+    "INSERT INTO naval_battles (character_id, kind, tier, state, status) VALUES (?, 'pirates', 1, '{}', 'active')",
+  ).run(c.id);
+  assert.throws(
+    () => startBattle({ characterId: c.id, monsterId: monster.id, locationId: loc.id }),
+    /морской бой/i,
+  );
+  getDb().prepare("UPDATE naval_battles SET status = 'fled' WHERE character_id = ? AND status = 'active'").run(c.id);
+});
+
+// --- voyage + papers ---------------------------------------------------------
 const PORT_A = 'Сумеречная гавань';
 const PORT_B = 'Порт Солёного Стекла';
 

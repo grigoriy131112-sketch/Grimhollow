@@ -48,6 +48,11 @@ export function startBattle({ characterId, monsterId, locationId, kind = 'normal
   const character = getCharacter(characterId);
   if (!character) throw new Error('Персонаж не найден');
   if (character.fate === 'dead') throw new Error('Герой пал — им больше нельзя сражаться');
+  // Sea and land do not overlap: a naval battle still running would fight the
+  // same party at the same time. The captain must finish it first.
+  if (getDb().prepare("SELECT id FROM naval_battles WHERE character_id = ? AND status = 'active' LIMIT 1").get(characterId)) {
+    throw new Error('Сначала закончите морской бой');
+  }
 
   let monster = opponent || (monsterId ? getMonster(monsterId) : null);
   let location = locationId ? getLocation(locationId) : null;

@@ -60,12 +60,21 @@ function activeBattleRow(characterId) {
   ).get(characterId) || null;
 }
 
+// A land fight left open elsewhere still holds the party: no peaceful island
+// errand (search, explore) should run while it is unsettled.
+function landBattleOpen(characterId) {
+  return !!getDb().prepare("SELECT id FROM battles WHERE character_id = ? AND status = 'active' LIMIT 1").get(characterId);
+}
+
 // Open a sea fight. Enemies scale with the ship's tier (= its level); a `tier`
 // argument overrides it (a voyage names the tier explicitly).
 export function startNavalBattle(characterId, { kind, tier, voyageId = null, seed } = {}) {
   const bonuses = getShipBonuses(characterId);
   if (!bonuses) throw new Error('Сначала купите корабль в порту.');
   if (activeBattleRow(characterId)) throw new Error('У вас уже идёт морской бой.');
+  // One fight at a time, sea or land: a land battle left open elsewhere would
+  // run its own turns against the same party while the ship is being fought.
+  if (landBattleOpen(characterId)) throw new Error('Сначала закончите наземный бой.');
 
   const safeKind = kind === 'sea_monster' ? 'sea_monster' : 'pirates';
   const t = clampTier(tier ?? bonuses.level);
@@ -486,6 +495,7 @@ export function leaveIsland(characterId) {
   const row = activeVoyageRow(characterId);
   if (!row) throw new Error('Нет активного плавания');
   if (row.mode !== 'island' || !row.ashore_id) throw new Error('Отряд не на острове');
+  if (landBattleOpen(characterId)) throw new Error('Сначала закончите бой');
   const island = islandPlaces(row.island_ref);
   if (island && row.ashore_id !== island.anchor.id) throw new Error('Сначала вернитесь на берег — корабль ждёт у причала');
   const stops = parseJson(row.stops, []);
@@ -508,6 +518,7 @@ export function searchIsland(characterId) {
   if (!row || row.mode !== 'island' || !row.ashore_id) throw new Error('Отряд не на острове');
   const island = islandPlaces(row.island_ref);
   if (!island) throw new Error('Этот остров море не отдаёт');
+  if (landBattleOpen(characterId)) throw new Error('Сначала закончите бой');
   const here = island.places.find((p) => p.id === row.ashore_id);
   if (!here) throw new Error('Отряд не на острове');
 
@@ -547,9 +558,7 @@ export function exploreIslandLandmark(characterId) {
   if (state === 'raided') throw new Error('Племя уже разорено — говорить больше не с кем');
   if (state === 'explored') throw new Error('Это место уже исследовано');
   // Talking is a peaceable act: not while a blade is already out somewhere.
-  if (getDb().prepare("SELECT id FROM battles WHERE character_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1").get(characterId)) {
-    throw new Error('Сначала закончите бой — сейчас не до разговоров');
-  }
+  if (landBattleOpen(characterId)) throw new Error('Сначала закончите бой — сейчас не до разговоров');
 
   const isle = islandByKey(row.island_ref);
   const place = isle?.landmark;
