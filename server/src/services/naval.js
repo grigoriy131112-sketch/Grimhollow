@@ -293,8 +293,9 @@ const activeVoyageRow = (characterId) => getDb().prepare(
 
 // Set sail between two ports. Deterministic, like a road: the stops are drawn
 // from the seed and stored once, so a reload cannot reroll the sea. The fare and
-// the toll are charged up front; the party is placed at the far port and the
-// stops are then resolved one by one (a fight, or an island the sea offers).
+// the toll are charged up front; the party stays at the home shore while the
+// stops are answered one by one (a fight, or an island the sea offers), and only
+// when every stop is done does it land at the far port.
 export function startVoyage({ characterId, fromId, toId } = {}) {
   requireCharacter(characterId);
   const bonuses = getShipBonuses(characterId);
