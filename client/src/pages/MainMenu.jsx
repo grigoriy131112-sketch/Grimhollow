@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SceneBackdrop from '../scenes.jsx';
+import Atmosphere from '../Atmosphere.jsx';
 import { api } from '../api.js';
 
-// The title screen (Wave W-MENU, restyled). A full-viewport menu like a classic
-// RPG: a big letter-spaced title over an atmospheric scene, a column of
-// buttons, and the saves as a slide-up sheet.
+// The title screen (Wave W-MENU, restyled; W-ATMOSPHERE). A full-viewport menu
+// like a classic RPG: a big letter-spaced title over a layered, breathing scene,
+// a column of buttons, and the saves as a slide-up sheet.
 
 function SavesSheet({ saves, busy, onClose, onResume, onDelete }) {
   return (
@@ -71,26 +72,46 @@ export default function MainMenuPage({ characters = [], saves = [], onRefresh })
       <div className="menu-bg" aria-hidden="true">
         <SceneBackdrop scene="crossroads" biome="waste" danger={1} name="Гримхоллоу" />
       </div>
+      <Atmosphere tone="ember" intensity={1.15} />
 
       <div className="menu-inner">
+        <div className="menu-crest" aria-hidden="true">
+          <span className="menu-crest-line" />
+          <span className="menu-crest-mark">✦</span>
+          <span className="menu-crest-line" />
+        </div>
         <h1 className="menu-title">ГРИМХОЛЛОУ</h1>
         <div className="menu-sub">Мрачная низина · мир, у которого отняли память</div>
 
         <div className="menu-btns">
           {last && (
             <button className="menu-btn primary" onClick={() => navigate(`/characters/${last.id}`)}>
+              <span className="menu-btn-glyph" aria-hidden="true">➤</span>
               Продолжить
+              <span className="menu-btn-tail muted small">ур. {last.level} · {last.className || last.class}</span>
             </button>
           )}
-          <button className="menu-btn" onClick={() => navigate('/characters')}>Новая игра</button>
-          <button className="menu-btn" onClick={() => setSheet(true)}>Сохранённые игры</button>
-          <button className="menu-btn" onClick={() => navigate('/settings')}>Настройки</button>
-          <button className="menu-btn" onClick={() => navigate('/creators')}>Создатели</button>
-          <button className="menu-btn" onClick={() => navigate('/lore')}>Лор</button>
+          <button className="menu-btn" onClick={() => navigate('/characters')}>
+            <span className="menu-btn-glyph" aria-hidden="true">✧</span>Новая игра
+          </button>
+          <button className="menu-btn" onClick={() => setSheet(true)}>
+            <span className="menu-btn-glyph" aria-hidden="true">❐</span>Сохранённые игры
+          </button>
+          <button className="menu-btn" onClick={() => navigate('/settings')}>
+            <span className="menu-btn-glyph" aria-hidden="true">⚙</span>Настройки
+          </button>
+          <button className="menu-btn" onClick={() => navigate('/creators')}>
+            <span className="menu-btn-glyph" aria-hidden="true">✥</span>Создатели
+          </button>
+          <button className="menu-btn" onClick={() => navigate('/lore')}>
+            <span className="menu-btn-glyph" aria-hidden="true">◈</span>Лор
+          </button>
         </div>
 
         <div className="menu-foot muted small">
+          <span className="menu-foot-dot" aria-hidden="true" />
           {characters.length} гер. · {saves.length} сохр.
+          <span className="menu-foot-dot" aria-hidden="true" />
         </div>
       </div>
 
